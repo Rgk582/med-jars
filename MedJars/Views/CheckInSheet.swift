@@ -22,7 +22,7 @@ struct CheckInSheet: View {
                             HStack(spacing: 12) {
                                 if let jar = store.jar(entry.jarId) { JarIcon(jar: jar, size: 40) }
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text(entry.jarName).font(.headline)
+                                    JarNameStack(name: entry.jarName, label: store.jar(entry.jarId)?.labelName ?? "")
                                     Text("\(entry.amountLine) at \(Format.time12(entry.takenAt)), \(Format.dayLabel(entry.takenAt).lowercased())")
                                         .font(.subheadline).foregroundStyle(Palette.secondary)
                                 }

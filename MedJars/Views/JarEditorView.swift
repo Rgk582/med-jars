@@ -29,7 +29,11 @@ struct JarEditorView: View {
                         Spacer()
                         VStack(spacing: 8) {
                             JarIcon(jar: draft, size: 72)
-                            Text(draft.name.ifEmpty("New Jar")).font(.headline).foregroundStyle(draft.name.isEmpty ? Palette.tertiary : Palette.label)
+                            if draft.name.isEmpty {
+                                Text("New Jar").font(.headline).foregroundStyle(Palette.tertiary)
+                            } else {
+                                JarNameStack(name: draft.name, label: draft.labelName.trimmingCharacters(in: .whitespaces))
+                            }
                         }
                         Spacer()
                     }
@@ -37,10 +41,11 @@ struct JarEditorView: View {
                 }
 
                 Section {
-                    TextField("Name on the Jar", text: $draft.name)
+                    TextField("Medication or Supplement", text: $draft.name)
                         .onChange(of: draft.name) { _, newValue in
                             if isNew && !tagIdTouched { tagId = Format.slug(newValue) }
                         }
+                    TextField("Name on the Jar's Label (optional)", text: $draft.labelName)
                     Picker("Type", selection: $draft.kind) {
                         ForEach(JarKind.allCases) { Text($0.label).tag($0) }
                     }
@@ -242,7 +247,7 @@ struct JarEditorView: View {
     private func save() {
         var jar = draft
         jar.name = jar.name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !jar.name.isEmpty else { problem = "Give the jar a name."; return }
+        guard !jar.name.isEmpty else { problem = "Enter the medication or supplement name."; return }
         if isNew {
             let id = Format.slug(tagId.isEmpty ? jar.name : tagId)
             guard !id.isEmpty else { problem = "Give the link name at least one letter or number."; return }
@@ -254,6 +259,7 @@ struct JarEditorView: View {
         jar.howTo = jar.howTo.trimmingCharacters(in: .whitespacesAndNewlines)
         jar.summary = jar.summary.trimmingCharacters(in: .whitespacesAndNewlines)
         jar.strength = jar.strength.trimmingCharacters(in: .whitespacesAndNewlines)
+        jar.labelName = jar.labelName.trimmingCharacters(in: .whitespacesAndNewlines)
         if trackSupply {
             let n = Double(supplyText.replacingOccurrences(of: ",", with: ".").trimmingCharacters(in: .whitespaces))
             guard let n, n >= 0 else { problem = "Enter how many \(jar.form.plural) are in the jar, or turn off Track Pills Left."; return }

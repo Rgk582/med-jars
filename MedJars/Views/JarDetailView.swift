@@ -329,9 +329,7 @@ private struct Header: View {
     var body: some View {
         VStack(spacing: 10) {
             JarIcon(jar: jar, size: 76)
-            Text(jar.name)
-                .font(.title.weight(.bold))
-                .multilineTextAlignment(.center)
+            JarNameStack(jar: jar, large: true)
             Text([jar.kind.label, jar.strength.isEmpty ? jar.form.plural.capitalized : "\(jar.strength) \(jar.form.plural)", jar.frequencyText]
                     .joined(separator: " \u{00B7} "))
                 .font(.subheadline)

@@ -103,7 +103,10 @@ struct DoseSlot: Codable, Identifiable, Hashable {
 
 struct Jar: Codable, Identifiable, Hashable {
     var id: String
+    /// The medication or supplement, e.g. "Vitamin D3".
     var name: String
+    /// What the jar's own label says, e.g. "Nature Made 2000 IU". Optional.
+    var labelName: String = ""
     var kind: JarKind = .supplement
     var form: PillForm = .capsule
     var strength: String = ""
@@ -133,7 +136,7 @@ struct Jar: Codable, Identifiable, Hashable {
     init(id: String, name: String) { self.id = id; self.name = name }
 
     enum CodingKeys: String, CodingKey {
-        case id, name, kind, form, strength, lid, schedule, howTo, food, avoid, absorb, summary, order, tagIds
+        case id, name, labelName, kind, form, strength, lid, schedule, howTo, food, avoid, absorb, summary, order, tagIds
         case pillsLeft, refillWarnDays, lowNotified, nudge, nudgeMinutes, checkIn, checkInMinutes
     }
 
@@ -157,6 +160,7 @@ struct Jar: Codable, Identifiable, Hashable {
         summary = (try? c.decodeIfPresent(String.self, forKey: .summary)) ?? ""
         order = (try? c.decodeIfPresent(Int.self, forKey: .order)) ?? 0
         tagIds = (try? c.decodeIfPresent([String].self, forKey: .tagIds)) ?? []
+        labelName = ((try? c.decodeIfPresent(String.self, forKey: .labelName)) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         pillsLeft = try? c.decodeIfPresent(Double.self, forKey: .pillsLeft)
         refillWarnDays = (try? c.decodeIfPresent(Int.self, forKey: .refillWarnDays)) ?? 7
         lowNotified = (try? c.decodeIfPresent(Bool.self, forKey: .lowNotified)) ?? false

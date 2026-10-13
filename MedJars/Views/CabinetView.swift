@@ -186,10 +186,10 @@ private struct TodayRow: View {
         HStack(spacing: 12) {
             JarIcon(jar: jar, size: 40)
             VStack(alignment: .leading, spacing: 2) {
-                Text(jar.name).font(.headline)
+                JarNameStack(jar: jar)
                 Text([row.slot.minutes == nil ? "Any time" : Format.time12(row.slot.time), row.slot.amountLine(jar.form)]
                         .filter { !$0.isEmpty }.joined(separator: " \u{00B7} "))
-                    .font(.subheadline).foregroundStyle(Palette.secondary)
+                    .font(.footnote).foregroundStyle(Palette.secondary)
                     .monospacedDigit()
             }
             Spacer(minLength: 8)
@@ -224,14 +224,14 @@ private struct JarRow: View {
         HStack(spacing: 12) {
             JarIcon(jar: jar, size: 40)
             VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) {
-                    Text(jar.name).font(.headline)
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    JarNameStack(jar: jar)
                     if !jar.tagIds.isEmpty {
                         Image(systemName: "wave.3.right").font(.caption).foregroundStyle(Palette.tertiary)
                             .accessibilityLabel("Tag paired")
                     }
                 }
-                Text("\(jar.kind.label) \u{00B7} \(jar.frequencyText)").font(.subheadline).foregroundStyle(Palette.secondary)
+                Text("\(jar.kind.label) \u{00B7} \(jar.frequencyText)").font(.footnote).foregroundStyle(Palette.secondary)
                 if jar.isLow {
                     Label(jar.daysLeft.map { "Refill soon, \($0) day\($0 == 1 ? "" : "s") left" } ?? "Refill soon",
                           systemImage: "exclamationmark.triangle.fill")
@@ -290,7 +290,7 @@ struct UnknownTagSheet: View {
                             } label: {
                                 HStack(spacing: 12) {
                                     JarIcon(jar: jar, size: 34)
-                                    Text(jar.name).foregroundStyle(Palette.label)
+                                    JarNameStack(jar: jar)
                                     Spacer()
                                     if !jar.tagIds.isEmpty {
                                         Text("Has a tag").font(.footnote).foregroundStyle(Palette.secondary)

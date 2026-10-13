@@ -211,3 +211,36 @@ extension UIColor {
         return c
     }
 }
+
+/// A jar's two names: the medication or supplement in full white, the jar's label smaller and lighter beneath it.
+struct JarNameStack: View {
+    let name: String
+    let label: String
+    var large = false
+
+    init(jar: Jar, large: Bool = false) {
+        self.name = jar.name
+        self.label = jar.labelName
+        self.large = large
+    }
+
+    init(name: String, label: String, large: Bool = false) {
+        self.name = name
+        self.label = label
+        self.large = large
+    }
+
+    var body: some View {
+        VStack(alignment: large ? .center : .leading, spacing: large ? 3 : 1) {
+            Text(name)
+                .font(large ? .title.weight(.bold) : .headline)
+                .foregroundStyle(Palette.label)
+            if !label.isEmpty {
+                Text(label)
+                    .font(large ? .body : .subheadline)
+                    .foregroundStyle(Palette.secondary)
+            }
+        }
+        .multilineTextAlignment(large ? .center : .leading)
+    }
+}

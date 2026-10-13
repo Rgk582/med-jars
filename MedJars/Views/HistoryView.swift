@@ -101,7 +101,7 @@ struct HistoryView: View {
         return HStack(spacing: 12) {
             JarIcon(jar: jar, size: 36)
             VStack(alignment: .leading, spacing: 2) {
-                Text(e.jarName).font(.headline)
+                JarNameStack(name: e.jarName, label: jar.labelName)
                 Text([e.amountLine, e.slotLabel, e.note].filter { !$0.isEmpty }.joined(separator: " \u{00B7} "))
                     .font(.subheadline).foregroundStyle(Palette.secondary)
             }

@@ -111,7 +111,10 @@ struct NextDoseWidgetView: View {
                 }
                 Spacer(minLength: 0)
                 Text(timeText.uppercased()).font(.caption2.weight(.semibold)).foregroundStyle(entry.accent).widgetAccentable()
-                Text(n.jar.name).font(.headline).lineLimit(2).minimumScaleFactor(0.8).privacySensitive()
+                Text(n.jar.name).font(.headline).foregroundStyle(Palette.label).lineLimit(2).minimumScaleFactor(0.8).privacySensitive()
+                if !n.jar.labelName.isEmpty {
+                    Text(n.jar.labelName).font(.caption).foregroundStyle(.secondary).lineLimit(1).privacySensitive()
+                }
                 Text(amountLine(n).ifEmptyFallback("Dose")).font(.subheadline).foregroundStyle(.secondary).lineLimit(1).privacySensitive()
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -127,7 +130,10 @@ struct NextDoseWidgetView: View {
                 JarIcon(jar: n.jar, size: 56)
                 VStack(alignment: .leading, spacing: 3) {
                     Text("NEXT \u{00B7} \(timeText.uppercased())").font(.caption2.weight(.semibold)).foregroundStyle(entry.accent).widgetAccentable()
-                    Text(n.jar.name).font(.title3.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.8).privacySensitive()
+                    Text(n.jar.name).font(.title3.weight(.semibold)).foregroundStyle(Palette.label).lineLimit(1).minimumScaleFactor(0.8).privacySensitive()
+                    if !n.jar.labelName.isEmpty {
+                        Text(n.jar.labelName).font(.subheadline).foregroundStyle(.secondary).lineLimit(1).privacySensitive()
+                    }
                     Text([amountLine(n), n.slot.label].filter { !$0.isEmpty }.joined(separator: " \u{00B7} "))
                         .font(.subheadline).foregroundStyle(.secondary).lineLimit(1).privacySensitive()
                     Text("\(entry.taken) of \(entry.total) doses logged today").font(.caption).foregroundStyle(.tertiary)
