@@ -10,8 +10,9 @@ enum ExtensionLog {
     static func log(jarId: String, slotId: String?, at now: Date = Date()) -> DoseEntry? {
         var file = StoreIO.load()
         guard let jar = file.jars.first(where: { $0.id == jarId }), jar.isActive(on: now) else { return nil }
-        let slot = slotId.flatMap { id in jar.sortedSchedule.first { $0.id == id } } ?? jar.asNeededSlot
-        if let slot, slot.minutes != nil,
+        let slot = slotId.flatMap { file.slot(jarId: jarId, slotId: $0) } ?? jar.asNeededSlot
+        if let slot, slot.isPlanned, file.entries.contains(where: { $0.slotId == slot.id }) { return nil }
+        if let slot, slot.minutes != nil, !slot.isPlanned,
            file.entries.contains(where: { $0.jarId == jar.id && $0.slotId == slot.id && DoseLogic.sameDoseDay($0.takenAt, now) }) {
             return nil
         }
@@ -41,7 +42,7 @@ struct LogDueDoseIntent: AppIntent {
         }
         let file = StoreIO.load()
         guard let due = file.dueDose() else {
-            let next = DoseLogic.nextDose(jars: file.jars, entries: file.entries)
+            let next = DoseLogic.nextDose(jars: file.jars, entries: file.entries, planned: file.planned)
             Notify.post(title: "Nothing due right now",
                         body: next.map { "Next up: \($0.jar.name) at \(Format.time12($0.time))." } ?? "No more doses scheduled.")
             return .result()
@@ -95,7 +96,7 @@ struct NextDoseControlValue: ControlValueProvider {
         guard StoreIO.isShared else { return "Log Dose" }
         let file = StoreIO.load()
         if let due = file.dueDose() { return "\(due.0.name) now" }
-        guard let next = DoseLogic.nextDose(jars: file.jars, entries: file.entries) else { return "Log Dose" }
+        guard let next = DoseLogic.nextDose(jars: file.jars, entries: file.entries, planned: file.planned) else { return "Log Dose" }
         return "\(next.jar.name), \(Format.time12(next.time))"
     }
 }

@@ -18,6 +18,7 @@ enum Notify {
     static let checkInPrefix = "checkin."
     static let effectPrefix = "effect."
     static let followUpPrefix = "followup."
+    static let headsUpPrefix = "headsup."
     static let maxNudges = 10
 
     /// Key for the dose day a date falls in (4 AM to 4 AM).
@@ -62,7 +63,14 @@ enum Notify {
     /// Everything that follows a logged dose: clear its reminders, refill warning, check-in,
     /// wearing-off alert and as-needed follow-up. Used by the app, Siri, widgets and Control Center.
     static func afterLog(_ entry: DoseEntry, jar: Jar, lowSupply low: Jar?) {
-        if let slot = entry.slotId { clear(jar: jar.id, slot: slot, day: entry.takenAt) }
+        if let slot = entry.slotId {
+            clear(jar: jar.id, slot: slot, day: entry.takenAt)
+            if slot.hasPrefix(PlannedDose.slotPrefix) {
+                let ids = ["\(headsUpPrefix)\(slot)"]
+                UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ids)
+                UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: ids)
+            }
+        }
         if entry.skipped { return }
         if let low { lowSupply(low) }
         let sinceDose = Date().timeIntervalSince(entry.takenAt)

@@ -48,7 +48,10 @@ enum StoreIO {
         for strategy in [JSONDecoder.DateDecodingStrategy.secondsSince1970, .iso8601] {
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = strategy
-            if let file = try? decoder.decode(StoreFile.self, from: data) { return file }
+            if let file = try? decoder.decode(StoreFile.self, from: data) {
+                Bedtime.minutes = file.settings.bedtime ?? Bedtime.defaultMinutes
+                return file
+            }
         }
         // Never let an unreadable file be overwritten: keep a copy first.
         if unreadableCopy != nil { return StoreFile() }

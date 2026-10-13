@@ -56,8 +56,8 @@ struct OpenLogSheetIntent: AppIntent {
         store.reload()
         Router.shared.open(jarId: jar.id)
         if let j = store.jar(jar.id) {
-            let suggested = DoseLogic.suggestion(DoseLogic.rows(for: j, entries: store.entries))?.slot.id
-            Router.shared.logRequest = LogTarget(jarId: j.id, slotId: suggested ?? j.asNeededSlot?.id ?? "")
+            let suggested = DoseLogic.suggestion(DoseLogic.rows(for: j, entries: store.entries, planned: store.planned))?.slot
+            Router.shared.logRequest = LogTarget(jarId: j.id, slotId: suggested?.id ?? j.asNeededSlot?.id ?? "", slot: suggested)
         }
         return .result()
     }
@@ -94,9 +94,10 @@ struct LogNextDoseIntent: AppIntent {
             return .result(dialog: IntentDialog(stringLiteral: "Logged \(entry.amount.isEmpty ? j.name : "\(entry.amount) of \(j.name)") at \(Format.time12(entry.takenAt))."))
         }
         // Only a dose that's due now or was missed in the last 3 hours. Never an early one.
-        guard let slot = DoseLogic.dueSlot(for: j, entries: store.entries) else {
-            if let next = DoseLogic.nextDose(jars: [j], entries: store.entries) {
-                return .result(dialog: IntentDialog(stringLiteral: "Nothing is due right now. Your next \(j.name) dose is at \(Format.time12(next.time))."))
+        guard let slot = DoseLogic.dueSlot(for: j, entries: store.entries, planned: store.planned) else {
+            if let next = DoseLogic.nextDose(jars: [j], entries: store.entries, planned: store.planned) {
+                let when = DoseLogic.sameDoseDay(next.time, Date()) ? "at" : "\(next.time.formatted(.dateTime.weekday(.wide))) at"
+                return .result(dialog: IntentDialog(stringLiteral: "Nothing is due right now. Your next \(j.name) dose is \(when) \(Format.time12(next.time))."))
             }
             return .result(dialog: IntentDialog(stringLiteral: "Every \(j.name) dose is already logged today."))
         }
@@ -133,7 +134,7 @@ struct DoseStatusIntent: AppIntent {
         let cal = Calendar.current
         let today = DoseLogic.entriesToday(for: j.id, entries: store.entries).filter { !$0.skipped }.sorted { $0.takenAt < $1.takenAt }
         _ = cal
-        let rows = DoseLogic.rows(for: j, entries: store.entries)
+        let rows = DoseLogic.rows(for: j, entries: store.entries, planned: store.planned)
         let left = rows.filter { $0.slot.minutes != nil && !$0.status.isHandled }
         var parts: [String] = []
         if today.isEmpty {
@@ -144,7 +145,7 @@ struct DoseStatusIntent: AppIntent {
             parts.append("Yes. You've logged \(j.name) \(today.count) times today, at " + today.map { Format.time12($0.takenAt) }.joined(separator: ", ") + ".")
         }
         if let next = left.first {
-            parts.append("Your \(Format.time12(next.slot.time)) dose is still \(next.status == .missed ? "not logged" : "to come").")
+            parts.append("Your \(next.slot.timeText) dose is still \(next.status == .missed ? "not logged" : "to come").")
         } else if !rows.isEmpty && !today.isEmpty {
             parts.append("That's every scheduled dose for today.")
         }
@@ -166,12 +167,12 @@ struct TodayDosesIntent: AppIntent {
         store.reload()
         var left: [(Int, String)] = []
         for jar in store.jars {
-            for row in DoseLogic.rows(for: jar, entries: store.entries) where row.slot.minutes != nil && !row.status.isHandled {
-                left.append((row.slot.minutes ?? 0, "\(jar.name) at \(Format.time12(row.slot.time))"))
+            for row in DoseLogic.rows(for: jar, entries: store.entries, planned: store.planned) where row.at != nil && !row.status.isHandled {
+                left.append((DoseLogic.order(row.slot.minutes ?? 0), "\(jar.name) at \(row.slot.timeText)"))
             }
         }
         left.sort { $0.0 < $1.0 }
-        let counts = DoseLogic.todayCounts(jars: store.jars, entries: store.entries)
+        let counts = DoseLogic.todayCounts(jars: store.jars, entries: store.entries, planned: store.planned)
         if counts.total == 0 { return .result(dialog: "You don't have any scheduled doses.") }
         if left.isEmpty { return .result(dialog: "You're done. All \(counts.total) doses are logged today.") }
         let list = left.map(\.1).joined(separator: ", ")

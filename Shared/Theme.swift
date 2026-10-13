@@ -80,7 +80,7 @@ struct StatusLabel: View {
         case .later:
             Label("Later", systemImage: "clock").foregroundStyle(Palette.secondary)
         case .missed:
-            Label("Not Logged", systemImage: "exclamationmark.circle.fill").foregroundStyle(Palette.missed)
+            Label("Missed", systemImage: "exclamationmark.circle.fill").foregroundStyle(Palette.missed)
         case .asNeeded:
             Label("As Needed", systemImage: "circle.dashed").foregroundStyle(Palette.secondary)
         }

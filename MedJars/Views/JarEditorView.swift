@@ -35,6 +35,78 @@ struct JarEditorView: View {
 
     private var otherJars: [Jar] { store.jars.filter { $0.id != draft.id || isNew } }
 
+    // MARK: Split dose
+
+    private var totalBinding: Binding<Double> {
+        Binding(get: { draft.dailyPills ?? 1 }, set: { draft.dailyPills = $0; recomputeSplit() })
+    }
+
+    private var countBinding: Binding<Int> {
+        Binding(get: { draft.schedule.count }, set: { setDoseCount($0) })
+    }
+
+    /// Strength for the whole day, from strength per pill.
+    private var dailyStrength: String? {
+        let s = Format.doseStrength("", basePills: 1, pills: draft.dailyPills ?? 1, perPill: draft.strength)
+        return s.isEmpty ? nil : s
+    }
+
+    /// Days where the doses' shares don't add up to the whole daily dose.
+    private var shareIssues: [String] {
+        guard !draft.asNeeded, draft.schedule.count > 1 else { return [] }
+        var byTotal: [String: [Int]] = [:]
+        for d in DoseSlot.everyDay {
+            let slots = draft.schedule.filter { $0.days.contains(d) }
+            guard !slots.isEmpty else { continue }
+            let sum = slots.reduce(0.0) { $0 + ($1.share ?? 0) }
+            if abs(sum - 1) > 0.01 { byTotal[Format.share(sum), default: []].append(d) }
+        }
+        return byTotal.keys.sorted().map { total in
+            let days = byTotal[total] ?? []
+            let when = days.count == 7 ? "The shares" : "On \(Format.days(days)), the shares"
+            return "\(when) add up to \(total) of the daily dose, not the whole dose."
+        }
+    }
+
+    /// A scheduled jar always has at least one dose time and a daily total.
+    private func ensureSplit() {
+        draft.schedule = draft.schedule.filter { $0.time != nil }
+        if draft.schedule.isEmpty {
+            let p = prnSlot.pills ?? 1
+            draft.schedule = [DoseSlot(label: "Morning", time: "08:00", amount: prnSlot.amount, pills: p, share: 1)]
+            draft.dailyPills = p
+        }
+        if draft.dailyPills == nil { draft.adoptSplitFromDoses() }
+        if draft.dailyPills == nil { draft.dailyPills = 1 }
+        recomputeSplit()
+    }
+
+    private func setDoseCount(_ requested: Int) {
+        let n = min(6, max(1, requested))
+        while draft.schedule.count > n { draft.schedule.removeLast() }
+        while draft.schedule.count < n {
+            let last = draft.schedule.last?.minutes ?? 8 * 60
+            let next = min(last + 4 * 60, 23 * 60)
+            let used = draft.schedule.reduce(0.0) { $0 + ($1.share ?? 0) }
+            draft.schedule.append(DoseSlot(time: String(format: "%02d:%02d", next / 60, next % 60),
+                                           share: draft.splitEqual ? nil : max(0, 1 - used)))
+        }
+        recomputeSplit()
+    }
+
+    /// Equal split gives every dose the same share. Each dose's pills are its share of the daily total.
+    private func recomputeSplit() {
+        guard !draft.asNeeded, !draft.schedule.isEmpty else { return }
+        let total = draft.dailyPills ?? 1
+        let n = Double(draft.schedule.count)
+        for i in draft.schedule.indices {
+            if draft.splitEqual || draft.schedule.count == 1 { draft.schedule[i].share = draft.schedule.count == 1 ? 1 : 1 / n }
+            let share = draft.schedule[i].share ?? 1 / n
+            draft.schedule[i].share = share
+            draft.schedule[i].pills = (total * share * 1_000_000).rounded() / 1_000_000
+        }
+    }
+
     private var isNew: Bool { target.jar == nil }
 
     private var hasTag: Bool {
@@ -69,9 +141,13 @@ struct JarEditorView: View {
                     Picker("Type", selection: $draft.kind) {
                         ForEach(JarKind.allCases) { Text($0.label).tag($0) }
                     }
+                    .onChange(of: draft.kind) { _, kind in
+                        if kind == .recreational { draft.asNeeded = true }
+                        if kind != .recreational && draft.form == .smoked { draft.form = .other }
+                    }
                     Picker("Form", selection: $draft.form) {
-                        ForEach(PillForm.allCases) { f in
-                            Label(f.title, systemImage: f.symbol).tag(f)
+                        ForEach(PillForm.options(for: draft.kind)) { f in
+                            Label(f.name, systemImage: f.symbol).tag(f)
                         }
                     }
                     LabeledContent("Strength per \(draft.form.title)") {
@@ -128,31 +204,62 @@ struct JarEditorView: View {
                 }
 
                 Section {
-                    Toggle("As Needed", isOn: $draft.asNeeded)
-                        .onChange(of: draft.asNeeded) { _, on in
-                            if !on && draft.schedule.allSatisfy({ $0.minutes == nil }) {
-                                draft.schedule = [DoseSlot(label: "Morning", time: "08:00", amount: prnSlot.amount, pills: prnSlot.pills ?? 1)]
-                            }
-                        }
+                    if draft.kind.allowsSchedule {
+                        Toggle("As Needed", isOn: $draft.asNeeded)
+                            .onChange(of: draft.asNeeded) { _, on in if !on { ensureSplit() } }
+                    }
                     if draft.asNeeded {
                         DoseAmountFields(slot: $prnSlot, form: draft.form, perPill: draft.strength)
                     } else {
-                        ForEach($draft.schedule) { $slot in
-                            SlotEditorRow(slot: $slot, form: draft.form, perPill: draft.strength)
+                        Stepper(value: totalBinding, in: draft.form.step...100, step: draft.form.step) {
+                            LabeledContent("Total Daily Dose", value: Format.pills(draft.dailyPills ?? 1, draft.form))
                         }
-                        .onDelete { draft.schedule.remove(atOffsets: $0) }
-                        Button {
-                            draft.schedule.append(DoseSlot(label: "", time: "08:00", amount: "", pills: 1))
-                        } label: {
-                            Label("Add Dose Time", systemImage: "plus.circle.fill")
+                        if let perDay = dailyStrength {
+                            LabeledContent("Strength per Day", value: perDay)
+                        }
+                        Stepper(value: countBinding, in: 1...6) {
+                            LabeledContent("Doses per Day", value: "\(draft.schedule.count)")
+                        }
+                        if draft.schedule.count > 1 {
+                            Picker("Split", selection: $draft.splitEqual) {
+                                Text("Equal").tag(true)
+                                Text("Custom").tag(false)
+                            }
+                            .pickerStyle(.segmented)
+                            .onChange(of: draft.splitEqual) { _, _ in recomputeSplit() }
+                            if !draft.splitEqual {
+                                LabeledContent("Shares Add Up To", value: Format.share(draft.schedule.reduce(0.0) { $0 + ($1.share ?? 0) }))
+                            }
+                        }
+                        ForEach(shareIssues, id: \.self) { issue in
+                            Label(issue, systemImage: "exclamationmark.triangle.fill")
+                                .font(.footnote.weight(.semibold))
+                                .foregroundStyle(Palette.due)
                         }
                     }
                 } header: {
-                    Text("Doses")
+                    Text(draft.asNeeded ? "Usual Dose" : "Daily Dose")
                 } footer: {
-                    Text(draft.asNeeded
-                         ? "No set times. Log a dose whenever you take one. The amount here is the default each time you log, and you can change it when you log."
-                         : "The amount on each dose is the default when you log it, and you can change it when you log. Swipe left on a dose time to remove it. Doses between midnight and 4 AM count toward the day before.")
+                    Text(!draft.kind.allowsSchedule
+                         ? "Recreational substances are always as needed. Plan a one-time dose from the jar page if you want a reminder."
+                         : draft.asNeeded
+                         ? "No set times. This amount is the default each time you log, and you can change it when you log."
+                         : "Set the whole day's amount, how many times you take it, and how it's split. Each dose's amount is the default when you log it, and you can change it when you log.")
+                }
+
+                if !draft.asNeeded {
+                    ForEach($draft.schedule) { $slot in
+                        Section {
+                            SplitDoseRow(slot: $slot, form: draft.form, perPill: draft.strength, total: draft.dailyPills ?? 1,
+                                         custom: !draft.splitEqual, showShare: draft.schedule.count > 1)
+                        } header: {
+                            Text("Dose \((draft.schedule.firstIndex(where: { $0.id == slot.id }) ?? 0) + 1)")
+                        } footer: {
+                            if slot.id == draft.schedule.last?.id {
+                                Text("Doses between midnight and 4 AM count toward the day before. On days with no doses, this jar shows as as needed in the Schedule.")
+                            }
+                        }
+                    }
                 }
 
                 if draft.asNeeded {
@@ -355,6 +462,7 @@ struct JarEditorView: View {
                 Button("Delete Jar", role: .destructive) {
                     store.deleteJar(draft.id)
                     router.path = []
+                    router.schedulePath = []
                     dismiss()
                 }
             } message: {
@@ -399,12 +507,18 @@ struct JarEditorView: View {
                 prnSlot = prn
                 if prnSlot.pills == nil { prnSlot.pills = 1 }
             }
+            if !jar.asNeeded {
+                draft.schedule = jar.sortedSchedule.filter { $0.time != nil }
+                if draft.dailyPills == nil { draft.adoptSplitFromDoses() }
+                if draft.schedule.isEmpty { ensureSplit() } else { recomputeSplit() }
+            }
             for (other, level) in store.interactions(for: jar.id) { interactionLevels[other.id] = level }
         } else {
             var j = Jar(id: "", name: "")
             let used = Set(store.jars.map(\.lid))
             j.lid = LidColor.allCases.first { !used.contains($0) } ?? .slate
-            j.schedule = [DoseSlot(label: "Morning", time: "08:00", amount: "", pills: 1)]
+            j.schedule = [DoseSlot(label: "Morning", time: "08:00", amount: "", pills: 1, share: 1)]
+            j.dailyPills = 1
             draft = j
             if !target.presetId.isEmpty {
                 tagId = target.presetId
@@ -430,14 +544,27 @@ struct JarEditorView: View {
         jar.strength = jar.strength.trimmingCharacters(in: .whitespacesAndNewlines)
         jar.labelName = jar.labelName.trimmingCharacters(in: .whitespacesAndNewlines)
         if removeTags { jar.tagIds = [] }
+        if !jar.kind.allowsSchedule { jar.asNeeded = true }
         if jar.asNeeded {
             let existing = jar.schedule.first { $0.minutes == nil }
+            let pills = prnSlot.pills ?? 1
+            guard jar.form.fits(pills) else {
+                problem = "\(Format.pills(pills, jar.form).capitalized) isn't possible for \(jar.form.plural). Change the usual dose."
+                return
+            }
             jar.schedule = [DoseSlot(id: existing?.id ?? "prn", label: "As Needed", time: nil,
-                                     amount: prnSlot.amount.trimmingCharacters(in: .whitespaces), pills: prnSlot.pills ?? 1)]
+                                     amount: prnSlot.amount.trimmingCharacters(in: .whitespaces), pills: pills)]
         } else {
             jar.minGapMinutes = 0
             jar.maxPerDay = 0
             jar.followUpMinutes = 0
+            if let bad = jar.schedule.firstIndex(where: { !jar.form.fits($0.pills ?? 1) }) {
+                let pills = jar.schedule[bad].pills ?? 1
+                let near = jar.form.nearest(pills).map { Format.pills($0, jar.form) }.joined(separator: " or ")
+                problem = "Dose \(bad + 1) comes to \(Format.pills(pills, jar.form)), which \(jar.form.plural) can't do. The nearest that works is \(near). Change the total or the split."
+                return
+            }
+            jar.schedule.sort { DoseLogic.order($0.minutes ?? 0) < DoseLogic.order($1.minutes ?? 0) }
         }
         if let from = jar.breakFrom, let until = jar.breakUntil, until < from {
             jar.breakFrom = until
@@ -460,7 +587,6 @@ struct JarEditorView: View {
                 t.amount = s.amount.trimmingCharacters(in: .whitespaces)
                 return t
             }
-            .filter { !$0.label.isEmpty || $0.time != nil || !$0.amount.isEmpty || $0.pills != nil }
         store.upsert(jar)
         store.setInteractions(for: jar.id, interactionLevels.filter { $0.key != jar.id })
         if jar.nudge || jar.checkIn || jar.pillsLeft != nil {
@@ -481,15 +607,62 @@ private func minutesLabel(_ m: Int) -> String {
     return String(format: "%.1f hours", Double(m) / 60)
 }
 
-/// One dose time inside the editor.
-struct SlotEditorRow: View {
+/// One part of a split dose: its share of the daily total, its amount, its time (clock or before bed) and its days.
+struct SplitDoseRow: View {
     @Binding var slot: DoseSlot
     let form: PillForm
     let perPill: String
+    let total: Double
+    let custom: Bool
+    let showShare: Bool
+    @State private var auto = false
+    @State private var loaded = false
 
-    private var hasTime: Binding<Bool> {
-        Binding(get: { slot.time != nil },
-                set: { slot.time = $0 ? (slot.time ?? "08:00") : nil })
+    private static let shareChoices: [Double] = [0.25, 1.0 / 3, 0.5, 2.0 / 3, 0.75, 1]
+
+    private var pills: Double { slot.pills ?? 1 }
+
+    private var computed: String { Format.doseStrength("", basePills: 1, pills: pills, perPill: perPill) }
+
+    private var choices: [Double] {
+        var c = Self.shareChoices
+        if let s = slot.share, !c.contains(where: { abs($0 - s) < 0.002 }) { c.append(s); c.sort() }
+        return c
+    }
+
+    private var shareBinding: Binding<Double> {
+        Binding(get: {
+            let s = slot.share ?? 1
+            return choices.first { abs($0 - s) < 0.002 } ?? s
+        }, set: { new in
+            slot.share = new
+            slot.pills = (total * new * 1_000_000).rounded() / 1_000_000
+        })
+    }
+
+    private var amount: Binding<String> {
+        Binding(get: { slot.amount }, set: { new in
+            slot.amount = new
+            auto = new.trimmingCharacters(in: .whitespaces).isEmpty || new == computed
+        })
+    }
+
+    private var bedtimeMode: Binding<Bool> {
+        Binding(get: { slot.bedtimeOffset != nil }, set: { on in
+            if on {
+                let current = slot.minutes ?? 22 * 60
+                var off = (Bedtime.minutes - current + 1440) % 1440
+                if off > 720 { off = 60 }
+                slot.bedtimeOffset = (off / 15) * 15
+            } else {
+                slot.bedtimeOffset = nil
+            }
+            syncTime()
+        })
+    }
+
+    private var offset: Binding<Int> {
+        Binding(get: { slot.bedtimeOffset ?? 60 }, set: { slot.bedtimeOffset = $0; syncTime() })
     }
 
     private var timeDate: Binding<Date> {
@@ -499,15 +672,87 @@ struct SlotEditorRow: View {
         }, set: { slot.time = Format.hhmm($0) })
     }
 
+    /// Keeps the stored clock time matching a bedtime dose, so it reads right everywhere.
+    private func syncTime() {
+        if let m = slot.minutes { slot.time = String(format: "%02d:%02d", m / 60, m % 60) }
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            TextField("Name, e.g. On Waking", text: $slot.label)
-                .font(.headline)
-            Toggle("Set Time", isOn: hasTime)
-            if slot.time != nil {
-                DatePicker("Time", selection: timeDate, displayedComponents: .hourAndMinute)
+        TextField("Name (optional), e.g. Early Afternoon", text: $slot.label)
+            .onAppear {
+                guard !loaded else { return }
+                loaded = true
+                if slot.time == nil { slot.time = "08:00" }
+                auto = slot.amount.trimmingCharacters(in: .whitespaces).isEmpty || slot.amount == computed
+                if auto { slot.amount = computed }
             }
-            DoseAmountFields(slot: $slot, form: form, perPill: perPill)
+            .onChange(of: slot.pills) { _, _ in if auto { slot.amount = computed } }
+            .onChange(of: perPill) { _, _ in if auto { slot.amount = computed } }
+        if showShare {
+            if custom {
+                Picker("Share of Daily Dose", selection: shareBinding) {
+                    ForEach(choices, id: \.self) { Text(Format.share($0)).tag($0) }
+                }
+            } else {
+                LabeledContent("Share of Daily Dose", value: Format.share(slot.share ?? 1))
+            }
+        }
+        LabeledContent("Amount", value: [Format.pills(pills, form), slot.amount].filter { !$0.isEmpty }.joined(separator: " \u{00B7} "))
+        if !form.fits(pills) {
+            Label("\(Format.pills(pills, form).capitalized) isn't possible with \(form.plural). Nearest that works: \(form.nearest(pills).map { Format.pills($0, form) }.joined(separator: " or ")). Change the total or the split.",
+                  systemImage: "exclamationmark.triangle.fill")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(Palette.due)
+        }
+        LabeledContent("Strength per Dose") {
+            TextField(computed.isEmpty ? "e.g. 5 mg" : computed, text: amount)
+                .multilineTextAlignment(.trailing)
+        }
+        Picker("Time", selection: bedtimeMode) {
+            Text("Clock Time").tag(false)
+            Text("Before Bed").tag(true)
+        }
+        .pickerStyle(.segmented)
+        if slot.bedtimeOffset != nil {
+            Stepper(value: offset, in: 0...720, step: 15) {
+                LabeledContent(slot.bedtimeText ?? "Before Bed", value: slot.timeText)
+            }
+        } else {
+            DatePicker("Time", selection: timeDate, displayedComponents: .hourAndMinute)
+        }
+        WeekdayPicker(days: $slot.days)
+    }
+}
+
+/// S M T W T F S toggles for the days a dose happens. At least one day stays on.
+struct WeekdayPicker: View {
+    @Binding var days: [Int]
+    @Environment(AppStore.self) private var store
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Days").foregroundStyle(Palette.label)
+                Spacer()
+                Text(Format.days(days)).foregroundStyle(Palette.secondary)
+            }
+            HStack(spacing: 6) {
+                ForEach(DoseSlot.everyDay, id: \.self) { d in
+                    let on = days.contains(d)
+                    Button {
+                        if on { if days.count > 1 { days.removeAll { $0 == d } } } else { days = (days + [d]).sorted() }
+                    } label: {
+                        Text(Calendar.current.veryShortWeekdaySymbols[d - 1])
+                            .font(.subheadline.weight(.semibold))
+                            .frame(maxWidth: .infinity, minHeight: 36)
+                            .background(on ? AnyShapeStyle(store.accentColor) : AnyShapeStyle(Palette.inset), in: Circle())
+                            .foregroundStyle(on ? Color.white : Palette.secondary)
+                    }
+                    .buttonStyle(.borderless)
+                    .accessibilityLabel(Calendar.current.weekdaySymbols[d - 1])
+                    .accessibilityAddTraits(on ? .isSelected : [])
+                }
+            }
         }
         .padding(.vertical, 4)
     }
@@ -537,7 +782,7 @@ struct DoseAmountFields: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Stepper(value: pills, in: 0.5...50, step: 0.5) {
+            Stepper(value: pills, in: form.step...50, step: form.step) {
                 LabeledContent("\(form.plural.capitalized) per Dose", value: Format.pills(slot.pills ?? 1, form))
             }
             LabeledContent("Strength per Dose") {

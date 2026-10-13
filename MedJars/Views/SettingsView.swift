@@ -103,6 +103,14 @@ struct SettingsView: View {
             }
 
             Section {
+                DatePicker(selection: bedtimeBinding, displayedComponents: .hourAndMinute) {
+                    Label { Text("Bedtime") } icon: { SettingsIcon(symbol: "bed.double.fill", color: .indigo) }
+                }
+            } footer: {
+                Text("Doses set to a time before bed move with this. Change it and their reminders, the Schedule and the widget follow.")
+            }
+
+            Section {
                 Toggle(isOn: Binding(get: { store.caffeineTrackerOn }, set: { store.setCaffeineTracker($0) })) {
                     Label { Text("Caffeine Tracker") } icon: { SettingsIcon(symbol: "cup.and.heat.waves.fill", color: .brown) }
                 }
@@ -286,6 +294,16 @@ struct SettingsView: View {
                 healthMessage = text
             }
         }
+    }
+
+    private var bedtimeBinding: Binding<Date> {
+        Binding(get: {
+            let m = store.bedtimeMinutes
+            return Calendar.current.date(bySettingHour: m / 60, minute: m % 60, second: 0, of: Date()) ?? Date()
+        }, set: { date in
+            let c = Calendar.current.dateComponents([.hour, .minute], from: date)
+            store.setBedtime((c.hour ?? 23) * 60 + (c.minute ?? 0))
+        })
     }
 
     private var notificationStatusText: String {

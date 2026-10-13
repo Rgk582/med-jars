@@ -13,6 +13,7 @@ struct JarDetailView: View {
     @State private var checkInFor: CheckInTarget?
     @State private var skipping: DoseSlot?
     @State private var schedulingBreak = false
+    @State private var planning: PlanTarget?
 
     var body: some View {
         TimelineView(.everyMinute) { context in
@@ -45,8 +46,9 @@ struct JarDetailView: View {
                         Divider()
                         Button(jar.asNeeded ? "Log a Dose" : "Log an Extra Dose", systemImage: "plus.circle") { logging = extraTarget(jar) }
                             .disabled(!jar.isActive())
-                        if let next = DoseLogic.suggestion(DoseLogic.rows(for: jar, entries: store.entries)), next.slot.minutes != nil {
-                            Button("Skip \(Format.time12(next.slot.time)) Dose", systemImage: "forward.end") { skipping = next.slot }
+                        Button("Plan a Dose", systemImage: "calendar.badge.plus") { planning = PlanTarget(jarId: jar.id, date: Date().addingTimeInterval(3600)) }
+                        if let next = DoseLogic.suggestion(DoseLogic.rows(for: jar, entries: store.entries, planned: store.planned)), next.at != nil {
+                            Button("Skip \(next.slot.timeText) Dose", systemImage: "forward.end") { skipping = next.slot }
                         }
                     } label: {
                         Image(systemName: "ellipsis.circle")
@@ -67,9 +69,10 @@ struct JarDetailView: View {
         .sheet(item: Binding(get: { skipping.map { SkipTarget(slot: $0) } }, set: { skipping = $0?.slot })) { target in
             if let jar = store.jar(jarId) { SkipSheet(jar: jar, slot: target.slot) }
         }
+        .sheet(item: $planning) { PlanDoseSheet(target: $0) }
         .sheet(item: $logging) { target in
             if let jar = store.jar(jarId) {
-                LogDoseSheet(jar: jar, slotId: target.slotId, editing: target.editing) { entry in
+                LogDoseSheet(jar: jar, slotId: target.slotId, slot: target.slot, editing: target.editing) { entry in
                     if target.editing == nil { show(entry) }
                 }
             }
@@ -84,8 +87,9 @@ struct JarDetailView: View {
     @ViewBuilder
     private func content(jar: Jar, now: Date) -> some View {
         let active = jar.isActive(on: DoseLogic.doseDayStart(for: now))
-        let rows = DoseLogic.rows(for: jar, entries: store.entries, now: now)
+        let rows = DoseLogic.rows(for: jar, entries: store.entries, planned: store.planned, now: now)
         let suggestion = DoseLogic.suggestion(rows)
+        let upcoming = store.upcomingPlanned(for: jar.id, now: now)
         let recent = Array(store.entries.filter { $0.jarId == jar.id }.prefix(5))
         let interactions = store.interactions(for: jar.id)
         List {
@@ -119,10 +123,13 @@ struct JarDetailView: View {
                     }
                 } else {
                     Section("Today") {
-                        if rows.isEmpty {
-                            Text("No dose times yet. Tap Edit to add them.").foregroundStyle(Palette.secondary)
+                        if rows.filter({ !$0.isPlanned }).isEmpty {
+                            Text(jar.timedSlots.isEmpty
+                                 ? "No dose times yet. Tap Edit to add them."
+                                 : "No doses scheduled today, so it's as needed today. Tap Log to log one.")
+                                .foregroundStyle(Palette.secondary)
                         } else {
-                            ForEach(rows) { row in
+                            ForEach(rows.filter { !$0.isPlanned }) { row in
                                 DoseRow(jar: jar, row: row, isNext: row.slot.id == suggestion?.slot.id)
                                     .swipeActions(edge: .trailing) {
                                         if !row.status.isHandled {
@@ -133,6 +140,47 @@ struct JarDetailView: View {
                             }
                         }
                     }
+                }
+            }
+
+            if jar.kind == .recreational {
+                Section {
+                    LabeledContent("Last 7 Days", value: "\(store.usageCount(jarId: jar.id, days: 7, now: now)) time\(store.usageCount(jarId: jar.id, days: 7, now: now) == 1 ? "" : "s")")
+                    LabeledContent("Last 30 Days", value: "\(store.usageCount(jarId: jar.id, days: 30, now: now)) time\(store.usageCount(jarId: jar.id, days: 30, now: now) == 1 ? "" : "s")")
+                } header: {
+                    Text("Usage")
+                }
+            }
+
+            if !upcoming.isEmpty || jar.asNeeded {
+                Section {
+                    ForEach(upcoming) { p in
+                        Button { planning = PlanTarget(jarId: jar.id, date: p.at, editing: p) } label: {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(p.at.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day().hour().minute()))
+                                        .font(.body).foregroundStyle(Palette.label)
+                                    Text([p.note, Format.pills(p.pills, jar.form), p.amount].filter { !$0.isEmpty }.joined(separator: " \u{00B7} "))
+                                        .font(.footnote).foregroundStyle(Palette.secondary)
+                                }
+                                Spacer()
+                                if p.headsUpMinutes > 0 {
+                                    Image(systemName: "bell.badge").foregroundStyle(Palette.secondary)
+                                        .accessibilityLabel("Heads-up \(PlannedDose.headsUpLabel(p.headsUpMinutes))")
+                                }
+                            }
+                        }
+                        .swipeActions {
+                            Button(role: .destructive) { store.deletePlanned(p.id) } label: { Label("Delete", systemImage: "trash") }
+                        }
+                    }
+                    Button { planning = PlanTarget(jarId: jar.id, date: Date().addingTimeInterval(3600)) } label: {
+                        Label("Plan a Dose", systemImage: "calendar.badge.plus")
+                    }
+                } header: {
+                    Text("Planned Doses")
+                } footer: {
+                    Text("Plan a one-time dose ahead, like before a speech. It shows in the Schedule and gets a reminder.")
                 }
             }
 
@@ -318,7 +366,7 @@ struct JarDetailView: View {
                 }
                 if active {
                     LogBar(jar: jar, rows: rows, suggestion: suggestion, last: store.lastTaken(for: jar.id), now: now,
-                           onLog: { logging = LogTarget(jarId: jar.id, slotId: $0.id) }, onOther: { logging = extraTarget(jar) },
+                           onLog: { logging = LogTarget(jarId: jar.id, slotId: $0.id, slot: $0) }, onOther: { logging = extraTarget(jar) },
                            onSkip: { skipping = $0 })
                 }
             }
@@ -584,7 +632,7 @@ struct SkipSheet: View {
         NavigationStack {
             Form {
                 Section {
-                    LabeledContent("Dose", value: "\(slot.displayLabel)\(slot.minutes != nil ? " \u{00B7} " + Format.time12(slot.time) : "")")
+                    LabeledContent("Dose", value: "\(slot.displayLabel)\(slot.minutes != nil ? " \u{00B7} " + slot.timeText : "")")
                     Picker("Reason", selection: $reason) {
                         ForEach(Self.reasons, id: \.self) { Text($0).tag($0) }
                     }
@@ -691,9 +739,12 @@ private struct DoseRow: View {
     var body: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(row.slot.minutes == nil ? "Any Time" : Format.time12(row.slot.time))
+                Text(row.slot.minutes == nil ? "Any Time" : row.slot.timeText)
                     .font(.headline).monospacedDigit()
-                Text([row.slot.label, row.slot.amountLine(jar.form)].filter { !$0.isEmpty }.joined(separator: " \u{00B7} "))
+                Text([row.slot.label,
+                      (row.slot.share ?? 1) < 0.999 ? Format.share(row.slot.share ?? 1) : "",
+                      row.slot.amountLine(jar.form),
+                      row.slot.bedtimeText ?? ""].filter { !$0.isEmpty }.joined(separator: " \u{00B7} "))
                     .font(.subheadline).foregroundStyle(Palette.secondary)
                 if row.slot.pills == nil {
                     Text("Set the pill count in Edit").font(.footnote).foregroundStyle(Palette.due)
@@ -724,7 +775,7 @@ struct LogBar: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 if let s = suggestion?.slot {
-                    Text(s.minutes == nil ? "As Needed" : "\(s.label.ifEmpty("Dose")) \u{00B7} \(Format.time12(s.time))")
+                    Text(s.minutes == nil ? "As Needed" : "\(s.label.ifEmpty("Dose")) \u{00B7} \(s.timeText)")
                         .font(.footnote).foregroundStyle(Palette.secondary).monospacedDigit()
                     Text(s.amountLine(jar.form).ifEmpty("Dose")).font(.headline)
                 } else if rows.isEmpty {

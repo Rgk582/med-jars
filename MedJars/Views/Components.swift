@@ -58,19 +58,21 @@ extension DoseEntry {
     }
 }
 
-/// Big minus / count / plus control for how many pills a dose is, in half-pill steps.
+/// Big minus / count / plus control for how many pills a dose is. Halvable forms step in halves,
+/// capsules, softgels, drops and hits in whole numbers.
 struct PillCounter: View {
     @Binding var count: Double
     let form: PillForm
 
-    static func step(_ n: Double, up: Bool) -> Double {
-        let halves = n * 2
-        let next = up ? (halves + 0.0001).rounded(.down) + 1 : (halves - 0.0001).rounded(.up) - 1
-        return min(50, max(0.5, next / 2))
+    static func step(_ n: Double, up: Bool, form: PillForm) -> Double {
+        let unit = form.step
+        let units = n / unit
+        let next = up ? (units + 0.0001).rounded(.down) + 1 : (units - 0.0001).rounded(.up) - 1
+        return min(50, max(unit, next * unit))
     }
 
     private func change(up: Bool) {
-        withAnimation(.snappy) { count = Self.step(count, up: up) }
+        withAnimation(.snappy) { count = Self.step(count, up: up, form: form) }
         UISelectionFeedbackGenerator().selectionChanged()
     }
 
@@ -81,7 +83,7 @@ struct PillCounter: View {
             }
             .buttonStyle(.bordered)
             .buttonBorderShape(.circle)
-            .disabled(count <= 0.5)
+            .disabled(count <= form.step)
             Spacer()
             VStack(spacing: 0) {
                 Text(Format.count(count))

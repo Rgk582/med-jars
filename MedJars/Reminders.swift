@@ -38,10 +38,12 @@ enum Reminders {
         let content: UNMutableNotificationContent
     }
 
-    static func reschedule(jars: [Jar], entries: [DoseEntry], enabled: Bool, grouped: Bool) {
+    static func reschedule(jars: [Jar], entries: [DoseEntry], planned: [PlannedDose], enabled: Bool, grouped: Bool) {
         let center = UNUserNotificationCenter.current()
         center.getPendingNotificationRequests { pending in
-            let mine: (String) -> Bool = { $0.hasPrefix(Notify.dosePrefix) || $0.hasPrefix(Notify.nudgePrefix) || $0.hasPrefix(Notify.groupPrefix) }
+            let mine: (String) -> Bool = {
+                $0.hasPrefix(Notify.dosePrefix) || $0.hasPrefix(Notify.nudgePrefix) || $0.hasPrefix(Notify.groupPrefix) || $0.hasPrefix(Notify.headsUpPrefix)
+            }
             let ours = pending.map(\.identifier).filter(mine)
             center.removePendingNotificationRequests(withIdentifiers: ours)
             let budget = max(8, pendingLimit - (pending.count - ours.count))
@@ -56,7 +58,7 @@ enum Reminders {
                 guard let dayStart = cal.date(byAdding: .day, value: offset, to: today) else { continue }
                 for jar in jars where jar.isActive(on: dayStart) && !jar.asNeeded {
                     guard enabled || jar.nudge else { continue }
-                    for slot in jar.timedSlots {
+                    for slot in jar.slots(onDayStarting: dayStart) {
                         guard let at = DoseLogic.occurrence(of: slot, dayStart: dayStart) else { continue }
                         if offset == 0, entries.contains(where: { $0.jarId == jar.id && $0.slotId == slot.id && DoseLogic.sameDoseDay($0.takenAt, now) }) { continue }
                         if enabled && at > now { onTime[at, default: []].append((jar, slot)) }
@@ -106,6 +108,39 @@ enum Reminders {
                         c.threadIdentifier = jar.id
                         c.userInfo = ["jarId": jar.id, "slotId": slot.id]
                         items.append(Item(id: Notify.doseId(jar: jar.id, slot: slot.id, day: at), date: at, content: c))
+                    }
+                }
+            }
+
+            // One-time planned doses: a reminder at the time and the heads-up before it.
+            if enabled {
+                for p in planned where p.at > now && p.at < now.addingTimeInterval(30 * 86400) {
+                    guard let jar = jars.first(where: { $0.id == p.jarId }), jar.isActive(on: DoseLogic.doseDayStart(for: p.at)),
+                          !entries.contains(where: { $0.slotId == p.slotId }) else { continue }
+                    let slot = p.slot
+                    let amount = slot.amountLine(jar.form)
+                    let c = UNMutableNotificationContent()
+                    c.title = "\(jar.name): \(amount.isEmpty ? "planned dose" : amount)"
+                    c.body = [p.note.isEmpty ? "Planned dose" : p.note, Format.time12(p.at)].joined(separator: " \u{00B7} ")
+                    c.sound = .default
+                    c.interruptionLevel = .timeSensitive
+                    c.categoryIdentifier = Notify.doseCategory
+                    c.threadIdentifier = jar.id
+                    c.userInfo = ["jarId": jar.id, "slotId": slot.id]
+                    items.append(Item(id: Notify.doseId(jar: jar.id, slot: slot.id, day: p.at), date: p.at, content: c))
+                    if p.headsUpMinutes > 0 {
+                        let at = p.at.addingTimeInterval(-Double(p.headsUpMinutes) * 60)
+                        guard at > now else { continue }
+                        let h = UNMutableNotificationContent()
+                        h.title = "Coming up: \(jar.name)"
+                        h.body = "\(p.note.isEmpty ? "Planned dose" : p.note) at \(Format.time12(p.at))\(Calendar.current.isDate(p.at, inSameDayAs: at) ? "" : " on " + p.at.formatted(.dateTime.weekday(.wide).month(.wide).day())). \(amount)"
+                            .trimmingCharacters(in: .whitespaces)
+                        h.sound = .default
+                        h.interruptionLevel = .timeSensitive
+                        h.categoryIdentifier = Notify.infoCategory
+                        h.threadIdentifier = jar.id
+                        h.userInfo = ["jarId": jar.id]
+                        items.append(Item(id: "\(Notify.headsUpPrefix)\(slot.id)", date: at, content: h))
                     }
                 }
             }

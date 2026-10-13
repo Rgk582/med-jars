@@ -1,24 +1,59 @@
 import Foundation
 
 enum JarKind: String, Codable, CaseIterable, Identifiable {
-    case rx, supplement
+    case rx, supplement, nootropic, recreational
     var id: String { rawValue }
-    var label: String { self == .rx ? "Prescription" : "Supplement" }
-    var tag: String { self == .rx ? "Rx" : "Supp" }
+    var label: String {
+        switch self {
+        case .rx: return "Prescription"
+        case .supplement: return "Supplement"
+        case .nootropic: return "Nootropic"
+        case .recreational: return "Recreational Substance"
+        }
+    }
+    /// Cabinet section title.
+    var sectionTitle: String {
+        switch self {
+        case .rx: return "Prescriptions"
+        case .supplement: return "Supplements"
+        case .nootropic: return "Nootropics"
+        case .recreational: return "Recreational"
+        }
+    }
+    var tag: String {
+        switch self {
+        case .rx: return "Rx"
+        case .supplement: return "Supp"
+        case .nootropic: return "Noot"
+        case .recreational: return "Rec"
+        }
+    }
+    /// Recreational substances never get a recurring schedule, only one-time planned doses.
+    var allowsSchedule: Bool { self != .recreational }
 }
 
 enum PillForm: String, Codable, CaseIterable, Identifiable {
-    case tablet, capsule, softgel, gummy, scoop, drop, other
+    case tablet, capsule, softgel, gummy, scoop, drop, smoked, other
     var id: String { rawValue }
-    var singular: String { self == .other ? "unit" : rawValue }
+    var singular: String {
+        switch self {
+        case .other: return "unit"
+        case .smoked: return "hit"
+        default: return rawValue
+        }
+    }
     var plural: String {
         switch self {
         case .gummy: return "gummies"
         case .other: return "units"
+        case .smoked: return "hits"
         default: return rawValue + "s"
         }
     }
+    /// The counting unit, capitalized: "Tablet", "Hit".
     var title: String { singular.capitalized }
+    /// Name in the Form picker.
+    var name: String { self == .smoked ? "Smoked" : rawValue.capitalized }
     /// SF Symbol shown in the jar's icon.
     var symbol: String {
         switch self {
@@ -28,8 +63,33 @@ enum PillForm: String, Codable, CaseIterable, Identifiable {
         case .gummy: return "heart.fill"
         case .scoop: return "cup.and.saucer.fill"
         case .drop: return "drop.fill"
+        case .smoked: return "smoke.fill"
         case .other: return "cross.vial.fill"
         }
+    }
+    /// Tablets, gummies, scoops and Other can be halved. Capsules, softgels, drops and hits can't.
+    var allowsHalf: Bool {
+        switch self {
+        case .tablet, .gummy, .scoop, .other: return true
+        default: return false
+        }
+    }
+    /// Smallest step and smallest amount: ½ or 1.
+    var step: Double { allowsHalf ? 0.5 : 1 }
+    /// True when the amount is a whole number of steps (½ for halvable forms, 1 otherwise).
+    func fits(_ n: Double) -> Bool {
+        let units = n / step
+        return n >= step - 0.0001 && abs(units.rounded() - units) < 0.0001
+    }
+    /// The amounts that work on either side of one that doesn't.
+    func nearest(_ n: Double) -> [Double] {
+        let low = max(step, (n / step).rounded(.down) * step)
+        let high = max(step, (n / step).rounded(.up) * step)
+        return low == high ? [low] : [low, high]
+    }
+    /// Smoked is only offered for recreational substances.
+    static func options(for kind: JarKind) -> [PillForm] {
+        kind == .recreational ? allCases : allCases.filter { $0 != .smoked }
     }
 }
 
@@ -66,19 +126,37 @@ enum LidColor: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+/// Your bedtime in minutes after midnight. Set from Settings whenever data loads, so doses timed
+/// "before bed" resolve the same way in the app, reminders, widgets, Control Center and Siri.
+enum Bedtime {
+    static let defaultMinutes = 23 * 60
+    static var minutes = defaultMinutes
+}
+
 /// One scheduled dose. `time` is "HH:mm" (24 h) or nil for "as needed".
+/// A dose can instead sit a set time before bedtime, and only happen on some days of the week.
 struct DoseSlot: Codable, Identifiable, Hashable {
+    static let everyDay = [1, 2, 3, 4, 5, 6, 7]
+
     var id: String = UUID().uuidString
     var label: String = ""
     var time: String? = nil
     var amount: String = ""
     var pills: Double? = nil
+    /// Days it happens, as Calendar weekdays (1 = Sunday).
+    var days: [Int] = DoseSlot.everyDay
+    /// Minutes before bedtime, when the time follows bedtime instead of the clock.
+    var bedtimeOffset: Int? = nil
+    /// Part of the jar's total daily dose this dose is, like ⅓.
+    var share: Double? = nil
 
-    init(id: String = UUID().uuidString, label: String = "", time: String? = nil, amount: String = "", pills: Double? = nil) {
+    init(id: String = UUID().uuidString, label: String = "", time: String? = nil, amount: String = "", pills: Double? = nil,
+         days: [Int] = DoseSlot.everyDay, bedtimeOffset: Int? = nil, share: Double? = nil) {
         self.id = id; self.label = label; self.time = time; self.amount = amount; self.pills = pills
+        self.days = days; self.bedtimeOffset = bedtimeOffset; self.share = share
     }
 
-    enum CodingKeys: String, CodingKey { case id, label, time, amount, pills }
+    enum CodingKeys: String, CodingKey { case id, label, time, amount, pills, days, bedtimeOffset, share }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -88,17 +166,87 @@ struct DoseSlot: Codable, Identifiable, Hashable {
         time = (t?.isEmpty ?? true) ? nil : t
         amount = (try? c.decodeIfPresent(String.self, forKey: .amount)) ?? ""
         pills = try? c.decodeIfPresent(Double.self, forKey: .pills)
+        let d = ((try? c.decodeIfPresent([Int].self, forKey: .days)) ?? nil)?.filter { (1...7).contains($0) } ?? []
+        days = d.isEmpty ? DoseSlot.everyDay : Array(Set(d)).sorted()
+        bedtimeOffset = try? c.decodeIfPresent(Int.self, forKey: .bedtimeOffset)
+        share = try? c.decodeIfPresent(Double.self, forKey: .share)
     }
 
-    /// Minutes after midnight, or nil when the dose has no set time.
+    /// Minutes after midnight, or nil when the dose has no set time. Bedtime doses follow the bedtime setting.
     var minutes: Int? {
         guard let time else { return nil }
+        if let off = bedtimeOffset { return ((Bedtime.minutes - off) % 1440 + 1440) % 1440 }
         let parts = time.split(separator: ":").compactMap { Int($0) }
         guard parts.count == 2 else { return nil }
         return parts[0] * 60 + parts[1]
     }
 
-    var displayLabel: String { label.isEmpty ? Format.time12(time) : label }
+    /// "8:00 AM", or "As needed" without a time.
+    var timeText: String {
+        guard let m = minutes else { return "As needed" }
+        return Format.time12(String(format: "%02d:%02d", m / 60, m % 60))
+    }
+
+    /// "1 hr before bed" for bedtime doses.
+    var bedtimeText: String? {
+        guard let off = bedtimeOffset else { return nil }
+        return off == 0 ? "At bedtime" : "\(Format.duration(off)) before bed"
+    }
+
+    var displayLabel: String { label.isEmpty ? timeText : label }
+
+    /// True when this dose happens on the dose day that starts at `dayStart`.
+    func runs(onDayStarting dayStart: Date) -> Bool {
+        days.contains(Calendar.current.component(.weekday, from: dayStart))
+    }
+
+    /// A one-time planned dose stands in as a dose time with this id prefix.
+    var isPlanned: Bool { id.hasPrefix(PlannedDose.slotPrefix) }
+}
+
+/// A one-time dose planned ahead, like propranolol before a speech.
+struct PlannedDose: Codable, Identifiable, Hashable {
+    static let slotPrefix = "planned."
+    static let headsUpChoices = [0, 15, 30, 60, 120, 1440]
+
+    var id: String = UUID().uuidString
+    var jarId: String
+    var at: Date
+    var pills: Double? = nil
+    var amount: String = ""
+    var note: String = ""
+    /// Extra reminder this many minutes ahead (0 = none).
+    var headsUpMinutes: Int = 0
+
+    var slotId: String { Self.slotPrefix + id }
+
+    /// The planned dose as a dose time, so logging, skipping, warnings and reminders work like any other dose.
+    var slot: DoseSlot {
+        DoseSlot(id: slotId, label: note.isEmpty ? "Planned" : note, time: Format.hhmm(at), amount: amount, pills: pills)
+    }
+
+    static func headsUpLabel(_ m: Int) -> String {
+        switch m {
+        case 0: return "None"
+        case 1440: return "1 day before"
+        default: return "\(Format.duration(m)) before"
+        }
+    }
+}
+
+extension PlannedDose {
+    enum CodingKeys: String, CodingKey { case id, jarId, at, pills, amount, note, headsUpMinutes }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = (try? c.decodeIfPresent(String.self, forKey: .id)) ?? UUID().uuidString
+        jarId = try c.decode(String.self, forKey: .jarId)
+        at = try c.decode(Date.self, forKey: .at)
+        pills = try? c.decodeIfPresent(Double.self, forKey: .pills)
+        amount = (try? c.decodeIfPresent(String.self, forKey: .amount)) ?? ""
+        note = (try? c.decodeIfPresent(String.self, forKey: .note)) ?? ""
+        headsUpMinutes = (try? c.decodeIfPresent(Int.self, forKey: .headsUpMinutes)) ?? 0
+    }
 }
 
 enum InteractionLevel: String, Codable, CaseIterable, Identifiable, Comparable {
@@ -236,6 +384,10 @@ struct Jar: Codable, Identifiable, Hashable {
     var breakUntil: Date? = nil
     /// Jars this one interacts with, as set by the user.
     var interactions: [JarInteraction] = []
+    /// Split dose: the total pills a day, shared out across the dose times.
+    var dailyPills: Double? = nil
+    /// Equal split (every dose the same share) or custom shares.
+    var splitEqual: Bool = true
 
     init(id: String, name: String) { self.id = id; self.name = name }
 
@@ -243,6 +395,7 @@ struct Jar: Codable, Identifiable, Hashable {
         case id, name, labelName, kind, form, strength, lid, schedule, howTo, food, avoid, absorb, summary, order, tagIds
         case pillsLeft, refillWarnDays, lowNotified, nudge, nudgeMinutes, nudgeRepeats, checkIn, checkInMinutes
         case asNeeded, minGapMinutes, maxPerDay, followUpMinutes, effect, paused, breakFrom, breakUntil, interactions
+        case dailyPills, splitEqual
     }
 
     /// Tolerant decoding so jars pasted from the web cabinet (or older files) import cleanly.
@@ -285,6 +438,23 @@ struct Jar: Codable, Identifiable, Hashable {
         interactions = ((try? c.decodeIfPresent([Lossy<JarInteraction>].self, forKey: .interactions)) ?? []).compactMap(\.value)
         // Jars saved before "As Needed" existed: a schedule with no set times means as needed.
         if !c.contains(.asNeeded), !schedule.isEmpty, schedule.allSatisfy({ $0.minutes == nil }) { asNeeded = true }
+        if kind == .recreational { asNeeded = true }
+        if form == .smoked && kind != .recreational { form = .other }
+        dailyPills = try? c.decodeIfPresent(Double.self, forKey: .dailyPills)
+        splitEqual = (try? c.decodeIfPresent(Bool.self, forKey: .splitEqual)) ?? true
+        if dailyPills == nil && !asNeeded { adoptSplitFromDoses() }
+    }
+
+    /// Jars saved before split doses: the total is the sum of the dose times' pills and each
+    /// dose's share is its pills over that total, so every dose stays exactly as it was.
+    mutating func adoptSplitFromDoses() {
+        let timed = schedule.indices.filter { schedule[$0].time != nil }
+        let total = timed.reduce(0.0) { $0 + (schedule[$1].pills ?? 1) }
+        guard total > 0 else { return }
+        dailyPills = total
+        for i in timed { schedule[i].share = (schedule[i].pills ?? 1) / total }
+        let shares = timed.compactMap { schedule[$0].share }
+        splitEqual = shares.allSatisfy { abs($0 - (shares.first ?? 0)) < 0.0001 }
     }
 
     /// False while paused or during a break.
@@ -308,16 +478,21 @@ struct Jar: Codable, Identifiable, Hashable {
     /// The single dose an as-needed jar logs.
     var asNeededSlot: DoseSlot? { asNeeded ? (schedule.first ?? DoseSlot(id: "prn", label: "As Needed")) : nil }
 
-    /// Pills taken per day across the timed doses, nil if any count is missing.
+    /// Average pills a day across the timed doses (counting the days each one runs), nil if any count is missing.
     var pillsPerDay: Double? {
         let slots = timedSlots
         guard !slots.isEmpty else { return nil }
-        var total = 0.0
+        var weekly = 0.0
         for s in slots {
             guard let p = s.pills else { return nil }
-            total += p
+            weekly += p * Double(s.days.count)
         }
-        return total > 0 ? total : nil
+        return weekly > 0 ? weekly / 7 : nil
+    }
+
+    /// The timed doses that happen on the dose day starting at `dayStart`.
+    func slots(onDayStarting dayStart: Date) -> [DoseSlot] {
+        timedSlots.filter { $0.runs(onDayStarting: dayStart) }
     }
 
     /// Whole days of supply left, when it can be worked out.
@@ -355,13 +530,17 @@ struct Jar: Codable, Identifiable, Hashable {
     var timedSlots: [DoseSlot] { asNeeded ? [] : sortedSchedule.filter { $0.minutes != nil } }
 
     var frequencyText: String {
-        if asNeeded { return "As needed" }
-        switch timedSlots.count {
-        case 0: return "As needed"
-        case 1: return "Once a day"
-        case 2: return "Twice a day"
-        default: return "\(timedSlots.count) times a day"
+        let slots = timedSlots
+        if asNeeded || slots.isEmpty { return "As needed" }
+        let daySets = Set(slots.map { Set($0.days) })
+        guard daySets.count == 1, let days = daySets.first else { return "Varies by day" }
+        let count: String
+        switch slots.count {
+        case 1: count = "Once a day"
+        case 2: count = "Twice a day"
+        default: count = "\(slots.count) times a day"
         }
+        return days.count == 7 ? count : "\(count), \(Format.days(Array(days)))"
     }
 }
 
@@ -431,10 +610,12 @@ struct AppSettings: Codable, Hashable {
     var caffeineTracker: Bool? = nil
     /// One notification for doses due at the same time. Nil means on.
     var groupReminders: Bool? = nil
+    /// Bedtime in minutes after midnight. Nil means 11:00 PM.
+    var bedtime: Int? = nil
 }
 
 extension AppSettings {
-    enum CodingKeys: String, CodingKey { case faceIDLock, reminders, backupBookmark, accent, caffeineTracker, groupReminders }
+    enum CodingKeys: String, CodingKey { case faceIDLock, reminders, backupBookmark, accent, caffeineTracker, groupReminders, bedtime }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -444,6 +625,7 @@ extension AppSettings {
         accent = try? c.decodeIfPresent(String.self, forKey: .accent)
         caffeineTracker = try? c.decodeIfPresent(Bool.self, forKey: .caffeineTracker)
         groupReminders = try? c.decodeIfPresent(Bool.self, forKey: .groupReminders)
+        bedtime = try? c.decodeIfPresent(Int.self, forKey: .bedtime)
     }
 }
 
@@ -453,10 +635,11 @@ struct StoreFile: Codable {
     var entries: [DoseEntry] = []
     var settings: AppSettings = AppSettings()
     var caffeine: [CaffeineEntry] = []
+    var planned: [PlannedDose] = []
 }
 
 extension StoreFile {
-    enum CodingKeys: String, CodingKey { case version, jars, entries, settings, caffeine }
+    enum CodingKeys: String, CodingKey { case version, jars, entries, settings, caffeine, planned }
 
     /// Skips any jar, dose or caffeine entry it can't read rather than losing the whole file.
     init(from decoder: Decoder) throws {
@@ -466,6 +649,7 @@ extension StoreFile {
         entries = ((try? c.decodeIfPresent([Lossy<DoseEntry>].self, forKey: .entries)) ?? []).compactMap(\.value)
         settings = (try? c.decodeIfPresent(AppSettings.self, forKey: .settings)) ?? AppSettings()
         caffeine = ((try? c.decodeIfPresent([Lossy<CaffeineEntry>].self, forKey: .caffeine)) ?? []).compactMap(\.value)
+        planned = ((try? c.decodeIfPresent([Lossy<PlannedDose>].self, forKey: .planned)) ?? []).compactMap(\.value)
     }
 }
 
@@ -497,16 +681,23 @@ extension StoreFile {
         return entry
     }
 
-    /// A scheduled dose that's due now or was missed in the last 3 hours, earliest first.
+    /// A scheduled or planned dose that's due now or was missed in the last 3 hours, earliest first.
     func dueDose(at now: Date = Date()) -> (Jar, DoseSlot)? {
         var best: (Jar, DoseSlot, Date)?
         for jar in jars {
-            if let slot = DoseLogic.dueSlot(for: jar, entries: entries, now: now),
-               let at = DoseLogic.occurrence(of: slot, dayStart: DoseLogic.doseDayStart(for: now)) {
-                if best == nil || at < best!.2 { best = (jar, slot, at) }
+            if let row = DoseLogic.dueRow(for: jar, entries: entries, planned: planned, now: now), let at = row.at {
+                if best == nil || at < best!.2 { best = (jar, row.slot, at) }
             }
         }
         return best.map { ($0.0, $0.1) }
+    }
+
+    /// A jar's dose time or planned dose by id.
+    func slot(jarId: String, slotId: String) -> DoseSlot? {
+        if slotId.hasPrefix(PlannedDose.slotPrefix) {
+            return planned.first { $0.slotId == slotId && $0.jarId == jarId }?.slot
+        }
+        return jars.first { $0.id == jarId }?.sortedSchedule.first { $0.id == slotId }
     }
 
     func makeEntry(jar: Jar, slot: DoseSlot?, amount: String, pills: Double?, at date: Date, note: String = "", skipped: Bool = false) -> DoseEntry {
@@ -535,7 +726,7 @@ extension StoreFile {
         var out: [String] = []
         let cal = Calendar.current
         if let slot, slot.minutes != nil {
-            let rows = DoseLogic.rows(for: jar, entries: entries, now: now)
+            let rows = DoseLogic.rows(for: jar, entries: entries, planned: planned, now: now)
             if let row = rows.first(where: { $0.slot.id == slot.id }) {
                 if case .later = row.status, let at = DoseLogic.occurrence(of: slot, dayStart: DoseLogic.doseDayStart(for: now)) {
                     out.append("This dose isn't due until \(Format.time12(at)).")
@@ -660,6 +851,27 @@ enum Format {
         if h < 24 { return h < 10 ? String(format: "%.1f hr ago", h).replacingOccurrences(of: ".0 ", with: " ") : "\(Int(h.rounded())) hr ago" }
         let d = Int((h / 24).rounded())
         return d == 1 ? "1 day ago" : "\(d) days ago"
+    }
+
+    /// "Every day", "Weekdays", "Weekends", or "Mon, Wed, Fri".
+    static func days(_ days: [Int]) -> String {
+        let set = Set(days)
+        if set.count == 7 { return "Every day" }
+        if set == [2, 3, 4, 5, 6] { return "Weekdays" }
+        if set == [1, 7] { return "Weekends" }
+        let names = Calendar.current.shortWeekdaySymbols
+        let order = [2, 3, 4, 5, 6, 7, 1]
+        return order.filter { set.contains($0) }.map { names[$0 - 1] }.joined(separator: ", ")
+    }
+
+    /// ⅓, ½, ⅔ and friends, or a percent when it isn't a common fraction.
+    static func share(_ x: Double) -> String {
+        let known: [(Double, String)] = [(1, "1"), (0.5, "\u{00BD}"), (1.0 / 3, "\u{2153}"), (2.0 / 3, "\u{2154}"), (0.25, "\u{00BC}"),
+                                         (0.75, "\u{00BE}"), (0.2, "\u{2155}"), (0.4, "\u{2156}"), (0.6, "\u{2157}"), (0.8, "\u{2158}"),
+                                         (1.0 / 6, "\u{2159}"), (5.0 / 6, "\u{215A}"), (0.125, "\u{215B}"), (0.375, "\u{215C}"),
+                                         (0.625, "\u{215D}"), (0.875, "\u{215E}")]
+        if let k = known.first(where: { abs($0.0 - x) < 0.002 }) { return k.1 }
+        return "\(Int((x * 100).rounded()))%"
     }
 
     /// "45 min", "2 hr", "2 hr 30 min".

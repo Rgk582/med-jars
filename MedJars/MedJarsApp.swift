@@ -11,17 +11,27 @@ enum Route: Hashable {
     case caffeine
 }
 
+enum AppTab: Hashable {
+    case cabinet, schedule
+}
+
 @MainActor
 @Observable
 final class Router {
     static let shared = Router()
+    var tab: AppTab = .cabinet
+    /// The Cabinet tab's navigation.
     var path: [Route] = []
+    /// The Schedule tab's navigation.
+    var schedulePath: [Route] = []
     /// A dose whose check-in sheet should open.
     var checkInEntryId: String?
     /// A dose to log from outside the app (Open and Log, a notification), shown in the log sheet first.
     var logRequest: LogTarget?
 
+    /// Opens a jar from outside (NFC, a notification, a link) in the Cabinet tab.
     func open(jarId: String) {
+        tab = .cabinet
         path = [.jar(jarId)]
     }
 
@@ -34,19 +44,22 @@ final class Router {
         case "jar" where !first.isEmpty:
             open(jarId: first)
         case "log":
+            tab = .cabinet
             path = [.history]
         case "log-next":
             let store = AppStore.shared
             store.reload()
             if let due = store.dueDose() {
                 open(jarId: due.0.id)
-                logRequest = LogTarget(jarId: due.0.id, slotId: due.1.id)
+                logRequest = LogTarget(jarId: due.0.id, slotId: due.1.id, slot: due.1)
             } else {
-                path = []
+                tab = .schedule
+                schedulePath = []
             }
         case "checkin" where !first.isEmpty:
             checkInEntryId = first
         default:
+            tab = .cabinet
             path = []
         }
     }
@@ -83,15 +96,20 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
                     let bits = part.split(separator: "|").map(String.init)
                     return bits.count == 2 ? (jarId: bits[0], slotId: bits[1]) : nil
                 }
-                if action == Notify.logAllAction { store.logAll(pairs) } else { Router.shared.path = [] }
+                if action == Notify.logAllAction {
+                    store.logAll(pairs)
+                } else {
+                    Router.shared.tab = .schedule
+                    Router.shared.schedulePath = []
+                }
             } else if let jarId {
                 if action == Notify.logAction, let slotId {
                     store.logSlot(jarId: jarId, slotId: slotId)
                 } else if action == Notify.logCustomAction, let slotId {
                     Router.shared.open(jarId: jarId)
-                    Router.shared.logRequest = LogTarget(jarId: jarId, slotId: slotId)
-                } else if action == Notify.skipAction, let slotId, let jar = store.jar(jarId) {
-                    store.skip(jarId: jarId, slot: jar.sortedSchedule.first { $0.id == slotId }, reason: "Skipped from notification")
+                    Router.shared.logRequest = LogTarget(jarId: jarId, slotId: slotId, slot: store.slot(jarId: jarId, slotId: slotId))
+                } else if action == Notify.skipAction, let slotId, let slot = store.slot(jarId: jarId, slotId: slotId) {
+                    store.skip(jarId: jarId, slot: slot, reason: "Skipped from notification")
                 } else if action == UNNotificationDefaultActionIdentifier {
                     Router.shared.open(jarId: jarId)
                 }
@@ -126,16 +144,17 @@ struct RootView: View {
 
     var body: some View {
         @Bindable var router = router
-        NavigationStack(path: $router.path) {
-            CabinetView()
-                .navigationDestination(for: Route.self) { route in
-                    switch route {
-                    case .jar(let id): JarDetailView(jarId: id)
-                    case .history: HistoryView()
-                    case .settings: SettingsView()
-                    case .caffeine: CaffeineView()
-                    }
+        TabView(selection: $router.tab) {
+            Tab("Cabinet", systemImage: "pills.fill", value: AppTab.cabinet) {
+                NavigationStack(path: $router.path) {
+                    CabinetView().withRoutes()
                 }
+            }
+            Tab("Schedule", systemImage: "calendar", value: AppTab.schedule) {
+                NavigationStack(path: $router.schedulePath) {
+                    ScheduleView().withRoutes()
+                }
+            }
         }
         .tint(store.accentColor)
         .sheet(item: Binding(get: { router.checkInEntryId.map { CheckInTarget(id: $0) } },
@@ -144,7 +163,7 @@ struct RootView: View {
         }
         .sheet(item: $router.logRequest) { target in
             if let jar = store.jar(target.jarId) {
-                LogDoseSheet(jar: jar, slotId: target.slotId) { entry in store.recentLog = entry }
+                LogDoseSheet(jar: jar, slotId: target.slotId, slot: target.slot) { entry in store.recentLog = entry }
             }
         }
         .onAppear {
@@ -192,7 +211,8 @@ struct RootView: View {
     }
 
     private func refreshBackgroundWork() {
-        Reminders.reschedule(jars: store.jars, entries: store.entries, enabled: store.settings.reminders, grouped: store.groupRemindersOn)
+        Reminders.reschedule(jars: store.jars, entries: store.entries, planned: store.planned,
+                             enabled: store.settings.reminders, grouped: store.groupRemindersOn)
         LiveDoses.sync(jars: store.jars, entries: store.entries)
     }
 
@@ -231,6 +251,20 @@ struct RootView: View {
 }
 
 struct CheckInTarget: Identifiable { let id: String }
+
+extension View {
+    /// The pages any tab can push: a jar, the dose log, settings, caffeine.
+    func withRoutes() -> some View {
+        navigationDestination(for: Route.self) { route in
+            switch route {
+            case .jar(let id): JarDetailView(jarId: id)
+            case .history: HistoryView()
+            case .settings: SettingsView()
+            case .caffeine: CaffeineView()
+            }
+        }
+    }
+}
 
 /// A window above everything else (sheets included) that hides the app while it's locked or in the app switcher.
 @MainActor

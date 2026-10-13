@@ -12,6 +12,8 @@ final class AppStore {
     private(set) var entries: [DoseEntry] = []
     private(set) var settings: AppSettings = AppSettings()
     private(set) var caffeine: [CaffeineEntry] = []
+    /// One-time planned doses, soonest first.
+    private(set) var planned: [PlannedDose] = []
     var isLocked: Bool = false
     var saveError: String?
 
@@ -21,6 +23,7 @@ final class AppStore {
         entries = file.entries.sorted { $0.takenAt > $1.takenAt }
         settings = file.settings
         caffeine = file.caffeine.sorted { $0.at > $1.at }
+        planned = file.planned.sorted { $0.at < $1.at }
         isLocked = file.settings.faceIDLock
         if let copy = StoreIO.unreadableCopy {
             saveError = "Your saved data couldn't be read, so a copy was kept as \(copy.lastPathComponent). Restore from a backup in Settings."
@@ -53,6 +56,15 @@ final class AppStore {
 
     func setGroupReminders(_ on: Bool) {
         settings.groupReminders = on
+        persist()
+    }
+
+    var bedtimeMinutes: Int { settings.bedtime ?? Bedtime.defaultMinutes }
+
+    /// Moves every dose timed "before bed" along with it.
+    func setBedtime(_ minutes: Int) {
+        settings.bedtime = minutes
+        Bedtime.minutes = minutes
         persist()
     }
 
@@ -105,7 +117,8 @@ final class AppStore {
             j.labelName = med.nickname ?? ""
             j.kind = .rx
             j.form = .tablet
-            j.schedule = [DoseSlot(label: "Morning", time: "08:00", amount: "1 dose", pills: 1)]
+            j.schedule = [DoseSlot(label: "Morning", time: "08:00", amount: "", pills: 1, share: 1)]
+            j.dailyPills = 1
             j.order = (jars.map(\.order).max() ?? 0) + 1
             jars.append(j)
             added += 1
@@ -118,6 +131,7 @@ final class AppStore {
 
     func deleteJar(_ id: String) {
         jars.removeAll { $0.id == id }
+        planned.removeAll { $0.jarId == id }
         for i in jars.indices { jars[i].interactions.removeAll { $0.jarId == id } }
         persist()
     }
@@ -202,7 +216,12 @@ final class AppStore {
                 existing.kind = j.kind
                 existing.form = j.form
                 if !j.strength.isEmpty { existing.strength = j.strength }
-                if !j.schedule.isEmpty { existing.schedule = j.schedule; existing.asNeeded = j.asNeeded }
+                if !j.schedule.isEmpty {
+                    existing.schedule = j.schedule
+                    existing.asNeeded = j.asNeeded
+                    existing.dailyPills = j.dailyPills
+                    existing.splitEqual = j.splitEqual
+                }
                 if !j.howTo.isEmpty { existing.howTo = j.howTo }
                 existing.food = j.food
                 if !j.avoid.isEmpty { existing.avoid = j.avoid }
@@ -222,12 +241,45 @@ final class AppStore {
 
     // MARK: Logging
 
-    private var file: StoreFile { StoreFile(jars: jars, entries: entries, settings: settings, caffeine: caffeine) }
+    private var file: StoreFile { StoreFile(jars: jars, entries: entries, settings: settings, caffeine: caffeine, planned: planned) }
 
     private func adopt(_ f: StoreFile) {
         jars = f.jars.sorted(by: Self.jarOrder)
         entries = f.entries
         caffeine = f.caffeine.sorted { $0.at > $1.at }
+        planned = f.planned.sorted { $0.at < $1.at }
+    }
+
+    /// A jar's dose time or planned dose by id.
+    func slot(jarId: String, slotId: String) -> DoseSlot? { file.slot(jarId: jarId, slotId: slotId) }
+
+    // MARK: Planned doses
+
+    func savePlanned(_ dose: PlannedDose) {
+        planned.removeAll { $0.id == dose.id }
+        planned.append(dose)
+        planned.sort { $0.at < $1.at }
+        persist()
+    }
+
+    func deletePlanned(_ id: String) {
+        planned.removeAll { $0.id == id }
+        persist()
+    }
+
+    func plannedDose(slotId: String) -> PlannedDose? { planned.first { $0.slotId == slotId } }
+
+    /// Planned doses for a jar that are still ahead or from the last few hours and not logged or skipped.
+    func upcomingPlanned(for jarId: String, now: Date = Date()) -> [PlannedDose] {
+        planned.filter { p in
+            p.jarId == jarId && p.at > now.addingTimeInterval(-3 * 3600) && !entries.contains { $0.slotId == p.slotId }
+        }
+    }
+
+    /// Times a jar was taken (not skipped) in the last `days` days.
+    func usageCount(jarId: String, days: Int, now: Date = Date()) -> Int {
+        let since = now.addingTimeInterval(-Double(days) * 86400)
+        return entries.filter { $0.jarId == jarId && !$0.skipped && $0.takenAt >= since }.count
     }
 
     /// A dose logged from outside the jar page (Control Center, a link) that the jar page should confirm.
@@ -258,10 +310,11 @@ final class AppStore {
         return entry
     }
 
-    /// Logs a scheduled dose right now. Returns nil if a timed dose was already handled today.
+    /// Logs a scheduled or planned dose right now. Returns nil if it was already handled.
     @discardableResult
     func logSlot(jarId: String, slotId: String, at date: Date = Date()) -> DoseEntry? {
-        guard let jar = self.jar(jarId), let slot = jar.sortedSchedule.first(where: { $0.id == slotId }) else { return nil }
+        guard self.jar(jarId) != nil, let slot = self.slot(jarId: jarId, slotId: slotId) else { return nil }
+        if slot.isPlanned, entries.contains(where: { $0.slotId == slotId }) { return nil }
         if alreadyLogged(jarId: jarId, slotId: slotId, on: date) != nil { return nil }
         return log(jarId: jarId, slot: slot, amount: slot.amount, pills: slot.pills, at: date)
     }
@@ -387,6 +440,7 @@ final class AppStore {
         adopt(f)
         entries.sort { $0.takenAt > $1.takenAt }
         settings = f.settings
+        Bedtime.minutes = f.settings.bedtime ?? Bedtime.defaultMinutes
         saveError = nil
         persist()
         return "Restored \(jars.count) jar\(jars.count == 1 ? "" : "s") and \(entries.count) dose\(entries.count == 1 ? "" : "s")."
@@ -449,6 +503,8 @@ final class AppStore {
         jars = f.jars.sorted(by: Self.jarOrder)
         entries = f.entries.sorted { $0.takenAt > $1.takenAt }
         caffeine = f.caffeine.sorted { $0.at > $1.at }
+        planned = f.planned.sorted { $0.at < $1.at }
+        settings.bedtime = f.settings.bedtime ?? settings.bedtime
     }
 
     private func persist() {
@@ -460,7 +516,7 @@ final class AppStore {
         }
         WidgetCenter.shared.reloadAllTimelines()
         ControlCenter.shared.reloadAllControls()
-        Reminders.reschedule(jars: jars, entries: entries, enabled: settings.reminders, grouped: groupRemindersOn)
+        Reminders.reschedule(jars: jars, entries: entries, planned: planned, enabled: settings.reminders, grouped: groupRemindersOn)
         MedJarsShortcuts.updateAppShortcutParameters()
         LiveDoses.sync(jars: jars, entries: entries)
         backupNow()

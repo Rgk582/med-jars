@@ -6,6 +6,8 @@ struct LogTarget: Identifiable {
     let jarId: String
     var slotId: String = ""
     var editing: DoseEntry? = nil
+    /// The dose itself when it isn't one of the jar's dose times (a planned dose).
+    var slot: DoseSlot? = nil
 }
 
 /// Shown every time a dose is logged in the app. The pill count and strength start at the jar's
@@ -13,6 +15,8 @@ struct LogTarget: Identifiable {
 struct LogDoseSheet: View {
     let jar: Jar
     let editing: DoseEntry?
+    /// A planned dose being logged; it isn't in the jar's dose times.
+    let extraSlot: DoseSlot?
     var onSaved: (DoseEntry) -> Void
 
     @Environment(AppStore.self) private var store
@@ -28,11 +32,13 @@ struct LogDoseSheet: View {
     @State private var note: String
     @State private var problem: String?
 
-    init(jar: Jar, slotId: String, editing: DoseEntry? = nil, onSaved: @escaping (DoseEntry) -> Void = { _ in }) {
+    init(jar: Jar, slotId: String, slot preset: DoseSlot? = nil, editing: DoseEntry? = nil, onSaved: @escaping (DoseEntry) -> Void = { _ in }) {
         self.jar = jar
         self.editing = editing
         self.onSaved = onSaved
-        let slot = jar.sortedSchedule.first { $0.id == slotId }
+        let extra = (preset?.id == slotId && preset?.isPlanned == true) ? preset : nil
+        self.extraSlot = extra
+        let slot = extra ?? jar.sortedSchedule.first { $0.id == slotId }
         let defaults = editing.map { (max($0.pills ?? 1, 0.25), $0.amount) } ?? Self.defaults(jar: jar, slot: slot)
         _slotId = State(initialValue: editing?.slotId ?? slot?.id ?? "")
         _pills = State(initialValue: defaults.0)
@@ -51,7 +57,10 @@ struct LogDoseSheet: View {
         return (pills, set.isEmpty ? Format.doseStrength("", basePills: 1, pills: pills, perPill: jar.strength) : set)
     }
 
-    private var slot: DoseSlot? { jar.sortedSchedule.first { $0.id == slotId } }
+    private var slot: DoseSlot? {
+        if let extraSlot, extraSlot.id == slotId { return extraSlot }
+        return jar.sortedSchedule.first { $0.id == slotId }
+    }
     private var isEdit: Bool { editing != nil }
     private var timedSlots: [DoseSlot] { jar.timedSlots }
 
@@ -62,7 +71,8 @@ struct LogDoseSheet: View {
         if let e = editing { return "\(e.slotLabel) \u{00B7} \(Format.dayLabel(e.takenAt))" }
         guard let slot else { return jar.asNeeded ? "As needed" : "Extra dose" }
         if slot.minutes == nil { return "As needed" }
-        return "\(slot.displayLabel) \u{00B7} \(Format.time12(slot.time))"
+        if slot.isPlanned { return "Planned \u{00B7} \(slot.label) \u{00B7} \(slot.timeText)" }
+        return "\(slot.displayLabel) \u{00B7} \(slot.timeText)"
     }
 
     private var amountBinding: Binding<String> {
@@ -118,10 +128,10 @@ struct LogDoseSheet: View {
                 }
 
                 Section {
-                    if !isEdit && !jar.asNeeded && !timedSlots.isEmpty {
+                    if !isEdit && !jar.asNeeded && !timedSlots.isEmpty && extraSlot == nil {
                         Picker("Dose", selection: $slotId) {
                             ForEach(timedSlots) { s in
-                                Text("\(s.displayLabel) \u{00B7} \(Format.time12(s.time))").tag(s.id)
+                                Text("\(s.displayLabel) \u{00B7} \(s.timeText)").tag(s.id)
                             }
                             Text("Extra Dose").tag("")
                         }

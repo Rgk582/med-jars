@@ -32,17 +32,17 @@ struct NextDoseProvider: TimelineProvider {
     func getTimeline(in context: Context, completion: @escaping (Timeline<NextDoseEntry>) -> Void) {
         let file = StoreIO.load()
         let now = Date()
-        let times = Array(([now] + DoseLogic.refreshDates(jars: file.jars, from: now).filter { $0 > now }).prefix(40))
+        let times = Array(([now] + DoseLogic.refreshDates(jars: file.jars, planned: file.planned, from: now).filter { $0 > now }).prefix(40))
         let entries = times.map { entry(at: $0, file: file) }
         let last = times.last ?? now.addingTimeInterval(3600)
         completion(Timeline(entries: entries, policy: .after(max(last, now.addingTimeInterval(900)))))
     }
 
     private func entry(at date: Date, file: StoreFile) -> NextDoseEntry {
-        let counts = DoseLogic.todayCounts(jars: file.jars, entries: file.entries, now: date)
+        let counts = DoseLogic.todayCounts(jars: file.jars, entries: file.entries, planned: file.planned, now: date)
         let due = file.dueDose(at: date)
         return NextDoseEntry(date: date,
-                             next: DoseLogic.nextDose(jars: file.jars, entries: file.entries, at: date),
+                             next: DoseLogic.nextDose(jars: file.jars, entries: file.entries, planned: file.planned, at: date),
                              taken: counts.taken, total: counts.total,
                              hasJars: !file.jars.isEmpty, canRead: StoreIO.isShared,
                              accent: AccentChoice.color(for: file.settings.accent),
