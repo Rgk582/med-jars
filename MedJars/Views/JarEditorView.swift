@@ -18,8 +18,15 @@ struct JarEditorView: View {
     @State private var didSetup = false
     @State private var trackSupply = false
     @State private var supplyText = ""
+    @State private var newTagUID: String?
+    @State private var removeTags = false
+    @State private var scanAlert: ScanAlert?
 
     private var isNew: Bool { target.jar == nil }
+
+    private var hasTag: Bool {
+        !removeTags && (newTagUID != nil || !target.pairTagUID.isEmpty || !draft.tagIds.isEmpty)
+    }
 
     var body: some View {
         NavigationStack {
@@ -58,6 +65,26 @@ struct JarEditorView: View {
                         TextField("e.g. 5 mg", text: $draft.strength)
                             .multilineTextAlignment(.trailing)
                     }
+                }
+
+                Section {
+                    Label(hasTag ? (newTagUID != nil ? "New Tag Scanned" : "Tag Paired") : "No Tag Yet",
+                          systemImage: hasTag ? "checkmark.circle.fill" : "wave.3.right")
+                        .foregroundStyle(hasTag ? Palette.taken : Palette.secondary)
+                    Button(hasTag ? "Scan a Different Tag" : "Scan Tag to Pair") { scanTag() }
+                        .disabled(!TagScanner.isSupported)
+                    if hasTag {
+                        Button("Remove Tag", role: .destructive) {
+                            newTagUID = nil
+                            removeTags = true
+                        }
+                    }
+                } header: {
+                    Text("NFC Tag")
+                } footer: {
+                    Text(TagScanner.isSupported
+                         ? "Hold the top of your iPhone to the tag on this jar's lid. After you save, Scan Jar on the Cabinet screen opens this jar."
+                         : "This iPhone can't scan NFC tags.")
                 }
 
                 Section("Color") {
@@ -178,12 +205,6 @@ struct JarEditorView: View {
                     }
                 }
 
-                if !target.pairTagUID.isEmpty {
-                    Section {
-                        Label("The tag you scanned will be paired with this jar.", systemImage: "wave.3.right")
-                            .foregroundStyle(Palette.secondary)
-                    }
-                }
 
                 if let problem {
                     Section { Label(problem, systemImage: "exclamationmark.circle.fill").foregroundStyle(Palette.missed) }
@@ -218,6 +239,27 @@ struct JarEditorView: View {
                 Text("The jar and its dose card are removed. Logged doses stay in the dose log.")
             }
             .onAppear(perform: setup)
+            .alert("Can't Scan", isPresented: Binding(get: { scanAlert != nil }, set: { if !$0 { scanAlert = nil } })) {
+                Button("OK", role: .cancel) {}
+            } message: { Text(scanAlert?.message ?? "") }
+        }
+    }
+
+    private func scanTag() {
+        TagScanner.shared.scan(prompt: "Hold your iPhone near the tag on this jar.") { result in
+            switch result {
+            case .success(let tag):
+                newTagUID = tag.uid
+                removeTags = false
+                Haptics.logged()
+                if let other = store.jars.first(where: { $0.tagIds.contains(tag.uid) && $0.id != draft.id }) {
+                    problem = "That tag was paired with \(other.name). Saving moves it to this jar."
+                } else {
+                    problem = nil
+                }
+            case .failure(let failure):
+                if let message = failure.message { scanAlert = ScanAlert(message: message) }
+            }
         }
     }
 
@@ -260,6 +302,7 @@ struct JarEditorView: View {
         jar.summary = jar.summary.trimmingCharacters(in: .whitespacesAndNewlines)
         jar.strength = jar.strength.trimmingCharacters(in: .whitespacesAndNewlines)
         jar.labelName = jar.labelName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if removeTags { jar.tagIds = [] }
         if trackSupply {
             let n = Double(supplyText.replacingOccurrences(of: ",", with: ".").trimmingCharacters(in: .whitespaces))
             guard let n, n >= 0 else { problem = "Enter how many \(jar.form.plural) are in the jar, or turn off Track Pills Left."; return }
@@ -281,7 +324,10 @@ struct JarEditorView: View {
         if jar.nudge || jar.checkIn || jar.pillsLeft != nil {
             Task { _ = await Reminders.requestPermission() }
         }
-        if !target.pairTagUID.isEmpty { store.pair(tagUID: target.pairTagUID, toJar: jar.id) }
+        if removeTags { store.unpairTags(jarId: jar.id) }
+        if let uid = newTagUID ?? (target.pairTagUID.isEmpty || removeTags ? nil : target.pairTagUID) {
+            store.pair(tagUID: uid, toJar: jar.id)
+        }
         if isNew { router.open(jarId: jar.id) }
         dismiss()
     }
