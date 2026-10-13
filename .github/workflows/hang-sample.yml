@@ -1,0 +1,74 @@
+name: Hang sample
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sample:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pick the newest Xcode
+        run: |
+          XCODE=$(ls -d /Applications/Xcode_*.app | grep -v beta | sort -V | tail -1)
+          sudo xcode-select -s "$XCODE"
+
+      - name: Build for the simulator
+        run: |
+          brew install xcodegen
+          xcodegen generate
+          xcodebuild -project MedJars.xcodeproj -scheme MedJars -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO build > sim.log 2>&1 \
+            || (grep -E "error:" sim.log | sort -u | head -60; exit 1)
+
+      - name: Launch with one jar and sample the main thread
+        run: |
+          mkdir -p out
+          UDID=$(xcrun simctl list devices available -j | python3 -c "
+          import json,sys
+          d=json.load(sys.stdin)['devices']
+          c=[x for k,v in d.items() if 'iOS' in k for x in v if x['name'].startswith('iPhone') and 'Pro Max' not in x['name'] and 'Plus' not in x['name']]
+          print(sorted(c,key=lambda x:x['name'])[-1]['udid'])")
+          xcrun simctl boot "$UDID"; xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl ui "$UDID" appearance dark
+          xcrun simctl install "$UDID" build/Build/Products/Debug-iphonesimulator/MedJars.app
+          xcrun simctl spawn "$UDID" defaults write com.medjars.app askedForNotifications -bool YES
+          xcrun simctl launch "$UDID" com.medjars.app; sleep 5
+          xcrun simctl terminate "$UDID" com.medjars.app || true
+          DATA=$(xcrun simctl get_app_container "$UDID" com.medjars.app data)
+          mkdir -p "$DATA/Documents" && cp ci/one_jar.json "$DATA/Documents/medjars.json"
+          xcrun simctl launch "$UDID" com.medjars.app
+          sleep 12
+          xcrun simctl io "$UDID" screenshot out/screen.png || true
+          PID=$(pgrep -f "MedJars.app/MedJars" | head -1)
+          echo "pid $PID"
+          ps -o pid,%cpu,etime,command -p "$PID" > out/ps.txt || true
+          sample "$PID" 4 -file out/sample1.txt || true
+          sleep 5
+          sample "$PID" 3 -file out/sample2.txt || true
+          ps -o pid,%cpu,etime -p "$PID" >> out/ps.txt || true
+          cat out/ps.txt
+          # Heaviest stack of the main thread
+          python3 - <<'PY' > out/main-thread.txt
+          import re
+          t=open('out/sample1.txt').read()
+          i=t.find('Thread_'); print(t[i:i+15000])
+          PY
+          head -150 out/main-thread.txt
+
+      - name: Save results
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd out || exit 0
+          git init -q -b ci-hang
+          git add -A
+          git -c user.name="github-actions" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -qm "Hang sample ${{ github.run_number }}"
+          git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" ci-hang

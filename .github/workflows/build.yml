@@ -7,6 +7,7 @@ on:
       - "ci/**"
       - ".github/workflows/preview.yml"
       - ".github/workflows/crash-repro.yml"
+      - ".github/workflows/hang-sample.yml"
       - "README.md"
   workflow_dispatch:
 
