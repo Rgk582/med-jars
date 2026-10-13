@@ -1,0 +1,4 @@
+  PID  %CPU ELAPSED COMMAND
+ 5243 100.0   00:18 /Users/runner/Library/Developer/CoreSimulator/Devices/48B2DA2E-AF18-4E36-BB25-B25969A4EBCF/data/Containers/Bundle/Application/2E53342D-28AD-4547-95C7-FC285A51FECF/MedJars.app/MedJars
+  PID  %CPU ELAPSED
+ 5243  99.1   00:50

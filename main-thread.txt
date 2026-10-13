@@ -1,0 +1,122 @@
+Thread_20661   DispatchQueue_1: com.apple.main-thread  (serial)
+    + 3 start  (in dyld) + 6076  [0x104ce2b98]
+    +   3 start_sim  (in dyld_sim) + 20  [0x104e0d3d0]
+    +     3 __debug_main_executable_dylib_entry_point  (in MedJars.debug.dylib) + 12  [0x10611e154]  MedJarsApp.swift:0
+    +       3 static MedJarsApp.$main()  (in MedJars.debug.dylib) + 40  [0x1061145dc]  /<compiler-generated>:0
+    +         3 static App.main()  (in SwiftUI) + 148  [0x1da31b42c]
+    +           3 runApp<A>(_:)  (in SwiftUI) + 180  [0x1da58d368]
+    +             3 closure #1 in KitRendererCommon(_:)  (in SwiftUI) + 164  [0x1da58d620]
+    +               3 UIApplicationMain  (in UIKitCore) + 124  [0x18634c79c]
+    +                 3 -[UIApplication _run]  (in UIKitCore) + 772  [0x186348574]
+    +                   3 GSEventRunModal  (in GraphicsServices) + 116  [0x192a669bc]
+    +                     3 _CFRunLoopRunSpecificWithOptions  (in CoreFoundation) + 496  [0x18044fcec]
+    +                       3 __CFRunLoopRun  (in CoreFoundation) + 788  [0x180454c68]
+    +                         3 __CFRunLoopDoBlocks  (in CoreFoundation) + 340  [0x1804558f8]
+    +                           3 __CFRUNLOOP_IS_CALLING_OUT_TO_A_BLOCK__  (in CoreFoundation) + 20  [0x180456170]
+    +                             3 __34-[UIApplication _firstCommitBlock]_block_invoke_2  (in UIKitCore) + 32  [0x186361178]
+    +                               3 CA::Transaction::commit()  (in QuartzCore) + 636  [0x18c738b54]
+    +                                 3 CA::Context::commit_transaction(CA::Transaction*, double, double*)  (in QuartzCore) + 544  [0x18c7089fc]
+    +                                   3 CA::Layer::layout_and_display_if_needed(CA::Transaction*)  (in QuartzCore) + 152  [0x18c7f34d8]
+    +                                     3 CA::Layer::update_if_needed_(CA::Transaction*, CA::LayerUpdateReason)  (in QuartzCore) + 600  [0x18c7e7848]
+    +                                       3 CA::Layer::perform_update_(CA::Layer*, CALayer*, unsigned int, CA::LayerUpdateReason, CA::Transaction*)  (in QuartzCore) + 452  [0x18c7e7ff8]
+    +                                         2 -[UIView(CALayerDelegate) layoutSublayersOfLayer:]  (in UIKitCore) + 2656  [0x1869151c8]
+    +                                         ! 2 ???  (in UIKitCore)  load address 0x18519e000 + 0x3e4ce0  [0x185582ce0]
+    +                                         !   2 ???  (in UIKitCore)  load address 0x18519e000 + 0x3e494c  [0x18558294c]
+    +                                         !     2 @objc _UIHostingView.layoutSubviews()  (in SwiftUI) + 32  [0x1dab254a4]
+    +                                         !       2 _UIHostingView.layoutSubviews()  (in SwiftUI) + 80  [0x1dab25470]
+    +                                         !         1 ???  (in UIKitCore)  load address 0x18519e000 + 0x15b144  [0x1852f9144]
+    +                                         !         : 1 ViewGraphHost.nextRenderInterval(interval:)  (in SwiftUICore) + 60  [0x1db19a21c]
+    +                                         !         :   1 ???  (in UIKitCore)  load address 0x18519e000 + 0x16090c  [0x1852fe90c]
+    +                                         !         :     1 CACurrentMediaTime  (in QuartzCore) + 12  [0x18c865a74]
+    +                                         !         :       1 mach_absolute_time  (in libsystem_kernel.dylib) + 48  [0x104bc4fdc]
+    +                                         !         1 ???  (in UIKitCore)  load address 0x18519e000 + 0x15b198  [0x1852f9198]
+    +                                         !           1 ViewGraphRootValueUpdater.render(interval:updateDisplayList:targetTimestamp:)  (in SwiftUICore) + 420  [0x1dba84858]
+    +                                         !             1 closure #1 in ViewGraphRootValueUpdater.render(interval:updateDisplayList:targetTimestamp:)  (in SwiftUICore) + 644  [0x1dba8612c]
+    +                                         !               1 ViewGraph.updateOutputs(at:)  (in SwiftUICore) + 172  [0x1dba8be5c]
+    +                                         !                 1 specialized GraphHost.runTransaction(_:do:id:)  (in SwiftUICore) + 320  [0x1db697014]
+    +                                         !                   1 AG::Subgraph::update(unsigned int)  (in AttributeGraph) + 944  [0x1c47a388c]
+    +                                         !                     1 AG::Graph::UpdateStack::update()  (in AttributeGraph) + 492  [0x1c4794728]
+    +                                         !                       1 partial apply for implicit closure #1 in closure #1 in closure #1 in Attribute.init<A>(_:)  (in SwiftUICore) + 28  [0x1db1d88e0]
+    +                                         !                         1 TimelineView<>.UpdateFilter.updateValue()  (in SwiftUI) + 4196  [0x1dab877b0]
+    +                                         !                           1 StatefulRule.withObservation<A>(observationCenter:do:)  (in SwiftUICore) + 60  [0x1db6b3df0]
+    +                                         !                             1 Rule.withObservation<A>(observationCenter:do:)  (in SwiftUICore) + 484  [0x1db6b3ffc]
+    +                                         !                               1 <deduplicated_symbol>  (in SwiftUICore) + 72  [0x1db1cb908]
+    +                                         !                                 1 <deduplicated_symbol>  (in SwiftUICore) + 12  [0x1db6b6328]
+    +                                         !                                   1 partial apply for closure #1 in ObservationCenter._withObservation<A>(do:)  (in SwiftUICore) + 24  [0x1db01fd04]
+    +                                         !                                     1 closure #1 in ObservationCenter._withObservation<A>(do:)  (in SwiftUICore) + 84  [0x1db6b49e0]
+    +                                         !                                       1 partial apply for closure #1 in TimelineView<>.UpdateFilter.updateValue()  (in SwiftUI) + 24  [0x1dab896e0]
+    +                                         !                                         1 closure #1 in TimelineView<>.UpdateFilter.updateValue()  (in SwiftUI) + 148  [0x1dab87ce0]
+    +                                         !                                           1 Attribute.syncMainIfReferences<A>(do:)  (in SwiftUICore) + 280  [0x1db7419e4]
+    +                                         !                                             1 specialized static Update.syncMain(_:)  (in SwiftUICore) + 76  [0x1db46b928]
+    +                                         !                                               1 closure #1 in Attribute.syncMainIfReferences<A>(do:)  (in SwiftUICore) + 104  [0x1db743420]
+    +                                         !                                                 1 partial apply for closure #1 in closure #1 in TimelineView<>.UpdateFilter.updateValue()  (in SwiftUI) + 68  [0x1dab897a4]
+    +                                         !                                                   1 closure #1 in TimelineView<>.init(_:content:)  (in SwiftUI) + 264  [0x1dab85bd0]
+    +                                         !                                                     1 closure #1 in TimelineView<>.init(_:content:)  (in MedJars.debug.dylib) + 280  [0x105f72cd4]  /<compiler-generated>:0
+    +                                         !                                                       1 closure #1 in CaffeineSummaryRow.body.getter  (in MedJars.debug.dylib) + 524  [0x105f88b30]  CaffeineView.swift:10
+    +                                         !                                                         1 HStack.init(alignment:spacing:content:)  (in SwiftUICore) + 76  [0x1db36fc38]
+    +                                         !                                                           1 _VariadicView.Tree.init(_:content:)  (in SwiftUICore) + 112  [0x1db45c5e0]
+    +                                         !                                                             1 <deduplicated_symbol>  (in SwiftUICore) + 88  [0x1dafd4410]
+    +                                         !                                                               1 closure #1 in closure #1 in CaffeineSummaryRow.body.getter  (in MedJars.debug.dylib) + 1896  [0x105f893c4]  CaffeineView.swift:25
+    +                                         !                                                                 1 Menu.init(content:label:)  (in SwiftUI) + 116  [0x1da2680dc]
+    +                                         !                                                                   1 closure #2 in closure #1 in closure #1 in CaffeineSummaryRow.body.getter  (in MedJars.debug.dylib) + 1252  [0x105f8aef0]  CaffeineView.swift:0
+    +                                         !                                                                     1 static ViewBuilder.buildExpression<A>(_:)  (in MedJars.debug.dylib) + 56  [0x105f31108]  /<compiler-generated>:0
+    +                                         !                                                                       1 __swift_memcpy0_1  (in SwiftUI) + 0  [0x1d9e09668]
+    +                                         1 -[UIView(CALayerDelegate) layoutSublayersOfLayer:]  (in UIKitCore) + 1312  [0x186914c88]
+    +                                           1 -[UIViewController _embeddedDelegate]  (in UIKitCore) + 8  [0x185b7101c]
+    3 Thread_20679
+    + 3 start_wqthread  (in libsystem_pthread.dylib) + 8  [0x104b4598c]
+    +   3 _pthread_wqthread  (in libsystem_pthread.dylib) + 364  [0x104b46bd4]
+    +     3 __workq_kernreturn  (in libsystem_kernel.dylib) + 8  [0x104bc6680]
+    3 Thread_20682: com.apple.uikit.eventfetch-thread
+    + 3 thread_start  (in libsystem_pthread.dylib) + 8  [0x104b45998]
+    +   3 _pthread_start  (in libsystem_pthread.dylib) + 104  [0x104b4a5ac]
+    +     3 __NSThread__start__  (in Foundation) + 716  [0x181132d14]
+    +       3 -[UIEventFetcher threadMain]  (in UIKitCore) + 392  [0x18609fc50]
+    +         3 -[NSRunLoop(NSRunLoop) runUntilDate:]  (in Foundation) + 60  [0x18110c068]
+    +           3 -[NSRunLoop(NSRunLoop) runMode:beforeDate:]  (in Foundation) + 208  [0x18110be48]
+    +             3 _CFRunLoopRunSpecificWithOptions  (in CoreFoundation) + 496  [0x18044fcec]
+    +               3 __CFRunLoopRun  (in CoreFoundation) + 1128  [0x180454dbc]
+    +                 3 __CFRunLoopServiceMachPort  (in CoreFoundation) + 156  [0x180455c04]
+    +                   3 mach_msg  (in libsystem_kernel.dylib) + 20  [0x104bc4ed8]
+    +                     3 mach_msg_overwrite  (in libsystem_kernel.dylib) + 480  [0x104bccc28]
+    +                       3 mach_msg2_internal  (in libsystem_kernel.dylib) + 72  [0x104bd5f44]
+    +                         3 mach_msg2_trap  (in libsystem_kernel.dylib) + 8  [0x104bc4b70]
+    3 Thread_20683   DispatchQueue_22: com.apple.libtrace.state.block-list  (serial)
+    + 3 start_wqthread  (in libsystem_pthread.dylib) + 8  [0x104b4598c]
+    +   3 _pthread_wqthread  (in libsystem_pthread.dylib) + 288  [0x104b46b88]
+    +     3 _dispatch_workloop_worker_thread  (in libdispatch.dylib) + 692  [0x1801d4c74]
+    +       3 _dispatch_root_queue_drain_deferred_wlh  (in libdispatch.dylib) + 288  [0x1801d5534]
+    +         3 _dispatch_lane_invoke  (in libdispatch.dylib) + 396  [0x1801ca6e8]
+    +           3 _dispatch_lane_serial_drain  (in libdispatch.dylib) + 984  [0x1801c9c28]
+    +             3 _dispatch_client_callout  (in libdispatch.dylib) + 12  [0x1801db4b0]
+    +               3 _dispatch_call_block_and_release  (in libdispatch.dylib) + 24  [0x1801c07a8]
+    +                 3 ___os_state_request_for_self_block_invoke  (in libsystem_trace.dylib) + 340  [0x1800f309c]
+    +                   3 _dispatch_sync_f_slow  (in libdispatch.dylib) + 160  [0x1801d0e64]
+    +                     3 __DISPATCH_WAIT_FOR_QUEUE__  (in libdispatch.dylib) + 392  [0x1801d1368]
+    +                       3 _dispatch_thread_event_wait_slow  (in libdispatch.dylib) + 52  [0x1801c23bc]
+    +                         3 _dlock_wait  (in libdispatch.dylib) + 52  [0x1801c25b0]
+    +                           3 __ulock_wait  (in libsystem_kernel.dylib) + 8  [0x104bc6770]
+    3 Thread_20684
+      3 start_wqthread  (in libsystem_pthread.dylib) + 0  [0x104b45984]
+
+Total number in stack (recursive counted multiple, when >=5):
+
+Sort by top of stack, same collapsed (when >= 5):
+
+Binary Images:
+       0x104b30000 -        0x104b336b3 +com.medjars.app (1.0 - 1) <5069E8E5-AA41-3DAB-85AD-22C3F698B3DE> /Users/*/Library/Developer/CoreSimulator/Devices/48B2DA2E-AF18-4E36-BB25-B25969A4EBCF/data/Containers/Bundle/Application/2E53342D-28AD-4547-95C7-FC285A51FECF/MedJars.app/MedJars
+       0x104b44000 -        0x104b50047  libsystem_pthread.dylib (536.0.0.702.1) <773DC6D4-6B3F-329F-8D48-C568C5250FE0> /usr/lib/system/libsystem_pthread.dylib
+       0x104ba4000 -        0x104bab7fb  libsystem_platform.dylib (349.140.6) <781E89E0-7F3E-381C-9C6F-758AE67555F4> /usr/lib/system/libsystem_platform.dylib
+       0x104bc4000 -        0x104bfd10b  libsystem_kernel.dylib (11417.140.69.711.44) <FAD6415F-BF89-3B78-AFD6-3D0110B38432> /usr/lib/system/libsystem_kernel.dylib
+       0x104cdc000 -        0x104d7757b  dyld (1.0.0 - 1286.10) <AA296324-126C-32DD-9026-5B744F8EB283> /usr/lib/dyld
+       0x104e0c000 -        0x104e5956f +dyld_sim (1335) <FDF77ECC-13AB-3A08-BEE2-9A65EDEDC16E> /Volumes/*/dyld_sim
+       0x1050d4000 -        0x1050dc03f +libobjc-trampolines.dylib (951.1) <997B234D-5C24-3E21-97D6-33B6853818C0> /Volumes/*/libobjc-trampolines.dylib
+       0x105ef8000 -        0x106203237 +MedJars.debug.dylib (0) <6780E210-498A-30FC-940E-71F82ECDF6E6> /Users/*/Library/Developer/CoreSimulator/Devices/48B2DA2E-AF18-4E36-BB25-B25969A4EBCF/data/Containers/Bundle/Application/2E53342D-28AD-4547-95C7-FC285A51FECF/MedJars.app/MedJars.debug.dylib
+       0x180070000 -        0x1800ad297 +libobjc.A.dylib (951.1) <880F8664-CD53-3912-BDD5-5E3159295F7D> /Volumes/*/libobjc.A.dylib
+       0x1800ae000 -        0x1800d9ac9 +libdyld.dylib (1335) <7BB80DDF-B0CB-365B-8FD3-6A83F426C422> /Volumes/*/libdyld.dylib
+       0x1800da000 -        0x1800f7fff +libsystem_trace.dylib (1815.62.1) <11A939B5-2E77-3A64-84A4-5DC0A1C74BBD> /Volumes/*/libsystem_trace.dylib
+       0x1800f8000 -        0x18013d4ff +libxpc.dylib (3089.60.7) <5D3B42DD-89E9-36F1-8E20-F4BBF2B7644E> /Volumes/*/libxpc.dylib
+       0x18013e000 -        0x180140da8 +libsystem_blocks.dylib (96) <4403835F-DC7F-3167-A142-2776968CE101> /Volumes/*/libsystem_blocks.dylib
+       0x180141000 -        0x1801be2c3 +libsystem_c.dylib (1725.40.4) <E0197E7B-9D61-356A-90B7-4BE1270B82D5> /Volumes/*/libsystem_c.dylib
+       0x1801bf000 -        0x1802041bf +libdispatch.dylib (1542.0.4) <EC9ECF10-959D-3DA1-A055-6DE970159B9D> /Volumes/*/libdispatch.dylib
+       0x180205000 -        0x18024814f +libsystem_malloc.dylib (792.60.6) <51240706-2B57-3586-87BB-42893ACAABD0>
