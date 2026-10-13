@@ -3,11 +3,11 @@ import SwiftUI
 /// Cabinet row: caffeine in your system now, today's total, quick add.
 struct CaffeineSummaryRow: View {
     @Environment(AppStore.self) private var store
+    let now: Date
     let onAdd: () -> Void
 
     var body: some View {
-        TimelineView(.everyMinute) { context in
-            HStack(spacing: 12) {
+        HStack(spacing: 12) {
                 Image(systemName: "cup.and.heat.waves.fill")
                     .font(.title3)
                     .foregroundStyle(.brown)
@@ -15,9 +15,9 @@ struct CaffeineSummaryRow: View {
                     .background(Color.brown.opacity(0.18), in: Circle())
                 NavigationLink(value: Route.caffeine) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("About \(Int(store.caffeineInSystem(at: context.date).rounded())) mg in your system")
+                        Text("About \(Int(store.caffeineInSystem(at: now).rounded())) mg in your system")
                             .font(.headline)
-                        Text("\(Int(store.caffeineToday(at: context.date).rounded())) mg today")
+                        Text("\(Int(store.caffeineToday(at: now).rounded())) mg today")
                             .font(.footnote).foregroundStyle(Palette.secondary)
                     }
                 }
@@ -39,7 +39,6 @@ struct CaffeineSummaryRow: View {
                 .accessibilityLabel("Add caffeine")
             }
             .padding(.vertical, 2)
-        }
     }
 }
 
@@ -101,11 +100,23 @@ struct CaffeineView: View {
     }
 
     var body: some View {
+        TimelineView(.everyMinute) { context in
+            list(now: context.date)
+        }
+        .navigationTitle("Caffeine")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button { adding = true } label: { Image(systemName: "plus") }
+                    .accessibilityLabel("Add caffeine")
+            }
+        }
+        .sheet(isPresented: $adding) { CaffeineAddSheet() }
+    }
+
+    private func list(now: Date) -> some View {
         List {
             Section {
-                TimelineView(.everyMinute) { context in
-                    LabeledContent("In your system now", value: "\(Int(store.caffeineInSystem(at: context.date).rounded())) mg")
-                }
+                LabeledContent("In your system now", value: "\(Int(store.caffeineInSystem(at: now).rounded())) mg")
             } footer: {
                 Text("Estimated with a 5 hour half-life, the typical average. Your own rate can be faster or slower.")
             }
@@ -132,13 +143,5 @@ struct CaffeineView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .navigationTitle("Caffeine")
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button { adding = true } label: { Image(systemName: "plus") }
-                    .accessibilityLabel("Add caffeine")
-            }
-        }
-        .sheet(isPresented: $adding) { CaffeineAddSheet() }
     }
 }

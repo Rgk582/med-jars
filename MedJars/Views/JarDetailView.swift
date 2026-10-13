@@ -15,9 +15,9 @@ struct JarDetailView: View {
     @State private var schedulingBreak = false
 
     var body: some View {
-        TimelineView(.explicit(DoseLogic.refreshDates(jars: store.jar(jarId).map { [$0] } ?? []))) { context in
+        TimelineView(.everyMinute) { context in
             if let jar = store.jar(jarId) {
-                content(jar: jar, now: max(context.date, Date()))
+                content(jar: jar, now: context.date)
             } else {
                 ContentUnavailableView {
                     Label("No Jar Uses This Link", systemImage: "questionmark.circle")
@@ -115,7 +115,7 @@ struct JarDetailView: View {
             if active {
                 if jar.asNeeded {
                     Section("As Needed") {
-                        AsNeededStatus(jar: jar)
+                        AsNeededStatus(jar: jar, now: now)
                     }
                 } else {
                     Section("Today") {
@@ -138,7 +138,7 @@ struct JarDetailView: View {
 
             if jar.effect != nil {
                 Section {
-                    EffectTimelineView(jar: jar, dose: store.activeEffectDose(for: jar, now: now))
+                    EffectTimelineView(jar: jar, dose: store.activeEffectDose(for: jar, now: now), now: now)
                 } header: {
                     Text("Effect Timeline")
                 } footer: {
@@ -374,10 +374,9 @@ struct SkipTarget: Identifiable {
 private struct AsNeededStatus: View {
     @Environment(AppStore.self) private var store
     let jar: Jar
+    let now: Date
 
     var body: some View {
-        TimelineView(.everyMinute) { context in
-            let now = context.date
             let taken = store.entries.filter { $0.jarId == jar.id && !$0.skipped }
             let today = taken.filter { $0.takenAt >= DoseLogic.doseDayStart(for: now) }.count
             VStack(alignment: .leading, spacing: 8) {
@@ -411,7 +410,6 @@ private struct AsNeededStatus: View {
                 }
             }
             .padding(.vertical, 2)
-        }
     }
 }
 
@@ -419,6 +417,7 @@ private struct AsNeededStatus: View {
 struct EffectTimelineView: View {
     let jar: Jar
     let dose: DoseEntry?
+    let now: Date
 
     private struct Point: Identifiable {
         let date: Date
@@ -428,8 +427,6 @@ struct EffectTimelineView: View {
 
     var body: some View {
         let p = (jar.effect ?? EffectProfile()).normalized
-        TimelineView(.everyMinute) { context in
-            let now = context.date
             VStack(alignment: .leading, spacing: 12) {
                 if let dose {
                     let start = dose.takenAt
@@ -491,7 +488,6 @@ struct EffectTimelineView: View {
                 }
             }
             .padding(.vertical, 4)
-        }
     }
 
     private func milestone(_ title: String, _ date: Date, done: Bool) -> some View {

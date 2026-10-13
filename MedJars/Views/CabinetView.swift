@@ -11,7 +11,7 @@ struct CabinetView: View {
     @State private var addingCaffeine = false
 
     var body: some View {
-        TimelineView(.explicit(DoseLogic.refreshDates(jars: store.jars))) { context in
+        TimelineView(.everyMinute) { context in
             Group {
                 if store.jars.isEmpty {
                     ContentUnavailableView {
@@ -23,7 +23,7 @@ struct CabinetView: View {
                             .prominentButton()
                     }
                 } else {
-                    list(now: max(context.date, Date()))
+                    list(now: context.date)
                 }
             }
         }
@@ -100,7 +100,7 @@ struct CabinetView: View {
 
             if store.caffeineTrackerOn {
                 Section {
-                    CaffeineSummaryRow(onAdd: { addingCaffeine = true })
+                    CaffeineSummaryRow(now: now, onAdd: { addingCaffeine = true })
                 } header: {
                     Text("Caffeine")
                 }
