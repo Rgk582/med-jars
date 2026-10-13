@@ -36,6 +36,8 @@ struct SettingsView: View {
     @State private var pickingFolder = false
     @State private var pendingRestore: Data?
     @State private var backupMessage: String?
+    @State private var healthBusy = false
+    @State private var healthMessage: String?
 
     var body: some View {
         Form {
@@ -65,8 +67,41 @@ struct SettingsView: View {
                 if let reminderNote {
                     Text(reminderNote).font(.footnote).foregroundStyle(Palette.missed)
                 }
+                Toggle(isOn: Binding(get: { store.groupRemindersOn }, set: { store.setGroupReminders($0) })) {
+                    Label { Text("Group Same-Time Reminders") } icon: { SettingsIcon(symbol: "square.stack.fill", color: .purple) }
+                }
+                .disabled(!store.settings.reminders)
             } footer: {
-                Text("Reminders arrive at each dose time with a Log button, and skip doses you already logged. Opening the app keeps the next week scheduled.")
+                Text("Reminders arrive at each dose time with Log and Skip buttons, and skip doses you already logged. When several jars are due at the same minute, grouping sends one reminder with Log All. Opening the app keeps the next week scheduled.")
+            }
+
+            Section {
+                Toggle(isOn: Binding(get: { store.caffeineTrackerOn }, set: { store.setCaffeineTracker($0) })) {
+                    Label { Text("Caffeine Tracker") } icon: { SettingsIcon(symbol: "cup.and.heat.waves.fill", color: .brown) }
+                }
+                if HealthImport.isSupported {
+                    Button {
+                        importFromHealth()
+                    } label: {
+                        Label {
+                            HStack {
+                                Text("Import from Apple Health").foregroundStyle(Palette.label)
+                                Spacer()
+                                if healthBusy { ProgressView() }
+                            }
+                        } icon: { SettingsIcon(symbol: "heart.fill", color: .pink) }
+                    }
+                    .disabled(healthBusy)
+                }
+                if let healthMessage {
+                    Text(healthMessage).font(.footnote).foregroundStyle(Palette.secondary)
+                }
+            } header: {
+                Text("Extras")
+            } footer: {
+                Text(HealthImport.isSupported
+                     ? "Caffeine shows on the cabinet with an estimate of how much is still in your system. Import from Apple Health adds a jar for each medication in the Health app that isn't here yet. Edit each one afterward to set its real times."
+                     : "Caffeine shows on the cabinet with an estimate of how much is still in your system. Importing medications from Apple Health needs iOS 26.")
             }
 
             Section {
@@ -195,6 +230,30 @@ struct SettingsView: View {
         guard ctx.canEvaluatePolicy(.deviceOwnerAuthentication, error: &err) else { return }
         ctx.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: "Turn on Face ID Lock") { ok, _ in
             DispatchQueue.main.async { if ok { store.setFaceIDLock(true) } }
+        }
+    }
+
+    private func importFromHealth() {
+        healthBusy = true
+        healthMessage = nil
+        Task { @MainActor in
+            let result = await HealthImport.fetch()
+            healthBusy = false
+            switch result {
+            case .success(let found):
+                if found.isEmpty {
+                    healthMessage = "No medications found. Add them in the Health app under Browse, Medications, or allow Med Jars to read them."
+                } else {
+                    let added = store.addFromHealth(found)
+                    healthMessage = added == 0
+                        ? "Every medication in Health already has a jar."
+                        : "Added \(added) jar\(added == 1 ? "" : "s"). Open each one and tap Edit to set times and details."
+                }
+            case .failure(.unsupported):
+                healthMessage = "Importing from Health needs iOS 26."
+            case .failure(.denied(let text)):
+                healthMessage = text
+            }
         }
     }
 

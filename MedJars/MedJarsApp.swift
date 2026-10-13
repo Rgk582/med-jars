@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import UserNotifications
 import LocalAuthentication
 import Observation
@@ -7,6 +8,7 @@ enum Route: Hashable {
     case jar(String)
     case history
     case settings
+    case caffeine
 }
 
 @MainActor
@@ -62,17 +64,26 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         let info = response.notification.request.content.userInfo
         let jarId = info["jarId"] as? String
         let slotId = info["slotId"] as? String
-        let action = response.actionIdentifier
         let entryId = info["entryId"] as? String
+        let items = (info["items"] as? String) ?? ""
+        let action = response.actionIdentifier
         let category = response.notification.request.content.categoryIdentifier
         Task { @MainActor in
+            let store = AppStore.shared
+            store.reload()
             if category == Notify.checkInCategory, let entryId {
-                AppStore.shared.reload()
                 Router.shared.checkInEntryId = entryId
+            } else if category == Notify.groupCategory {
+                let pairs: [(jarId: String, slotId: String)] = items.split(separator: ";").compactMap { part in
+                    let bits = part.split(separator: "|").map(String.init)
+                    return bits.count == 2 ? (jarId: bits[0], slotId: bits[1]) : nil
+                }
+                if action == Notify.logAllAction { store.logAll(pairs) } else { Router.shared.path = [] }
             } else if let jarId {
                 if action == Notify.logAction, let slotId {
-                    AppStore.shared.reload()
-                    AppStore.shared.logSlot(jarId: jarId, slotId: slotId)
+                    store.logSlot(jarId: jarId, slotId: slotId)
+                } else if action == Notify.skipAction, let slotId, let jar = store.jar(jarId) {
+                    store.skip(jarId: jarId, slot: jar.sortedSchedule.first { $0.id == slotId }, reason: "Skipped from notification")
                 } else if action == UNNotificationDefaultActionIdentifier {
                     Router.shared.open(jarId: jarId)
                 }
@@ -113,6 +124,7 @@ struct RootView: View {
                     case .jar(let id): JarDetailView(jarId: id)
                     case .history: HistoryView()
                     case .settings: SettingsView()
+                    case .caffeine: CaffeineView()
                     }
                 }
         }
@@ -121,16 +133,13 @@ struct RootView: View {
                              set: { router.checkInEntryId = $0?.id })) { target in
             CheckInSheet(entryId: target.id)
         }
-        .overlay {
-            if store.isLocked {
-                LockView(unlock: authenticate)
-                    .transition(.opacity)
-            }
-        }
         .onAppear {
             store.reload()
-            Reminders.reschedule(jars: store.jars, entries: store.entries, enabled: store.settings.reminders)
-            if store.isLocked { authenticate() }
+            refreshBackgroundWork()
+            if store.isLocked {
+                PrivacyShield.shared.show(locked: true, accent: store.accentColor, unlock: authenticate)
+                authenticate()
+            }
             #if DEBUG
             // Simulator previews: -previewRoute jar:<id> | history | settings
             if let r = UserDefaults.standard.string(forKey: "previewRoute") {
@@ -141,16 +150,34 @@ struct RootView: View {
             #endif
         }
         .onChange(of: scenePhase) { _, phase in
+            guard store.settings.faceIDLock else {
+                if phase == .active { store.reload(); refreshBackgroundWork() }
+                return
+            }
             switch phase {
+            case .inactive:
+                // Cover the screen right away so the app switcher never shows your meds.
+                if !store.isLocked { PrivacyShield.shared.show(locked: false, accent: store.accentColor, unlock: authenticate) }
             case .background:
-                if store.settings.faceIDLock { store.isLocked = true }
+                store.isLocked = true
+                PrivacyShield.shared.show(locked: true, accent: store.accentColor, unlock: authenticate)
             case .active:
                 store.reload()
-                Reminders.reschedule(jars: store.jars, entries: store.entries, enabled: store.settings.reminders)
-                if store.isLocked { authenticate() }
-            default: break
+                refreshBackgroundWork()
+                if store.isLocked {
+                    PrivacyShield.shared.show(locked: true, accent: store.accentColor, unlock: authenticate)
+                    authenticate()
+                } else {
+                    PrivacyShield.shared.hide()
+                }
+            @unknown default: break
             }
         }
+    }
+
+    private func refreshBackgroundWork() {
+        Reminders.reschedule(jars: store.jars, entries: store.entries, enabled: store.settings.reminders, grouped: store.groupRemindersOn)
+        LiveDoses.sync(jars: store.jars, entries: store.entries)
     }
 
     private func authenticate() {
@@ -159,13 +186,17 @@ struct RootView: View {
         var error: NSError?
         guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) else {
             store.isLocked = false
+            PrivacyShield.shared.hide()
             return
         }
         authInFlight = true
         context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: "Unlock your med cabinet") { ok, _ in
             DispatchQueue.main.async {
                 authInFlight = false
-                if ok { withAnimation { store.isLocked = false } }
+                if ok {
+                    store.isLocked = false
+                    PrivacyShield.shared.hide()
+                }
             }
         }
     }
@@ -173,23 +204,50 @@ struct RootView: View {
 
 struct CheckInTarget: Identifiable { let id: String }
 
-struct LockView: View {
+/// A window above everything else (sheets included) that hides the app while it's locked or in the app switcher.
+@MainActor
+final class PrivacyShield {
+    static let shared = PrivacyShield()
+    private var window: UIWindow?
+
+    func show(locked: Bool, accent: Color, unlock: @escaping () -> Void) {
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        guard let scene = scenes.first(where: { $0.activationState == .foregroundActive || $0.activationState == .foregroundInactive }) ?? scenes.first else { return }
+        let w = window ?? UIWindow(windowScene: scene)
+        w.windowLevel = .alert + 1
+        w.backgroundColor = .systemBackground
+        w.rootViewController = UIHostingController(rootView: ShieldView(locked: locked, unlock: unlock).tint(accent))
+        w.isHidden = false
+        window = w
+    }
+
+    func hide() {
+        window?.isHidden = true
+        window = nil
+    }
+}
+
+struct ShieldView: View {
+    let locked: Bool
     let unlock: () -> Void
+
     var body: some View {
         ZStack {
             Color(uiColor: .systemBackground).ignoresSafeArea()
             VStack(spacing: 14) {
-                Image(systemName: "lock.fill")
+                Image(systemName: locked ? "lock.fill" : "pills.fill")
                     .font(.system(size: 44, weight: .semibold))
                     .foregroundStyle(Palette.secondary)
-                Text("Med Jars Is Locked").font(.title2.weight(.bold))
-                Text("Unlock to see your jars and dose log.").font(.subheadline).foregroundStyle(Palette.secondary)
-                Button(action: unlock) {
-                    Label("Unlock with Face ID", systemImage: "faceid").font(.headline).padding(.horizontal, 6)
+                Text(locked ? "Med Jars Is Locked" : "Med Jars").font(.title2.weight(.bold))
+                if locked {
+                    Text("Unlock to see your jars and dose log.").font(.subheadline).foregroundStyle(Palette.secondary)
+                    Button(action: unlock) {
+                        Label("Unlock with Face ID", systemImage: "faceid").font(.headline).padding(.horizontal, 6)
+                    }
+                    .prominentButton()
+                    .controlSize(.large)
+                    .padding(.top, 8)
                 }
-                .prominentButton()
-                .controlSize(.large)
-                .padding(.top, 8)
             }
             .padding(32)
         }

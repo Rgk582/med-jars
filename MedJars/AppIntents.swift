@@ -56,15 +56,37 @@ struct LogNextDoseIntent: AppIntent {
         guard let j = store.jar(jar.id) else {
             return .result(dialog: "That jar isn't in Med Jars anymore.")
         }
-        let rows = DoseLogic.rows(for: j, entries: store.entries)
-        guard let next = DoseLogic.suggestion(rows) else {
-            return .result(dialog: "Every \(j.name) dose is already logged today.")
+        guard j.isActive() else {
+            return .result(dialog: IntentDialog(stringLiteral: "\(j.name) is \(j.paused ? "paused" : "on a break"), so nothing was logged."))
         }
-        guard let entry = store.log(jarId: j.id, slot: next.slot, amount: next.slot.amount, pills: next.slot.pills, at: Date()) else {
+        if j.asNeeded, let slot = j.asNeededSlot {
+            let warnings = store.logWarnings(jar: j, slot: slot)
+            if !warnings.isEmpty {
+                return .result(dialog: IntentDialog(stringLiteral: "Not logged. " + warnings.joined(separator: " ") + " Open Med Jars to log it anyway."))
+            }
+            guard let entry = store.log(jarId: j.id, slot: slot, amount: slot.amount, pills: slot.pills, at: Date()) else {
+                return .result(dialog: "Couldn't log that dose.")
+            }
+            return .result(dialog: IntentDialog(stringLiteral: "Logged \(entry.amount.isEmpty ? j.name : "\(entry.amount) of \(j.name)") at \(Format.time12(entry.takenAt))."))
+        }
+        // Only a dose that's due now or was missed in the last 3 hours. Never an early one.
+        guard let slot = DoseLogic.dueSlot(for: j, entries: store.entries) else {
+            if let next = DoseLogic.nextDose(jars: [j], entries: store.entries) {
+                return .result(dialog: IntentDialog(stringLiteral: "Nothing is due right now. Your next \(j.name) dose is at \(Format.time12(next.time))."))
+            }
+            return .result(dialog: IntentDialog(stringLiteral: "Every \(j.name) dose is already logged today."))
+        }
+        let interactionWarnings = store.logWarnings(jar: j, slot: slot).filter { $0.contains("Interaction") }
+        if interactionWarnings.contains(where: { $0.hasPrefix("Major") }) {
+            return .result(dialog: IntentDialog(stringLiteral: "Not logged. " + interactionWarnings.joined(separator: " ") + " Open Med Jars to log it anyway."))
+        }
+        guard let entry = store.log(jarId: j.id, slot: slot, amount: slot.amount, pills: slot.pills, at: Date()) else {
             return .result(dialog: "Couldn't log that dose.")
         }
         let what = entry.amount.isEmpty ? j.name : "\(entry.amount) of \(j.name)"
-        return .result(dialog: "Logged \(what) at \(Format.time12(entry.takenAt)).")
+        var reply = "Logged \(what) at \(Format.time12(entry.takenAt))."
+        if !interactionWarnings.isEmpty { reply += " Heads up: " + interactionWarnings.joined(separator: " ") }
+        return .result(dialog: IntentDialog(stringLiteral: reply))
     }
 }
 
@@ -85,9 +107,10 @@ struct DoseStatusIntent: AppIntent {
         store.reload()
         guard let j = store.jar(jar.id) else { return .result(dialog: "That jar isn't in Med Jars anymore.") }
         let cal = Calendar.current
-        let today = store.entries.filter { $0.jarId == j.id && cal.isDateInToday($0.takenAt) }.sorted { $0.takenAt < $1.takenAt }
+        let today = DoseLogic.entriesToday(for: j.id, entries: store.entries).filter { !$0.skipped }.sorted { $0.takenAt < $1.takenAt }
+        _ = cal
         let rows = DoseLogic.rows(for: j, entries: store.entries)
-        let left = rows.filter { $0.slot.minutes != nil && !$0.status.isTaken }
+        let left = rows.filter { $0.slot.minutes != nil && !$0.status.isHandled }
         var parts: [String] = []
         if today.isEmpty {
             parts.append("No, you haven't logged \(j.name) today.")
@@ -119,7 +142,7 @@ struct TodayDosesIntent: AppIntent {
         store.reload()
         var left: [(Int, String)] = []
         for jar in store.jars {
-            for row in DoseLogic.rows(for: jar, entries: store.entries) where row.slot.minutes != nil && !row.status.isTaken {
+            for row in DoseLogic.rows(for: jar, entries: store.entries) where row.slot.minutes != nil && !row.status.isHandled {
                 left.append((row.slot.minutes ?? 0, "\(jar.name) at \(Format.time12(row.slot.time))"))
             }
         }

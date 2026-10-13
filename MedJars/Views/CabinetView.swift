@@ -1,5 +1,18 @@
 import SwiftUI
 
+/// A dose waiting for "Log Anyway" because something about it needs a second look.
+struct PendingLog: Identifiable {
+    let id = UUID()
+    let jar: Jar
+    let slot: DoseSlot
+    let warnings: [String]
+    var title: String {
+        if warnings.contains(where: { $0.hasPrefix("Major") }) { return "Major Interaction" }
+        if warnings.contains(where: { $0.hasPrefix("Moderate") }) { return "Moderate Interaction" }
+        return "Log This Dose?"
+    }
+}
+
 struct CabinetView: View {
     @Environment(AppStore.self) private var store
     @Environment(Router.self) private var router
@@ -7,9 +20,11 @@ struct CabinetView: View {
     @State private var unknownTag: UnknownTag?
     @State private var scanAlert: ScanAlert?
     @State private var toast: DoseEntry?
+    @State private var pending: PendingLog?
+    @State private var addingCaffeine = false
 
     var body: some View {
-        TimelineView(.everyMinute) { context in
+        TimelineView(.explicit(DoseLogic.refreshDates(jars: store.jars))) { context in
             Group {
                 if store.jars.isEmpty {
                     ContentUnavailableView {
@@ -21,7 +36,7 @@ struct CabinetView: View {
                             .prominentButton()
                     }
                 } else {
-                    list(now: context.date)
+                    list(now: max(context.date, Date()))
                 }
             }
         }
@@ -63,10 +78,18 @@ struct CabinetView: View {
         }
         .sheet(item: $editing) { JarEditorView(target: $0) }
         .sheet(item: $unknownTag) { UnknownTagSheet(tag: $0.tag) { editing = $0 } }
+        .sheet(isPresented: $addingCaffeine) { CaffeineAddSheet() }
         .alert("Can't Scan", isPresented: Binding(get: { scanAlert != nil }, set: { if !$0 { scanAlert = nil } })) {
             Button("OK", role: .cancel) {}
         } message: {
             Text(scanAlert?.message ?? "")
+        }
+        .confirmationDialog(pending?.title ?? "Log This Dose?", isPresented: Binding(get: { pending != nil }, set: { if !$0 { pending = nil } }),
+                            titleVisibility: .visible, presenting: pending) { p in
+            Button("Log Anyway") { commit(p.jar, p.slot) }
+            Button("Cancel", role: .cancel) {}
+        } message: { p in
+            Text(p.warnings.joined(separator: "\n"))
         }
     }
 
@@ -82,9 +105,17 @@ struct CabinetView: View {
                 Section("Today") {
                     ForEach(items) { item in
                         NavigationLink(value: Route.jar(item.jar.id)) {
-                            TodayRow(jar: item.jar, row: item.row) { log(item.jar, item.row.slot) }
+                            TodayRow(jar: item.jar, row: item.row) { requestLog(item.jar, item.row.slot) }
                         }
                     }
+                }
+            }
+
+            if store.caffeineTrackerOn {
+                Section {
+                    CaffeineSummaryRow(onAdd: { addingCaffeine = true })
+                } header: {
+                    Text("Caffeine")
                 }
             }
 
@@ -97,7 +128,7 @@ struct CabinetView: View {
             }
 
             if let err = store.saveError {
-                Section { Text(err).foregroundStyle(Palette.missed) }
+                Section { Label(err, systemImage: "exclamationmark.triangle.fill").foregroundStyle(Palette.missed) }
             }
         }
         .listStyle(.insetGrouped)
@@ -115,7 +146,7 @@ struct CabinetView: View {
         }
         .sorted { a, b in
             switch (a.row.slot.minutes, b.row.slot.minutes) {
-            case let (x?, y?): return x < y
+            case let (x?, y?): return DoseLogic.order(x) < DoseLogic.order(y)
             case (_?, nil): return true
             case (nil, _?): return false
             default: return a.jar.name < b.jar.name
@@ -123,8 +154,13 @@ struct CabinetView: View {
         }
     }
 
-    private func log(_ jar: Jar, _ slot: DoseSlot) {
-        guard let entry = store.logSlot(jarId: jar.id, slotId: slot.id) else { return }
+    private func requestLog(_ jar: Jar, _ slot: DoseSlot) {
+        let warnings = store.logWarnings(jar: jar, slot: slot)
+        if warnings.isEmpty { commit(jar, slot) } else { pending = PendingLog(jar: jar, slot: slot, warnings: warnings) }
+    }
+
+    private func commit(_ jar: Jar, _ slot: DoseSlot) {
+        guard let entry = store.log(jarId: jar.id, slot: slot, amount: slot.amount, pills: slot.pills, at: Date()) else { return }
         Haptics.logged()
         withAnimation(.snappy) { toast = entry }
     }
@@ -173,28 +209,42 @@ private struct SummaryRow: View {
             }
         }
         .padding(.vertical, 6)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(total == 0 ? "No scheduled doses today" : "\(taken) of \(total) doses logged today")
     }
 }
 
 private struct TodayRow: View {
     @Environment(AppStore.self) private var store
+    @Environment(\.dynamicTypeSize) private var typeSize
     let jar: Jar
     let row: SlotRow
     let onLog: () -> Void
 
-    var body: some View {
-        HStack(spacing: 12) {
-            JarIcon(jar: jar, size: 40)
-            VStack(alignment: .leading, spacing: 2) {
-                JarNameStack(jar: jar)
-                Text([row.slot.minutes == nil ? "Any time" : Format.time12(row.slot.time), row.slot.amountLine(jar.form)]
-                        .filter { !$0.isEmpty }.joined(separator: " \u{00B7} "))
+    private var isPRN: Bool { row.slot.minutes == nil }
+
+    @ViewBuilder private var detail: some View {
+        if isPRN {
+            if let last = store.lastTaken(for: jar.id) {
+                (Text("As needed \u{00B7} last ") + Text(last.takenAt, style: .relative) + Text(" ago"))
                     .font(.footnote).foregroundStyle(Palette.secondary)
-                    .monospacedDigit()
+            } else {
+                Text(["As needed", row.slot.amountLine(jar.form)].filter { !$0.isEmpty }.joined(separator: " \u{00B7} "))
+                    .font(.footnote).foregroundStyle(Palette.secondary)
             }
-            Spacer(minLength: 8)
+        } else {
+            Text([Format.time12(row.slot.time), row.slot.amountLine(jar.form)].filter { !$0.isEmpty }.joined(separator: " \u{00B7} "))
+                .font(.footnote).foregroundStyle(Palette.secondary)
+                .monospacedDigit()
+        }
+    }
+
+    @ViewBuilder private var trailing: some View {
+        if isPRN {
+            logButton
+        } else {
             switch row.status {
-            case .taken:
+            case .taken, .skipped:
                 StatusLabel(status: row.status, compact: true)
                     .font(.subheadline.weight(.semibold))
                     .labelStyle(.titleAndIcon)
@@ -204,14 +254,42 @@ private struct TodayRow: View {
                     .labelStyle(.iconOnly)
                     .accessibilityLabel("Later")
             default:
-                Button("Log", action: onLog)
-                    .font(.subheadline.weight(.semibold))
-                    .buttonStyle(.bordered)
-                    .buttonBorderShape(.capsule)
-                    .tint(row.status == .missed ? Palette.missed : store.accentColor)
+                logButton
             }
         }
-        .padding(.vertical, 2)
+    }
+
+    private var logButton: some View {
+        Button("Log", action: onLog)
+            .font(.subheadline.weight(.semibold))
+            .buttonStyle(.bordered)
+            .buttonBorderShape(.capsule)
+            .tint(row.status == .missed ? Palette.missed : store.accentColor)
+    }
+
+    var body: some View {
+        if typeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 12) {
+                    JarIcon(jar: jar, size: 40)
+                    JarNameStack(jar: jar)
+                }
+                detail
+                trailing
+            }
+            .padding(.vertical, 4)
+        } else {
+            HStack(spacing: 12) {
+                JarIcon(jar: jar, size: 40)
+                VStack(alignment: .leading, spacing: 2) {
+                    JarNameStack(jar: jar)
+                    detail
+                }
+                Spacer(minLength: 8)
+                trailing
+            }
+            .padding(.vertical, 2)
+        }
     }
 }
 
@@ -223,6 +301,7 @@ private struct JarRow: View {
     var body: some View {
         HStack(spacing: 12) {
             JarIcon(jar: jar, size: 40)
+                .opacity(jar.isActive(on: now) ? 1 : 0.45)
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     JarNameStack(jar: jar)
@@ -232,7 +311,13 @@ private struct JarRow: View {
                     }
                 }
                 Text("\(jar.kind.label) \u{00B7} \(jar.frequencyText)").font(.footnote).foregroundStyle(Palette.secondary)
-                if jar.isLow {
+                if jar.paused {
+                    Label("Paused", systemImage: "pause.circle.fill").font(.footnote.weight(.semibold)).foregroundStyle(Palette.secondary)
+                } else if jar.onBreakNow, let until = jar.breakUntil {
+                    Label("On break until \(until.formatted(.dateTime.month(.abbreviated).day()))", systemImage: "calendar.badge.minus")
+                        .font(.footnote.weight(.semibold)).foregroundStyle(Palette.secondary)
+                }
+                if jar.isLow && jar.isActive(on: now) {
                     Label(jar.daysLeft.map { "Refill soon, \($0) day\($0 == 1 ? "" : "s") left" } ?? "Refill soon",
                           systemImage: "exclamationmark.triangle.fill")
                         .font(.footnote.weight(.semibold))
@@ -240,12 +325,13 @@ private struct JarRow: View {
                 }
             }
             Spacer(minLength: 8)
-            let timed = jar.timedSlots.count
-            if timed > 0 {
-                let taken = DoseLogic.rows(for: jar, entries: store.entries, now: now).filter { $0.slot.minutes != nil && $0.status.isTaken }.count
-                Text("\(taken)/\(timed)")
+            let rows = DoseLogic.rows(for: jar, entries: store.entries, now: now).filter { $0.slot.minutes != nil }
+            if !rows.isEmpty {
+                let done = rows.filter { $0.status.isHandled }.count
+                Text("\(done)/\(rows.count)")
                     .font(.subheadline).monospacedDigit()
-                    .foregroundStyle(taken == timed ? Palette.taken : Palette.secondary)
+                    .foregroundStyle(done == rows.count ? Palette.taken : Palette.secondary)
+                    .accessibilityLabel("\(done) of \(rows.count) doses done today")
             }
         }
         .padding(.vertical, 2)

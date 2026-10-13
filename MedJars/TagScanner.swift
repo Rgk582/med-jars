@@ -42,6 +42,8 @@ final class TagScanner: NSObject, NFCTagReaderSessionDelegate {
             completion(.failure(.unsupported))
             return
         }
+        // A scan is already open: ignore the second tap instead of losing the first result.
+        guard session == nil, self.completion == nil else { return }
         self.completion = completion
         guard let session = NFCTagReaderSession(pollingOption: [.iso14443, .iso15693], delegate: self, queue: nil) else {
             finish(.failure(.notAllowed))

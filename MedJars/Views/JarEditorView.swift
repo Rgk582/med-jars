@@ -21,6 +21,20 @@ struct JarEditorView: View {
     @State private var newTagUID: String?
     @State private var removeTags = false
     @State private var scanAlert: ScanAlert?
+    @State private var prnAmount = ""
+    @State private var prnPills = ""
+    @State private var interactionLevels: [String: InteractionLevel] = [:]
+
+    private func effectBinding<T>(_ kp: WritableKeyPath<EffectProfile, T>) -> Binding<T> {
+        Binding(get: { (draft.effect ?? EffectProfile())[keyPath: kp] },
+                set: { var e = draft.effect ?? EffectProfile(); e[keyPath: kp] = $0; draft.effect = e })
+    }
+
+    private func interactionBinding(_ otherId: String) -> Binding<InteractionLevel?> {
+        Binding(get: { interactionLevels[otherId] }, set: { interactionLevels[otherId] = $0 })
+    }
+
+    private var otherJars: [Jar] { store.jars.filter { $0.id != draft.id || isNew } }
 
     private var isNew: Bool { target.jar == nil }
 
@@ -113,19 +127,57 @@ struct JarEditorView: View {
                 }
 
                 Section {
-                    ForEach($draft.schedule) { $slot in
-                        SlotEditorRow(slot: $slot, form: draft.form)
-                    }
-                    .onDelete { draft.schedule.remove(atOffsets: $0) }
-                    Button {
-                        draft.schedule.append(DoseSlot(label: "", time: "08:00", amount: "", pills: 1))
-                    } label: {
-                        Label("Add Dose Time", systemImage: "plus.circle.fill")
+                    Toggle("As Needed", isOn: $draft.asNeeded)
+                        .onChange(of: draft.asNeeded) { _, on in
+                            if !on && draft.schedule.allSatisfy({ $0.minutes == nil }) {
+                                draft.schedule = [DoseSlot(label: "Morning", time: "08:00", amount: prnAmount,
+                                                           pills: Double(prnPills.replacingOccurrences(of: ",", with: ".")) ?? 1)]
+                            }
+                        }
+                    if draft.asNeeded {
+                        LabeledContent("Usual Dose") {
+                            TextField("e.g. 200 mg", text: $prnAmount).multilineTextAlignment(.trailing)
+                        }
+                        LabeledContent(draft.form.plural.capitalized) {
+                            TextField("e.g. 1", text: $prnPills).keyboardType(.decimalPad).multilineTextAlignment(.trailing)
+                        }
+                    } else {
+                        ForEach($draft.schedule) { $slot in
+                            SlotEditorRow(slot: $slot, form: draft.form)
+                        }
+                        .onDelete { draft.schedule.remove(atOffsets: $0) }
+                        Button {
+                            draft.schedule.append(DoseSlot(label: "", time: "08:00", amount: "", pills: 1))
+                        } label: {
+                            Label("Add Dose Time", systemImage: "plus.circle.fill")
+                        }
                     }
                 } header: {
-                    Text("Dose Times")
+                    Text("Doses")
                 } footer: {
-                    Text("Swipe left on a dose time to remove it. Turn off Set Time for an as needed dose.")
+                    Text(draft.asNeeded
+                         ? "No set times. Log a dose whenever you take one."
+                         : "Swipe left on a dose time to remove it. Doses between midnight and 4 AM count toward the day before.")
+                }
+
+                if draft.asNeeded {
+                    Section {
+                        Picker("Minimum Gap", selection: $draft.minGapMinutes) {
+                            Text("None").tag(0)
+                            ForEach([60, 120, 180, 240, 360, 480, 720, 1440], id: \.self) { Text(Format.duration($0)).tag($0) }
+                        }
+                        Stepper(value: $draft.maxPerDay, in: 0...12) {
+                            LabeledContent("Daily Max", value: draft.maxPerDay == 0 ? "None" : "\(draft.maxPerDay)")
+                        }
+                        Picker("Follow-Up Reminder", selection: $draft.followUpMinutes) {
+                            Text("Off").tag(0)
+                            ForEach([30, 60, 120, 180, 240, 360, 480], id: \.self) { Text("After \(Format.duration($0))").tag($0) }
+                        }
+                    } header: {
+                        Text("As-Needed Safety")
+                    } footer: {
+                        Text("You're warned before logging inside the minimum gap or past the daily max. The follow-up reminder fires once after each dose.")
+                    }
                 }
 
                 Section {
@@ -169,15 +221,90 @@ struct JarEditorView: View {
                     Text(trackSupply ? "Each logged dose counts down. You get a notification when you reach the warning." : "Count pills down as you log and get a refill warning.")
                 }
 
-                Section {
-                    Toggle("Missed-Dose Nudge", isOn: $draft.nudge)
-                    if draft.nudge {
-                        Picker("Nudge After", selection: $draft.nudgeMinutes) {
-                            ForEach([15, 30, 45, 60, 90, 120], id: \.self) { Text(minutesLabel($0)).tag($0) }
+                if !draft.asNeeded {
+                    Section {
+                        Toggle("Keep Reminding Until Logged", isOn: $draft.nudge)
+                        if draft.nudge {
+                            Picker("Remind Every", selection: $draft.nudgeMinutes) {
+                                ForEach([5, 10, 15, 30, 45, 60, 90, 120], id: \.self) { Text(minutesLabel($0)).tag($0) }
+                            }
+                            Stepper(value: $draft.nudgeRepeats, in: 1...10) {
+                                LabeledContent("Up To", value: draft.nudgeRepeats == 1 ? "1 time" : "\(draft.nudgeRepeats) times")
+                            }
                         }
+                    } header: {
+                        Text("Missed Doses")
+                    } footer: {
+                        Text("Optional. After a dose time passes, you get another notification on this interval until you log or skip it.")
                     }
+                }
+
+                Section {
+                    Toggle("Effect Timeline and Duration", isOn: Binding(get: { draft.effect != nil },
+                                                            set: { draft.effect = $0 ? (draft.effect ?? EffectProfile()) : nil }))
+                    if let effect = draft.effect {
+                        Stepper(value: effectBinding(\.onsetMinutes), in: 5...720, step: 5) {
+                            LabeledContent("Kicks In After", value: Format.duration(effect.onsetMinutes))
+                        }
+                        Stepper(value: effectBinding(\.peakMinutes), in: 5...1440, step: 15) {
+                            LabeledContent("Peaks At", value: Format.duration(effect.peakMinutes))
+                        }
+                        Stepper(value: effectBinding(\.durationMinutes), in: 15...2880, step: 15) {
+                            LabeledContent("Effective Duration", value: Format.duration(effect.durationMinutes))
+                        }
+                        Toggle("Wearing-Off Alert", isOn: effectBinding(\.wearOffAlert))
+                        Toggle("Live Activity", isOn: effectBinding(\.liveActivity))
+                        EffectCurveShape(profile: effect)
+                            .fill(LinearGradient(colors: [draft.lid.color.opacity(0.4), draft.lid.color.opacity(0.05)], startPoint: .top, endPoint: .bottom))
+                            .overlay(EffectCurveShape(profile: effect, filled: false).stroke(draft.lid.color, lineWidth: 2))
+                            .frame(height: 70)
+                            .padding(.vertical, 4)
+                    }
+                } header: {
+                    Text("Effect and Duration")
                 } footer: {
-                    Text("A second notification if a dose still isn't logged after this long.")
+                    Text("Use the timings from your prescription info or your doctor. Effective duration is how long one dose keeps working. The Live Activity shows the curve and countdowns on your Lock Screen.")
+                }
+
+                if !otherJars.isEmpty {
+                    Section {
+                        ForEach(otherJars) { other in
+                            Picker(selection: interactionBinding(other.id)) {
+                                Text("None").tag(InteractionLevel?.none)
+                                ForEach(InteractionLevel.allCases.reversed()) { level in
+                                    Label(level.short, systemImage: level.symbol).tag(InteractionLevel?.some(level))
+                                }
+                            } label: {
+                                JarNameStack(jar: other)
+                            }
+                        }
+                    } header: {
+                        Text("Interactions")
+                    } footer: {
+                        Text("Mark jars that interact with this one in a potentially dangerous way. The same level shows on both jars, and you're warned before logging while the other is still active.")
+                    }
+                }
+
+                Section {
+                    Toggle("Pause Jar", isOn: $draft.paused)
+                    Toggle("Schedule a Break", isOn: Binding(get: { draft.breakFrom != nil }, set: { on in
+                        if on {
+                            draft.breakFrom = Calendar.current.startOfDay(for: Date())
+                            draft.breakUntil = Calendar.current.date(byAdding: .day, value: 7, to: draft.breakFrom ?? Date())
+                        } else {
+                            draft.breakFrom = nil
+                            draft.breakUntil = nil
+                        }
+                    }))
+                    if draft.breakFrom != nil {
+                        DatePicker("From", selection: Binding(get: { draft.breakFrom ?? Date() }, set: { draft.breakFrom = $0 }), displayedComponents: .date)
+                        DatePicker("Until", selection: Binding(get: { draft.breakUntil ?? Date() }, set: { draft.breakUntil = $0 }),
+                                   in: (draft.breakFrom ?? Date())..., displayedComponents: .date)
+                    }
+                } header: {
+                    Text("Pause or Break")
+                } footer: {
+                    Text("Paused and on-break jars send no reminders, nudges, check-ins or refill alerts and aren't tracked in Today. A break ends by itself; a pause lasts until you turn it off.")
                 }
 
                 Section {
@@ -273,6 +400,11 @@ struct JarEditorView: View {
             tagId = jar.id
             trackSupply = jar.pillsLeft != nil
             supplyText = Format.number(jar.pillsLeft)
+            if let prn = jar.asNeededSlot {
+                prnAmount = prn.amount
+                prnPills = Format.number(prn.pills)
+            }
+            for (other, level) in store.interactions(for: jar.id) { interactionLevels[other.id] = level }
         } else {
             var j = Jar(id: "", name: "")
             let used = Set(store.jars.map(\.lid))
@@ -303,6 +435,21 @@ struct JarEditorView: View {
         jar.strength = jar.strength.trimmingCharacters(in: .whitespacesAndNewlines)
         jar.labelName = jar.labelName.trimmingCharacters(in: .whitespacesAndNewlines)
         if removeTags { jar.tagIds = [] }
+        if jar.asNeeded {
+            let existing = jar.schedule.first { $0.minutes == nil }
+            jar.schedule = [DoseSlot(id: existing?.id ?? "prn", label: "As Needed", time: nil,
+                                     amount: prnAmount.trimmingCharacters(in: .whitespaces),
+                                     pills: Double(prnPills.replacingOccurrences(of: ",", with: ".").trimmingCharacters(in: .whitespaces)))]
+        } else {
+            jar.minGapMinutes = 0
+            jar.maxPerDay = 0
+            jar.followUpMinutes = 0
+        }
+        if let from = jar.breakFrom, let until = jar.breakUntil, until < from {
+            jar.breakFrom = until
+            jar.breakUntil = from
+        }
+        if let e = jar.effect { jar.effect = e.normalized }
         if trackSupply {
             let n = Double(supplyText.replacingOccurrences(of: ",", with: ".").trimmingCharacters(in: .whitespaces))
             guard let n, n >= 0 else { problem = "Enter how many \(jar.form.plural) are in the jar, or turn off Track Pills Left."; return }
@@ -321,6 +468,7 @@ struct JarEditorView: View {
             }
             .filter { !$0.label.isEmpty || $0.time != nil || !$0.amount.isEmpty || $0.pills != nil }
         store.upsert(jar)
+        store.setInteractions(for: jar.id, interactionLevels.filter { $0.key != jar.id })
         if jar.nudge || jar.checkIn || jar.pillsLeft != nil {
             Task { _ = await Reminders.requestPermission() }
         }

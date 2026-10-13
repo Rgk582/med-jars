@@ -2,8 +2,32 @@ import AppIntents
 import WidgetKit
 import Foundation
 
+/// Logging from outside the app (widget button, Control Center). Needs the App Group to reach the app's data.
+enum ExtensionLog {
+    static let noAccessMessage = "Your certificate doesn't let widgets and Control Center reach Med Jars' data. Use the Open and Log control instead."
+
+    @discardableResult
+    static func log(jarId: String, slotId: String?, at now: Date = Date()) -> DoseEntry? {
+        var file = StoreIO.load()
+        guard let jar = file.jars.first(where: { $0.id == jarId }), jar.isActive(on: now) else { return nil }
+        let slot = slotId.flatMap { id in jar.sortedSchedule.first { $0.id == id } } ?? jar.asNeededSlot
+        if let slot, slot.minutes != nil,
+           file.entries.contains(where: { $0.jarId == jar.id && $0.slotId == slot.id && DoseLogic.sameDoseDay($0.takenAt, now) }) {
+            return nil
+        }
+        let entry = file.makeEntry(jar: jar, slot: slot, amount: slot?.amount ?? "", pills: slot?.pills, at: now)
+        let low = file.applyLog(entry)
+        guard (try? StoreIO.save(file)) != nil else { return nil }
+        Notify.afterLog(entry, jar: jar, lowSupply: low)
+        Notify.post(id: "logged.\(entry.id)", title: "Logged \(jar.name)",
+                    body: "\((slot?.amountLine(jar.form) ?? "").ifEmptyText("Dose")) at \(Format.time12(now)).")
+        WidgetCenter.shared.reloadAllTimelines()
+        ControlCenter.shared.reloadAllControls()
+        return entry
+    }
+}
+
 /// Control Center: logs the dose that's due now without opening the app.
-/// Runs in the widget extension, so it needs the App Group to reach the app's data.
 struct LogDueDoseIntent: AppIntent {
     static var title: LocalizedStringResource = "Log Due Dose"
     static var description = IntentDescription("Logs whichever scheduled dose is due right now.")
@@ -12,29 +36,42 @@ struct LogDueDoseIntent: AppIntent {
 
     func perform() async throws -> some IntentResult {
         guard StoreIO.isShared else {
-            Notify.post(title: "Couldn't log from Control Center",
-                        body: "Your certificate doesn't let Control Center reach Med Jars' data. Use the Open and Log control instead.")
+            Notify.post(title: "Couldn't log from Control Center", body: ExtensionLog.noAccessMessage)
             return .result()
         }
-        var file = StoreIO.load()
+        let file = StoreIO.load()
         guard let due = file.dueDose() else {
             let next = DoseLogic.nextDose(jars: file.jars, entries: file.entries)
             Notify.post(title: "Nothing due right now",
                         body: next.map { "Next up: \($0.jar.name) at \(Format.time12($0.time))." } ?? "No more doses scheduled.")
             return .result()
         }
-        let (jar, slot) = due
-        let now = Date()
-        let entry = file.makeEntry(jar: jar, slot: slot, amount: slot.amount, pills: slot.pills, at: now)
-        let low = file.applyLog(entry)
-        try StoreIO.save(file)
-        Notify.clear(jar: jar.id, slot: slot.id, day: now)
-        Notify.post(id: "logged.\(entry.id)", title: "Logged \(jar.name)",
-                    body: "\(slot.amountLine(jar.form).ifEmptyText("Dose")) at \(Format.time12(now)).")
-        if let low { Notify.lowSupply(low) }
-        if jar.checkIn { Notify.scheduleCheckIn(for: entry, after: jar.checkInMinutes) }
-        WidgetCenter.shared.reloadAllTimelines()
-        ControlCenter.shared.reloadAllControls()
+        ExtensionLog.log(jarId: due.0.id, slotId: due.1.id)
+        return .result()
+    }
+}
+
+/// Widget button: logs one specific dose.
+struct LogSlotIntent: AppIntent {
+    static var title: LocalizedStringResource = "Log This Dose"
+    static var isDiscoverable: Bool = false
+    static var openAppWhenRun: Bool = false
+
+    @Parameter(title: "Jar") var jarId: String
+    @Parameter(title: "Dose") var slotId: String
+
+    init() {}
+    init(jarId: String, slotId: String) {
+        self.jarId = jarId
+        self.slotId = slotId
+    }
+
+    func perform() async throws -> some IntentResult {
+        guard StoreIO.isShared else {
+            Notify.post(title: "Couldn't log from the widget", body: ExtensionLog.noAccessMessage)
+            return .result()
+        }
+        ExtensionLog.log(jarId: jarId, slotId: slotId.isEmpty ? nil : slotId)
         return .result()
     }
 }
@@ -47,5 +84,18 @@ struct OpenAndLogIntent: AppIntent {
 
     func perform() async throws -> some IntentResult & OpensIntent {
         .result(opensIntent: OpenURLIntent(URL(string: "medjars://log-next")!))
+    }
+}
+
+/// The text under the Control Center button: what's due next.
+struct NextDoseControlValue: ControlValueProvider {
+    var previewValue: String { "Next Dose" }
+
+    func currentValue() async throws -> String {
+        guard StoreIO.isShared else { return "Log Dose" }
+        let file = StoreIO.load()
+        if let due = file.dueDose() { return "\(due.0.name) now" }
+        guard let next = DoseLogic.nextDose(jars: file.jars, entries: file.entries) else { return "Log Dose" }
+        return "\(next.jar.name), \(Format.time12(next.time))"
     }
 }

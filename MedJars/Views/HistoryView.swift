@@ -102,7 +102,7 @@ struct HistoryView: View {
             JarIcon(jar: jar, size: 36)
             VStack(alignment: .leading, spacing: 2) {
                 JarNameStack(name: e.jarName, label: jar.labelName)
-                Text([e.amountLine, e.slotLabel, e.note].filter { !$0.isEmpty }.joined(separator: " \u{00B7} "))
+                Text((e.skipped ? ["Skipped", e.slotLabel, e.skipReason] : [e.amountLine, e.slotLabel, e.note]).filter { !$0.isEmpty }.joined(separator: " \u{00B7} "))
                     .font(.subheadline).foregroundStyle(Palette.secondary)
             }
             Spacer(minLength: 8)

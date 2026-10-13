@@ -39,6 +39,9 @@ targets:
           UIApplicationSupportsMultipleScenes: false
         NSFaceIDUsageDescription: Med Jars uses Face ID to keep your medications and dose log private.
         NFCReaderUsageDescription: Med Jars reads the NFC tag on a jar to open that jar.
+        NSHealthShareUsageDescription: Med Jars reads your medication list from the Health app so it can set up jars for you.
+        NSHealthUpdateUsageDescription: Med Jars does not write to the Health app.
+        NSSupportsLiveActivities: true
         com.apple.developer.nfc.readersession.iso7816.select-identifiers: [D2760000850101]
         CFBundleURLTypes:
           - CFBundleURLName: com.medjars.app
@@ -49,6 +52,9 @@ targets:
       properties:
         com.apple.security.application-groups: [group.com.medjars.app]
         com.apple.developer.nfc.readersession.formats: [TAG]
+        com.apple.developer.healthkit: true
+        com.apple.developer.healthkit.access: []
+        com.apple.developer.usernotifications.time-sensitive: true
     dependencies:
       - target: MedJarsWidget
     scheme: {}

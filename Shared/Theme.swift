@@ -53,6 +53,16 @@ struct JarIcon: View {
     }
 }
 
+extension InteractionLevel {
+    var color: Color {
+        switch self {
+        case .major: return .red
+        case .moderate: return .orange
+        case .minor: return .yellow
+        }
+    }
+}
+
 /// Status shown with a symbol and text, never color alone.
 struct StatusLabel: View {
     let status: SlotStatus
@@ -63,6 +73,8 @@ struct StatusLabel: View {
         case .taken(let e):
             Label(compact ? Format.time12(e.takenAt) : "Taken \(Format.time12(e.takenAt))", systemImage: "checkmark.circle.fill")
                 .foregroundStyle(Palette.taken)
+        case .skipped:
+            Label("Skipped", systemImage: "forward.end.circle").foregroundStyle(Palette.secondary)
         case .due:
             Label("Due Now", systemImage: "clock.fill").foregroundStyle(Palette.due)
         case .later:
