@@ -6,6 +6,7 @@ on:
     paths-ignore:
       - "ci/**"
       - ".github/workflows/preview.yml"
+      - ".github/workflows/crash-repro.yml"
       - "README.md"
   workflow_dispatch:
 
