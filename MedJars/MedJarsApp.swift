@@ -116,7 +116,7 @@ struct RootView: View {
                     }
                 }
         }
-        .tint(Palette.accent)
+        .tint(store.accentColor)
         .sheet(item: Binding(get: { router.checkInEntryId.map { CheckInTarget(id: $0) } },
                              set: { router.checkInEntryId = $0?.id })) { target in
             CheckInSheet(entryId: target.id)

@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import WidgetKit
+import SwiftUI
 
 @MainActor
 @Observable
@@ -32,6 +33,14 @@ final class AppStore {
 
     func setReminders(_ on: Bool) {
         settings.reminders = on
+        persist()
+    }
+
+    var accentColor: Color { AccentChoice.color(for: settings.accent) }
+
+    /// A preset id like "blue", a hex code, or nil for the default orange.
+    func setAccent(_ value: String?) {
+        settings.accent = value
         persist()
     }
 

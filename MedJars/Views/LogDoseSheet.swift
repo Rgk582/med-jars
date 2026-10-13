@@ -60,6 +60,7 @@ struct LogDoseSheet: View {
                 }
             }
             .navigationTitle(jar.name)
+            .tint(store.accentColor)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }

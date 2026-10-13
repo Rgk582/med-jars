@@ -193,6 +193,7 @@ struct JarEditorView: View {
                 }
             }
             .navigationTitle(isNew ? "New Jar" : "Edit Jar")
+            .tint(store.accentColor)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }

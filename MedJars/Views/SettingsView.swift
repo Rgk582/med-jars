@@ -40,6 +40,22 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section {
+                NavigationLink {
+                    ThemeView()
+                } label: {
+                    Label {
+                        LabeledContent("Theme", value: AccentChoice.name(for: store.settings.accent))
+                    } icon: {
+                        Image(systemName: "paintpalette.fill")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .frame(width: 29, height: 29)
+                            .background(store.accentColor.gradient, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                    }
+                }
+            }
+
+            Section {
                 Toggle(isOn: Binding(get: { store.settings.faceIDLock }, set: { toggleFaceID($0) })) {
                     Label { Text("Face ID Lock") } icon: { SettingsIcon(symbol: "faceid", color: .green) }
                 }
@@ -167,7 +183,7 @@ struct SettingsView: View {
 
     private func step(_ n: Int, _ text: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 10) {
-            Text("\(n)").font(.subheadline.weight(.semibold)).monospacedDigit().foregroundStyle(Palette.accent)
+            Text("\(n)").font(.subheadline.weight(.semibold)).monospacedDigit().foregroundStyle(.tint)
             Text(text).font(.subheadline).fixedSize(horizontal: false, vertical: true)
         }
     }

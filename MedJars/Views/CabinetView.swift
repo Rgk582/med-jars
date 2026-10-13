@@ -149,6 +149,7 @@ struct CabinetView: View {
 // MARK: - Rows
 
 private struct SummaryRow: View {
+    @Environment(AppStore.self) private var store
     let now: Date
     let taken: Int
     let total: Int
@@ -161,7 +162,7 @@ private struct SummaryRow: View {
                 Text("\(taken)").font(.headline).monospacedDigit()
             }
             .gaugeStyle(.accessoryCircularCapacity)
-            .tint(taken == total && total > 0 ? Palette.taken : Palette.accent)
+            .tint(taken == total && total > 0 ? Palette.taken : store.accentColor)
             .scaleEffect(0.95)
 
             VStack(alignment: .leading, spacing: 2) {
@@ -176,6 +177,7 @@ private struct SummaryRow: View {
 }
 
 private struct TodayRow: View {
+    @Environment(AppStore.self) private var store
     let jar: Jar
     let row: SlotRow
     let onLog: () -> Void
@@ -206,7 +208,7 @@ private struct TodayRow: View {
                     .font(.subheadline.weight(.semibold))
                     .buttonStyle(.bordered)
                     .buttonBorderShape(.capsule)
-                    .tint(row.status == .missed ? Palette.missed : Palette.accent)
+                    .tint(row.status == .missed ? Palette.missed : store.accentColor)
             }
         }
         .padding(.vertical, 2)
@@ -266,7 +268,7 @@ struct UnknownTagSheet: View {
                     VStack(spacing: 10) {
                         Image(systemName: "wave.3.right.circle.fill")
                             .font(.system(size: 52))
-                            .foregroundStyle(Palette.accent)
+                            .foregroundStyle(.tint)
                             .symbolRenderingMode(.hierarchical)
                         Text("New Tag").font(.title2.weight(.bold))
                         Text("Pick the jar this tag is stuck to. Next time you scan it, that jar opens.")
@@ -310,6 +312,7 @@ struct UnknownTagSheet: View {
                 }
             }
             .navigationTitle("Unknown Tag")
+            .tint(store.accentColor)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }

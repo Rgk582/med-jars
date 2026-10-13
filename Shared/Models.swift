@@ -253,6 +253,8 @@ struct AppSettings: Codable, Hashable {
     var reminders: Bool = false
     /// Folder (bookmark) the app writes an automatic backup into, like one in iCloud Drive.
     var backupBookmark: Data? = nil
+    /// Accent color: a preset name like "blue", or a hex code like "#5E5CE6". Nil means orange.
+    var accent: String? = nil
 }
 
 struct StoreFile: Codable {

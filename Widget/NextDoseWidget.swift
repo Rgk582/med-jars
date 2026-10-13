@@ -8,6 +8,7 @@ struct NextDoseEntry: TimelineEntry {
     let total: Int
     let hasJars: Bool
     let canRead: Bool
+    var accent: Color = .orange
 }
 
 struct NextDoseProvider: TimelineProvider {
@@ -47,7 +48,8 @@ struct NextDoseProvider: TimelineProvider {
         return NextDoseEntry(date: date,
                              next: DoseLogic.nextDose(jars: file.jars, entries: file.entries, at: date),
                              taken: counts.taken, total: counts.total,
-                             hasJars: !file.jars.isEmpty, canRead: StoreIO.isShared)
+                             hasJars: !file.jars.isEmpty, canRead: StoreIO.isShared,
+                             accent: AccentChoice.color(for: file.settings.accent))
     }
 }
 
@@ -108,7 +110,7 @@ struct NextDoseWidgetView: View {
                     Text("\(entry.taken)/\(entry.total)").font(.caption.weight(.semibold)).monospacedDigit().foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 0)
-                Text(timeText.uppercased()).font(.caption2.weight(.semibold)).foregroundStyle(Palette.accent).widgetAccentable()
+                Text(timeText.uppercased()).font(.caption2.weight(.semibold)).foregroundStyle(entry.accent).widgetAccentable()
                 Text(n.jar.name).font(.headline).lineLimit(2).minimumScaleFactor(0.8).privacySensitive()
                 Text(amountLine(n).ifEmptyFallback("Dose")).font(.subheadline).foregroundStyle(.secondary).lineLimit(1).privacySensitive()
             }
@@ -124,7 +126,7 @@ struct NextDoseWidgetView: View {
             HStack(spacing: 14) {
                 JarIcon(jar: n.jar, size: 56)
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("NEXT \u{00B7} \(timeText.uppercased())").font(.caption2.weight(.semibold)).foregroundStyle(Palette.accent).widgetAccentable()
+                    Text("NEXT \u{00B7} \(timeText.uppercased())").font(.caption2.weight(.semibold)).foregroundStyle(entry.accent).widgetAccentable()
                     Text(n.jar.name).font(.title3.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.8).privacySensitive()
                     Text([amountLine(n), n.slot.label].filter { !$0.isEmpty }.joined(separator: " \u{00B7} "))
                         .font(.subheadline).foregroundStyle(.secondary).lineLimit(1).privacySensitive()

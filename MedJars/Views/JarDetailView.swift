@@ -81,11 +81,11 @@ struct JarDetailView: View {
 
             Section("How to Take") {
                 if !jar.howTo.isEmpty {
-                    Label { Text(jar.howTo) } icon: { Image(systemName: "text.badge.checkmark").foregroundStyle(Palette.accent) }
+                    Label { Text(jar.howTo) } icon: { Image(systemName: "text.badge.checkmark").foregroundStyle(.tint) }
                 }
-                Label { Text(jar.food.label) } icon: { Image(systemName: jar.food.symbol).foregroundStyle(Palette.accent) }
+                Label { Text(jar.food.label) } icon: { Image(systemName: jar.food.symbol).foregroundStyle(.tint) }
                 if !jar.strength.isEmpty {
-                    Label { Text("\(jar.strength) per \(jar.form.singular)") } icon: { Image(systemName: jar.form.symbol).foregroundStyle(Palette.accent) }
+                    Label { Text("\(jar.strength) per \(jar.form.singular)") } icon: { Image(systemName: jar.form.symbol).foregroundStyle(.tint) }
                 }
             }
 
@@ -302,6 +302,7 @@ struct RefillSheet: View {
                 }
             }
             .navigationTitle("Refill \(jar.name)")
+            .tint(store.accentColor)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
@@ -365,11 +366,12 @@ private struct DoseRow: View {
                 .labelStyle(.titleAndIcon)
         }
         .padding(.vertical, 2)
-        .listRowBackground(isNext ? Palette.accent.opacity(0.14) : nil)
+        .listRowBackground(Rectangle().fill(isNext ? AnyShapeStyle(TintShapeStyle().opacity(0.14)) : AnyShapeStyle(Palette.card)))
     }
 }
 
 struct LogBar: View {
+    @Environment(AppStore.self) private var store
     let jar: Jar
     let rows: [SlotRow]
     let suggestion: SlotRow?
@@ -409,13 +411,12 @@ struct LogBar: View {
                     Text("Log").font(.headline).frame(minWidth: 64, minHeight: 30)
                 }
                 .prominentButton()
-                .tint(Palette.accent)
             } else {
                 Button { onOther() } label: {
                     Text(rows.isEmpty ? "Log" : "Log Extra").font(.headline).frame(minHeight: 30)
                 }
                 .prominentButton()
-                .tint(rows.isEmpty ? Palette.accent : .gray)
+                .tint(rows.isEmpty ? store.accentColor : .gray)
             }
         }
         .padding(.horizontal, 18).padding(.vertical, 12)

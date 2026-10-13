@@ -39,7 +39,7 @@ struct CheckInSheet: View {
                                         Text(effect).foregroundStyle(Palette.label)
                                         Spacer()
                                         if effects.contains(effect) {
-                                            Image(systemName: "checkmark").fontWeight(.semibold).foregroundStyle(Palette.accent)
+                                            Image(systemName: "checkmark").fontWeight(.semibold).foregroundStyle(.tint)
                                         }
                                     }
                                 }
@@ -64,6 +64,7 @@ struct CheckInSheet: View {
                 }
             }
             .navigationTitle("How Are You Feeling?")
+            .tint(store.accentColor)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
@@ -108,7 +109,7 @@ struct RatingPicker: View {
                             .font(.headline)
                             .frame(maxWidth: .infinity, minHeight: 40)
                             .foregroundStyle(value == n ? .white : Palette.label)
-                            .background(value == n ? Palette.accent : Palette.inset,
+                            .background(value == n ? AnyShapeStyle(.tint) : AnyShapeStyle(Palette.inset),
                                         in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                     }
                     .buttonStyle(.plain)
