@@ -160,9 +160,35 @@ struct NextDoseWidget: Widget {
     }
 }
 
+struct LogDueDoseControl: ControlWidget {
+    var body: some ControlWidgetConfiguration {
+        StaticControlConfiguration(kind: "com.medjars.app.control.log") {
+            ControlWidgetButton(action: LogDueDoseIntent()) {
+                Label("Log Dose", systemImage: "pills.fill")
+            }
+        }
+        .displayName("Log Due Dose")
+        .description("Logs the dose that's due now without opening Med Jars.")
+    }
+}
+
+struct OpenAndLogControl: ControlWidget {
+    var body: some ControlWidgetConfiguration {
+        StaticControlConfiguration(kind: "com.medjars.app.control.open") {
+            ControlWidgetButton(action: OpenAndLogIntent()) {
+                Label("Open and Log", systemImage: "pills.circle.fill")
+            }
+        }
+        .displayName("Open and Log Dose")
+        .description("Opens Med Jars and logs the dose that's due now.")
+    }
+}
+
 @main
 struct MedJarsWidgetBundle: WidgetBundle {
     var body: some Widget {
         NextDoseWidget()
+        LogDueDoseControl()
+        OpenAndLogControl()
     }
 }

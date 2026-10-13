@@ -14,19 +14,32 @@ enum Route: Hashable {
 final class Router {
     static let shared = Router()
     var path: [Route] = []
+    /// A dose whose check-in sheet should open.
+    var checkInEntryId: String?
 
     func open(jarId: String) {
         path = [.jar(jarId)]
     }
 
-    /// medjars://jar/<id>
+    /// medjars://jar/<id>, medjars://log, medjars://log-next, medjars://checkin/<entry id>
     func handle(_ url: URL) {
         guard url.scheme?.lowercased() == "medjars" else { return }
-        if url.host?.lowercased() == "jar", let id = url.pathComponents.dropFirst().first, !id.isEmpty {
-            open(jarId: id)
-        } else if url.host?.lowercased() == "log" {
+        let host = url.host?.lowercased() ?? ""
+        let first = url.pathComponents.dropFirst().first ?? ""
+        switch host {
+        case "jar" where !first.isEmpty:
+            open(jarId: first)
+        case "log":
             path = [.history]
-        } else {
+        case "log-next":
+            if let entry = AppStore.shared.logDueDose() {
+                open(jarId: entry.jarId)
+            } else {
+                path = []
+            }
+        case "checkin" where !first.isEmpty:
+            checkInEntryId = first
+        default:
             path = []
         }
     }
@@ -50,9 +63,15 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         let jarId = info["jarId"] as? String
         let slotId = info["slotId"] as? String
         let action = response.actionIdentifier
+        let entryId = info["entryId"] as? String
+        let category = response.notification.request.content.categoryIdentifier
         Task { @MainActor in
-            if let jarId {
-                if action == Reminders.logAction, let slotId {
+            if category == Notify.checkInCategory, let entryId {
+                AppStore.shared.reload()
+                Router.shared.checkInEntryId = entryId
+            } else if let jarId {
+                if action == Notify.logAction, let slotId {
+                    AppStore.shared.reload()
                     AppStore.shared.logSlot(jarId: jarId, slotId: slotId)
                 } else if action == UNNotificationDefaultActionIdentifier {
                     Router.shared.open(jarId: jarId)
@@ -98,6 +117,10 @@ struct RootView: View {
                 }
         }
         .tint(Palette.accent)
+        .sheet(item: Binding(get: { router.checkInEntryId.map { CheckInTarget(id: $0) } },
+                             set: { router.checkInEntryId = $0?.id })) { target in
+            CheckInSheet(entryId: target.id)
+        }
         .overlay {
             if store.isLocked {
                 LockView(unlock: authenticate)
@@ -147,6 +170,8 @@ struct RootView: View {
         }
     }
 }
+
+struct CheckInTarget: Identifiable { let id: String }
 
 struct LockView: View {
     let unlock: () -> Void

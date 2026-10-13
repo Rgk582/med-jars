@@ -1,5 +1,18 @@
 import SwiftUI
 import LocalAuthentication
+import UniformTypeIdentifiers
+
+struct BackupFile: Transferable {
+    let data: Data
+    static var transferRepresentation: some TransferRepresentation {
+        FileRepresentation(exportedContentType: .json) { item in
+            let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent("Med Jars Backup \(df.string(from: Date())).json")
+            try item.data.write(to: url, options: .atomic)
+            return SentTransferredFile(url)
+        }
+    }
+}
 
 /// Settings-app style icon: white symbol on a colored rounded square.
 private struct SettingsIcon: View {
@@ -19,6 +32,10 @@ struct SettingsView: View {
     @State private var importText = ""
     @State private var importResult: String?
     @State private var reminderNote: String?
+    @State private var picking = false
+    @State private var pickingFolder = false
+    @State private var pendingRestore: Data?
+    @State private var backupMessage: String?
 
     var body: some View {
         Form {
@@ -34,6 +51,42 @@ struct SettingsView: View {
                 }
             } footer: {
                 Text("Reminders arrive at each dose time with a Log button, and skip doses you already logged. Opening the app keeps the next week scheduled.")
+            }
+
+            Section {
+                ShareLink(item: BackupFile(data: store.backupData()), preview: SharePreview("Med Jars Backup")) {
+                    Label { Text("Export Backup").foregroundStyle(Palette.label) } icon: { SettingsIcon(symbol: "square.and.arrow.up", color: .blue) }
+                }
+                Button {
+                    pickingFolder = false
+                    picking = true
+                } label: {
+                    Label { Text("Restore from Backup").foregroundStyle(Palette.label) } icon: { SettingsIcon(symbol: "arrow.counterclockwise", color: .indigo) }
+                }
+                Button {
+                    pickingFolder = true
+                    picking = true
+                } label: {
+                    Label {
+                        LabeledContent("Automatic Backup", value: store.backupFolderName ?? "Off")
+                            .foregroundStyle(Palette.label)
+                    } icon: { SettingsIcon(symbol: "icloud.fill", color: .cyan) }
+                }
+                if store.backupFolderName != nil {
+                    Button("Back Up Now") {
+                        store.backupNow()
+                        backupMessage = store.backupError ?? "Backed up."
+                    }
+                    Button("Turn Off Automatic Backup", role: .destructive) { store.setBackupFolder(nil) }
+                }
+                if let message = backupMessage ?? store.backupError {
+                    Text(message).font(.footnote).foregroundStyle(store.backupError == nil ? Palette.secondary : Palette.missed)
+                }
+            } header: {
+                Text("Backup")
+            } footer: {
+                Text(store.lastBackup.map { "Pick a folder in iCloud Drive and every change is saved there as Med Jars Backup.json. Last backup: \($0.formatted(date: .abbreviated, time: .shortened))." }
+                     ?? "Pick a folder in iCloud Drive and every change is saved there as Med Jars Backup.json, so a reinstall never loses your log.")
             }
 
             Section {
@@ -90,6 +143,26 @@ struct SettingsView: View {
             }
         }
         .navigationTitle("Settings")
+        .fileImporter(isPresented: $picking, allowedContentTypes: pickingFolder ? [.folder] : [.json]) { result in
+            guard case .success(let url) = result else { return }
+            if pickingFolder {
+                store.setBackupFolder(url)
+                store.backupNow()
+                backupMessage = store.backupError ?? "Automatic backup is on."
+            } else {
+                let ok = url.startAccessingSecurityScopedResource()
+                defer { if ok { url.stopAccessingSecurityScopedResource() } }
+                if let data = try? Data(contentsOf: url) { pendingRestore = data } else { backupMessage = "Couldn't open that file." }
+            }
+        }
+        .confirmationDialog("Replace everything with this backup?", isPresented: Binding(get: { pendingRestore != nil }, set: { if !$0 { pendingRestore = nil } }), titleVisibility: .visible) {
+            Button("Replace All Data", role: .destructive) {
+                if let data = pendingRestore { backupMessage = store.restoreBackup(from: data) }
+                pendingRestore = nil
+            }
+        } message: {
+            Text("Your current jars and dose log are replaced by the ones in the backup.")
+        }
     }
 
     private func step(_ n: Int, _ text: String) -> some View {

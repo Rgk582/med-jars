@@ -51,11 +51,6 @@ extension String {
     func ifEmpty(_ fallback: String) -> String { isEmpty ? fallback : self }
 }
 
-extension DoseSlot {
-    func amountLine(_ form: PillForm) -> String {
-        [amount, Format.pills(pills, form)].filter { !$0.isEmpty }.joined(separator: " \u{00B7} ")
-    }
-}
 
 extension DoseEntry {
     var amountLine: String {

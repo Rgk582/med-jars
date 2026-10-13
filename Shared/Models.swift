@@ -117,11 +117,24 @@ struct Jar: Codable, Identifiable, Hashable {
     var order: Int = 0
     /// NFC tag hardware IDs (hex) paired with this jar.
     var tagIds: [String] = []
+    /// Pills left in the jar, or nil when supply isn't tracked.
+    var pillsLeft: Double? = nil
+    /// Warn when this many days of pills are left.
+    var refillWarnDays: Int = 7
+    /// Set once the low-supply warning has been sent, cleared on refill.
+    var lowNotified: Bool = false
+    /// Second reminder when a dose hasn't been logged.
+    var nudge: Bool = false
+    var nudgeMinutes: Int = 30
+    /// Ask how you feel after each dose.
+    var checkIn: Bool = false
+    var checkInMinutes: Int = 60
 
     init(id: String, name: String) { self.id = id; self.name = name }
 
     enum CodingKeys: String, CodingKey {
         case id, name, kind, form, strength, lid, schedule, howTo, food, avoid, absorb, summary, order, tagIds
+        case pillsLeft, refillWarnDays, lowNotified, nudge, nudgeMinutes, checkIn, checkInMinutes
     }
 
     /// Tolerant decoding so jars pasted from the web cabinet (or older files) import cleanly.
@@ -144,6 +157,38 @@ struct Jar: Codable, Identifiable, Hashable {
         summary = (try? c.decodeIfPresent(String.self, forKey: .summary)) ?? ""
         order = (try? c.decodeIfPresent(Int.self, forKey: .order)) ?? 0
         tagIds = (try? c.decodeIfPresent([String].self, forKey: .tagIds)) ?? []
+        pillsLeft = try? c.decodeIfPresent(Double.self, forKey: .pillsLeft)
+        refillWarnDays = (try? c.decodeIfPresent(Int.self, forKey: .refillWarnDays)) ?? 7
+        lowNotified = (try? c.decodeIfPresent(Bool.self, forKey: .lowNotified)) ?? false
+        nudge = (try? c.decodeIfPresent(Bool.self, forKey: .nudge)) ?? false
+        nudgeMinutes = (try? c.decodeIfPresent(Int.self, forKey: .nudgeMinutes)) ?? 30
+        checkIn = (try? c.decodeIfPresent(Bool.self, forKey: .checkIn)) ?? false
+        checkInMinutes = (try? c.decodeIfPresent(Int.self, forKey: .checkInMinutes)) ?? 60
+    }
+
+    /// Pills taken per day across the timed doses, nil if any count is missing.
+    var pillsPerDay: Double? {
+        let slots = timedSlots
+        guard !slots.isEmpty else { return nil }
+        var total = 0.0
+        for s in slots {
+            guard let p = s.pills else { return nil }
+            total += p
+        }
+        return total > 0 ? total : nil
+    }
+
+    /// Whole days of supply left, when it can be worked out.
+    var daysLeft: Int? {
+        guard let left = pillsLeft, let perDay = pillsPerDay else { return nil }
+        return Int((left / perDay).rounded(.down))
+    }
+
+    var isLow: Bool {
+        guard let left = pillsLeft else { return false }
+        if left <= 0 { return true }
+        guard let d = daysLeft else { return false }
+        return d <= refillWarnDays
     }
 
     var initials: String {
@@ -188,11 +233,26 @@ struct DoseEntry: Codable, Identifiable, Hashable {
     var slotLabel: String
     var takenAt: Date
     var note: String = ""
+    var checkIn: CheckIn? = nil
+}
+
+/// How a dose felt. Ratings run 1 (poor) to 5 (great).
+struct CheckIn: Codable, Hashable {
+    var focus: Int
+    var mood: Int
+    var sideEffects: [String] = []
+    var note: String = ""
+    var at: Date = Date()
+
+    static let commonSideEffects = ["Headache", "Low appetite", "Jittery", "Anxious", "Trouble sleeping",
+                                    "Dry mouth", "Upset stomach", "Tired", "Crash", "Irritable"]
 }
 
 struct AppSettings: Codable, Hashable {
     var faceIDLock: Bool = false
     var reminders: Bool = false
+    /// Folder (bookmark) the app writes an automatic backup into, like one in iCloud Drive.
+    var backupBookmark: Data? = nil
 }
 
 struct StoreFile: Codable {
@@ -200,6 +260,53 @@ struct StoreFile: Codable {
     var jars: [Jar] = []
     var entries: [DoseEntry] = []
     var settings: AppSettings = AppSettings()
+}
+
+/// Logging rules shared by the app, Siri and the Control Center button.
+extension StoreFile {
+    /// Adds a dose and counts its pills down from the jar's supply.
+    /// Returns the jar if this log just crossed its low-supply line.
+    @discardableResult
+    mutating func applyLog(_ entry: DoseEntry) -> Jar? {
+        entries.insert(entry, at: 0)
+        entries.sort { $0.takenAt > $1.takenAt }
+        guard let i = jars.firstIndex(where: { $0.id == entry.jarId }), let left = jars[i].pillsLeft, let p = entry.pills else { return nil }
+        jars[i].pillsLeft = max(0, left - p)
+        if jars[i].isLow && !jars[i].lowNotified {
+            jars[i].lowNotified = true
+            return jars[i]
+        }
+        return nil
+    }
+
+    /// Removes a dose and puts its pills back.
+    mutating func removeLog(_ id: String) -> DoseEntry? {
+        guard let idx = entries.firstIndex(where: { $0.id == id }) else { return nil }
+        let entry = entries.remove(at: idx)
+        if let i = jars.firstIndex(where: { $0.id == entry.jarId }), let left = jars[i].pillsLeft, let p = entry.pills {
+            jars[i].pillsLeft = left + p
+            if !jars[i].isLow { jars[i].lowNotified = false }
+        }
+        return entry
+    }
+
+    /// The scheduled dose that's due right now across every jar (within an hour either side), earliest first.
+    func dueDose(at now: Date = Date()) -> (Jar, DoseSlot)? {
+        var best: (Jar, DoseSlot, Int)?
+        for jar in jars {
+            for row in DoseLogic.rows(for: jar, entries: entries, now: now) where row.status == .due || row.status == .missed {
+                guard let m = row.slot.minutes else { continue }
+                if row.status == .missed && row.distance > 180 { continue }
+                if best == nil || m < best!.2 { best = (jar, row.slot, m) }
+            }
+        }
+        return best.map { ($0.0, $0.1) }
+    }
+
+    func makeEntry(jar: Jar, slot: DoseSlot?, amount: String, pills: Double?, at date: Date, note: String = "") -> DoseEntry {
+        DoseEntry(jarId: jar.id, jarName: jar.name, kind: jar.kind, form: jar.form, amount: amount, pills: pills,
+                  slotId: slot?.id, slotLabel: slot?.displayLabel ?? "Extra", takenAt: date, note: note)
+    }
 }
 
 enum Format {
@@ -274,5 +381,11 @@ enum Format {
                 return t
             }
             .filter { !$0.isEmpty }
+    }
+}
+
+extension DoseSlot {
+    func amountLine(_ form: PillForm) -> String {
+        [amount, Format.pills(pills, form)].filter { !$0.isEmpty }.joined(separator: " \u{00B7} ")
     }
 }

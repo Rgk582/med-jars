@@ -16,6 +16,8 @@ struct JarEditorView: View {
     @State private var problem: String?
     @State private var confirmDelete = false
     @State private var didSetup = false
+    @State private var trackSupply = false
+    @State private var supplyText = ""
 
     private var isNew: Bool { target.jar == nil }
 
@@ -117,6 +119,46 @@ struct JarEditorView: View {
                         .lineLimit(4...20)
                 } header: { Text("What It Does") }
 
+                Section {
+                    Toggle("Track Pills Left", isOn: $trackSupply)
+                    if trackSupply {
+                        LabeledContent("\(draft.form.plural.capitalized) in Jar") {
+                            TextField("e.g. 90", text: $supplyText)
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                        }
+                        Stepper(value: $draft.refillWarnDays, in: 1...60) {
+                            LabeledContent("Warn When Left", value: "\(draft.refillWarnDays) day\(draft.refillWarnDays == 1 ? "" : "s")")
+                        }
+                    }
+                } header: {
+                    Text("Supply")
+                } footer: {
+                    Text(trackSupply ? "Each logged dose counts down. You get a notification when you reach the warning." : "Count pills down as you log and get a refill warning.")
+                }
+
+                Section {
+                    Toggle("Missed-Dose Nudge", isOn: $draft.nudge)
+                    if draft.nudge {
+                        Picker("Nudge After", selection: $draft.nudgeMinutes) {
+                            ForEach([15, 30, 45, 60, 90, 120], id: \.self) { Text(minutesLabel($0)).tag($0) }
+                        }
+                    }
+                } footer: {
+                    Text("A second notification if a dose still isn't logged after this long.")
+                }
+
+                Section {
+                    Toggle("How-I-Feel Check-In", isOn: $draft.checkIn)
+                    if draft.checkIn {
+                        Picker("Ask After", selection: $draft.checkInMinutes) {
+                            ForEach([30, 60, 90, 120, 180, 240], id: \.self) { Text(minutesLabel($0)).tag($0) }
+                        }
+                    }
+                } footer: {
+                    Text("After each dose, a notification asks you to rate focus and mood and note side effects.")
+                }
+
                 if isNew {
                     Section {
                         TextField("link-name", text: $tagId)
@@ -181,6 +223,8 @@ struct JarEditorView: View {
             avoidText = jar.avoid.joined(separator: "\n")
             absorbText = jar.absorb.joined(separator: "\n")
             tagId = jar.id
+            trackSupply = jar.pillsLeft != nil
+            supplyText = Format.number(jar.pillsLeft)
         } else {
             var j = Jar(id: "", name: "")
             let used = Set(store.jars.map(\.lid))
@@ -209,6 +253,15 @@ struct JarEditorView: View {
         jar.howTo = jar.howTo.trimmingCharacters(in: .whitespacesAndNewlines)
         jar.summary = jar.summary.trimmingCharacters(in: .whitespacesAndNewlines)
         jar.strength = jar.strength.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trackSupply {
+            let n = Double(supplyText.replacingOccurrences(of: ",", with: ".").trimmingCharacters(in: .whitespaces))
+            guard let n, n >= 0 else { problem = "Enter how many \(jar.form.plural) are in the jar, or turn off Track Pills Left."; return }
+            jar.pillsLeft = n
+            if !jar.isLow { jar.lowNotified = false }
+        } else {
+            jar.pillsLeft = nil
+            jar.lowNotified = false
+        }
         jar.schedule = jar.schedule
             .map { s -> DoseSlot in
                 var t = s
@@ -218,10 +271,19 @@ struct JarEditorView: View {
             }
             .filter { !$0.label.isEmpty || $0.time != nil || !$0.amount.isEmpty || $0.pills != nil }
         store.upsert(jar)
+        if jar.nudge || jar.checkIn || jar.pillsLeft != nil {
+            Task { _ = await Reminders.requestPermission() }
+        }
         if !target.pairTagUID.isEmpty { store.pair(tagUID: target.pairTagUID, toJar: jar.id) }
         if isNew { router.open(jarId: jar.id) }
         dismiss()
     }
+}
+
+private func minutesLabel(_ m: Int) -> String {
+    if m < 60 { return "\(m) min" }
+    if m % 60 == 0 { return m == 60 ? "1 hour" : "\(m / 60) hours" }
+    return String(format: "%.1f hours", Double(m) / 60)
 }
 
 /// One dose time inside the editor.

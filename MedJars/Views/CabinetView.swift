@@ -230,6 +230,12 @@ private struct JarRow: View {
                     }
                 }
                 Text("\(jar.kind.label) \u{00B7} \(jar.frequencyText)").font(.subheadline).foregroundStyle(Palette.secondary)
+                if jar.isLow {
+                    Label(jar.daysLeft.map { "Refill soon, \($0) day\($0 == 1 ? "" : "s") left" } ?? "Refill soon",
+                          systemImage: "exclamationmark.triangle.fill")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(Palette.due)
+                }
             }
             Spacer(minLength: 8)
             let timed = jar.timedSlots.count

@@ -8,6 +8,8 @@ struct JarDetailView: View {
     @State private var toast: DoseEntry?
     @State private var scanAlert: ScanAlert?
     @State private var confirmUnpair = false
+    @State private var refilling = false
+    @State private var checkInFor: CheckInTarget?
 
     var body: some View {
         TimelineView(.everyMinute) { context in
@@ -35,6 +37,16 @@ struct JarDetailView: View {
             }
         }
         .sheet(item: $editing) { JarEditorView(target: $0) }
+        .sheet(item: $checkInFor) { CheckInSheet(entryId: $0.id) }
+        .sheet(isPresented: $refilling) {
+            if let jar = store.jar(jarId) { RefillSheet(jar: jar) }
+        }
+        .onAppear {
+            if let r = store.recentLog, r.jarId == jarId, Date().timeIntervalSince(r.takenAt) < 30 {
+                store.recentLog = nil
+                show(r)
+            }
+        }
         .sheet(isPresented: $loggingOther) {
             if let jar = store.jar(jarId) {
                 LogDoseSheet(jar: jar) { entry in show(entry) }
@@ -77,6 +89,17 @@ struct JarDetailView: View {
                 }
             }
 
+            if jar.pillsLeft != nil {
+                Section {
+                    SupplyRow(jar: jar)
+                    Button("Refill or Recount") { refilling = true }
+                } header: {
+                    Text("Supply")
+                } footer: {
+                    Text("Warns you when \(jar.refillWarnDays) day\(jar.refillWarnDays == 1 ? "" : "s") of \(jar.form.plural) are left. Change it in Edit.")
+                }
+            }
+
             if !jar.avoid.isEmpty {
                 Section("Avoid") {
                     ForEach(Array(jar.avoid.enumerated()), id: \.offset) { _, item in
@@ -105,6 +128,25 @@ struct JarDetailView: View {
                 }
             }
 
+            if jar.checkIn || !store.checkIns(for: jar.id).isEmpty {
+                Section {
+                    let checks = store.checkIns(for: jar.id)
+                    if checks.isEmpty {
+                        Text("After each dose you'll get a notification asking how you feel. Your answers show up here.")
+                            .foregroundStyle(Palette.secondary)
+                    } else {
+                        FeelingSummary(checkIns: checks)
+                    }
+                    if let last = store.lastEntry(for: jar.id) {
+                        Button(last.checkIn == nil ? "Check In on Last Dose" : "Edit Last Check-In") {
+                            checkInFor = CheckInTarget(id: last.id)
+                        }
+                    }
+                } header: {
+                    Text("How You've Felt")
+                }
+            }
+
             Section {
                 if recent.isEmpty {
                     Text("No doses logged yet.").foregroundStyle(Palette.secondary)
@@ -121,6 +163,14 @@ struct JarDetailView: View {
                                 Text(Format.time12(e.takenAt)).font(.subheadline).monospacedDigit()
                                 Text(Format.dayLabel(e.takenAt)).font(.footnote).foregroundStyle(Palette.secondary)
                             }
+                            if let c = e.checkIn {
+                                Image(systemName: "face.smiling").foregroundStyle(Palette.secondary)
+                                    .accessibilityLabel("Checked in, focus \(c.focus) of 5")
+                            }
+                        }
+                        .swipeActions(edge: .leading) {
+                            Button { checkInFor = CheckInTarget(id: e.id) } label: { Label("Check In", systemImage: "face.smiling") }
+                                .tint(.teal)
                         }
                     }
                 }
@@ -204,6 +254,74 @@ struct JarDetailView: View {
 }
 
 // MARK: - Pieces
+
+private struct SupplyRow: View {
+    let jar: Jar
+    var body: some View {
+        HStack(spacing: 14) {
+            Image(systemName: jar.isLow ? "exclamationmark.triangle.fill" : "shippingbox.fill")
+                .font(.title2)
+                .foregroundStyle(jar.isLow ? Palette.due : Palette.secondary)
+                .frame(width: 32)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(Format.pills(jar.pillsLeft, jar.form).ifEmpty("No \(jar.form.plural)") + " left")
+                    .font(.headline)
+                if let d = jar.daysLeft {
+                    Text(d == 0 ? "Less than a day of doses" : "About \(d) day\(d == 1 ? "" : "s") of doses")
+                        .font(.subheadline).foregroundStyle(jar.isLow ? Palette.due : Palette.secondary)
+                } else {
+                    Text("Set pill counts on each dose time to see days left")
+                        .font(.subheadline).foregroundStyle(Palette.secondary)
+                }
+            }
+        }
+        .padding(.vertical, 2)
+    }
+}
+
+struct RefillSheet: View {
+    let jar: Jar
+    @Environment(AppStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+    @State private var mode = 0
+    @State private var amount = ""
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    Picker("Action", selection: $mode) {
+                        Text("Add Pills").tag(0)
+                        Text("Set Count").tag(1)
+                    }
+                    .pickerStyle(.segmented)
+                    TextField(mode == 0 ? "How many \(jar.form.plural) did you add?" : "How many \(jar.form.plural) are in the jar?", text: $amount)
+                        .keyboardType(.decimalPad)
+                } footer: {
+                    Text("Now: \(Format.pills(jar.pillsLeft, jar.form).ifEmpty("none")).")
+                }
+            }
+            .navigationTitle("Refill \(jar.name)")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        let n = Double(amount.replacingOccurrences(of: ",", with: ".").trimmingCharacters(in: .whitespaces))
+                        if let n {
+                            if mode == 0 { store.refill(jarId: jar.id, add: n) } else { store.refill(jarId: jar.id, setTo: n) }
+                        }
+                        Haptics.logged()
+                        dismiss()
+                    }
+                    .fontWeight(.semibold)
+                    .disabled(Double(amount.replacingOccurrences(of: ",", with: ".").trimmingCharacters(in: .whitespaces)) == nil)
+                }
+            }
+        }
+        .presentationDetents([.height(280), .medium])
+    }
+}
 
 private struct Header: View {
     let jar: Jar

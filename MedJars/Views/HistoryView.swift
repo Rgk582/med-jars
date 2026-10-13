@@ -15,6 +15,7 @@ struct DoseLogCSV: Transferable {
 
 struct HistoryView: View {
     @Environment(AppStore.self) private var store
+    @Environment(Router.self) private var router
     @State private var lastRemoved: DoseEntry?
 
     private struct DayGroup: Identifiable {
@@ -48,6 +49,10 @@ struct HistoryView: View {
                                             withAnimation { lastRemoved = e }
                                             store.deleteEntry(e.id)
                                         } label: { Label("Delete", systemImage: "trash") }
+                                    }
+                                    .swipeActions(edge: .leading) {
+                                        Button { router.checkInEntryId = e.id } label: { Label("Check In", systemImage: "face.smiling") }
+                                            .tint(.teal)
                                     }
                             }
                         } header: {
@@ -101,7 +106,14 @@ struct HistoryView: View {
                     .font(.subheadline).foregroundStyle(Palette.secondary)
             }
             Spacer(minLength: 8)
-            Text(Format.time12(e.takenAt)).font(.subheadline).monospacedDigit().foregroundStyle(Palette.secondary)
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(Format.time12(e.takenAt)).font(.subheadline).monospacedDigit().foregroundStyle(Palette.secondary)
+                if let c = e.checkIn {
+                    Label("\(c.focus)/5", systemImage: "face.smiling")
+                        .font(.caption).foregroundStyle(.teal)
+                        .accessibilityLabel("Focus \(c.focus) of 5")
+                }
+            }
         }
         .padding(.vertical, 2)
     }

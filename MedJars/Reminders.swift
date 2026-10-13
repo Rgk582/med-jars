@@ -1,19 +1,18 @@
 import Foundation
 import UserNotifications
 
-/// Local dose reminders. iOS keeps at most 64 pending notifications, so instead of repeating
-/// alarms the app schedules the next upcoming doses (skipping ones already logged today)
+/// Dose reminders and missed-dose nudges. iOS keeps at most 64 pending notifications, so instead of
+/// repeating alarms the app schedules the next upcoming ones (skipping doses already logged today)
 /// and tops the queue up every time it opens or the log changes.
 enum Reminders {
-    static let category = "DOSE"
-    static let logAction = "LOG_DOSE"
-    static let idPrefix = "dose."
-    private static let maxPending = 60
+    private static let maxPending = 56
 
     static func registerCategories() {
-        let log = UNNotificationAction(identifier: logAction, title: "Log dose", options: [.authenticationRequired])
-        let cat = UNNotificationCategory(identifier: category, actions: [log], intentIdentifiers: [], options: [])
-        UNUserNotificationCenter.current().setNotificationCategories([cat])
+        let log = UNNotificationAction(identifier: Notify.logAction, title: "Log Dose", options: [.authenticationRequired])
+        let dose = UNNotificationCategory(identifier: Notify.doseCategory, actions: [log], intentIdentifiers: [], options: [])
+        let checkIn = UNNotificationCategory(identifier: Notify.checkInCategory, actions: [], intentIdentifiers: [], options: [])
+        let refill = UNNotificationCategory(identifier: Notify.refillCategory, actions: [], intentIdentifiers: [], options: [])
+        UNUserNotificationCenter.current().setNotificationCategories([dose, checkIn, refill])
     }
 
     static func requestPermission() async -> Bool {
@@ -30,51 +29,56 @@ enum Reminders {
     static func reschedule(jars: [Jar], entries: [DoseEntry], enabled: Bool) {
         let center = UNUserNotificationCenter.current()
         center.getPendingNotificationRequests { pending in
-            let ours = pending.map(\.identifier).filter { $0.hasPrefix(Reminders.idPrefix) }
+            let ours = pending.map(\.identifier).filter { $0.hasPrefix(Notify.dosePrefix) || $0.hasPrefix(Notify.nudgePrefix) }
             center.removePendingNotificationRequests(withIdentifiers: ours)
-            guard enabled else { return }
 
             let cal = Calendar.current
             let now = Date()
-            struct Occurrence { let jar: Jar; let slot: DoseSlot; let date: Date }
-            var upcoming: [Occurrence] = []
+            struct Item { let id: String; let date: Date; let content: UNMutableNotificationContent }
+            var items: [Item] = []
             for dayOffset in 0..<8 {
                 guard let day = cal.date(byAdding: .day, value: dayOffset, to: now) else { continue }
                 for jar in jars {
+                    let wantsNudge = jar.nudge
+                    guard enabled || wantsNudge else { continue }
                     for slot in jar.timedSlots {
-                        guard let date = DoseLogic.date(for: slot, on: day), date > now else { continue }
+                        guard let at = DoseLogic.date(for: slot, on: day) else { continue }
                         if dayOffset == 0, entries.contains(where: { $0.jarId == jar.id && $0.slotId == slot.id && cal.isDate($0.takenAt, inSameDayAs: now) }) { continue }
-                        upcoming.append(Occurrence(jar: jar, slot: slot, date: date))
+                        let info = ["jarId": jar.id, "slotId": slot.id]
+                        let amount = slot.amountLine(jar.form)
+                        if enabled && at > now {
+                            let c = UNMutableNotificationContent()
+                            c.title = "\(jar.name): \(slot.amount.isEmpty ? "dose due" : slot.amount)"
+                            c.body = [slot.displayLabel, Format.pills(slot.pills, jar.form)].filter { !$0.isEmpty }.joined(separator: " \u{00B7} ")
+                            c.sound = .default
+                            c.categoryIdentifier = Notify.doseCategory
+                            c.threadIdentifier = jar.id
+                            c.userInfo = info
+                            items.append(Item(id: Notify.doseId(jar: jar.id, slot: slot.id, day: day), date: at, content: c))
+                        }
+                        if wantsNudge {
+                            let nudgeAt = at.addingTimeInterval(TimeInterval(max(5, jar.nudgeMinutes) * 60))
+                            if nudgeAt > now {
+                                let c = UNMutableNotificationContent()
+                                c.title = "Did you take \(jar.name)?"
+                                c.body = "\(amount.isEmpty ? "Your dose" : amount) was due at \(Format.time12(slot.time)). Tap Log Dose if you took it."
+                                c.sound = .default
+                                c.categoryIdentifier = Notify.doseCategory
+                                c.threadIdentifier = jar.id
+                                c.userInfo = info
+                                items.append(Item(id: Notify.nudgeId(jar: jar.id, slot: slot.id, day: day), date: nudgeAt, content: c))
+                            }
+                        }
                     }
                 }
             }
-            upcoming.sort { $0.date < $1.date }
-
-            let df = DateFormatter(); df.dateFormat = "yyyyMMdd"
-            for occ in upcoming.prefix(Reminders.maxPending) {
-                let content = UNMutableNotificationContent()
-                content.title = "\(occ.jar.name): \(occ.slot.amount.isEmpty ? "dose due" : occ.slot.amount)"
-                let pills = Format.pills(occ.slot.pills, occ.jar.form)
-                content.body = [occ.slot.displayLabel, pills].filter { !$0.isEmpty }.joined(separator: " \u{00B7} ")
-                content.sound = .default
-                content.categoryIdentifier = Reminders.category
-                content.threadIdentifier = occ.jar.id
-                content.userInfo = ["jarId": occ.jar.id, "slotId": occ.slot.id]
-                let comps = cal.dateComponents([.year, .month, .day, .hour, .minute], from: occ.date)
+            items.sort { $0.date < $1.date }
+            for item in items.prefix(maxPending) {
+                let comps = cal.dateComponents([.year, .month, .day, .hour, .minute], from: item.date)
                 let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
-                let id = "\(Reminders.idPrefix)\(occ.jar.id).\(occ.slot.id).\(df.string(from: occ.date))"
-                center.add(UNNotificationRequest(identifier: id, content: content, trigger: trigger))
+                center.add(UNNotificationRequest(identifier: item.id, content: item.content, trigger: trigger))
             }
         }
     }
-
-    /// Removes any reminder for this dose still sitting in Notification Center.
-    static func clearDelivered(jarId: String, slotId: String) {
-        let center = UNUserNotificationCenter.current()
-        let start = "\(Reminders.idPrefix)\(jarId).\(slotId)."
-        center.getDeliveredNotifications { delivered in
-            let ids = delivered.map(\.request.identifier).filter { $0.hasPrefix(start) }
-            if !ids.isEmpty { center.removeDeliveredNotifications(withIdentifiers: ids) }
-        }
-    }
 }
+
