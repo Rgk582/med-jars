@@ -1,0 +1,16 @@
+2026-10-13 06:34:02.914 Df MedJars[22586:10064] [com.apple.BoardServices:XPCErrors] [C:1] Alloc com.apple.frontboard.systemappservices
+2026-10-13 06:34:03.055 Df MedJars[22586:10057] [com.apple.BoardServices:XPCErrors] [C:2] Alloc com.apple.backboard.hid-services.xpc
+2026-10-13 06:34:21.936 Df MedJars[23106:10589] [com.apple.BoardServices:XPCErrors] [C:1] Alloc com.apple.frontboard.systemappservices
+2026-10-13 06:34:22.092 Df MedJars[23106:10582] [com.apple.BoardServices:XPCErrors] [C:2] Alloc com.apple.backboard.hid-services.xpc
+2026-10-13 06:34:33.808 Df MedJars[23420:1090a] [com.apple.BoardServices:XPCErrors] [C:1] Alloc com.apple.frontboard.systemappservices
+2026-10-13 06:34:33.906 Df MedJars[23420:10902] [com.apple.BoardServices:XPCErrors] [C:2] Alloc com.apple.backboard.hid-services.xpc
+2026-10-13 06:34:59.413 Df MedJars[24410:112bf] [com.apple.BoardServices:XPCErrors] [C:1] Alloc com.apple.frontboard.systemappservices
+2026-10-13 06:34:59.544 Df MedJars[24410:112bb] [com.apple.BoardServices:XPCErrors] [C:2] Alloc com.apple.backboard.hid-services.xpc
+2026-10-13 06:35:09.692 Df MedJars[25181:119d9] [com.apple.BoardServices:XPCErrors] [C:1] Alloc com.apple.frontboard.systemappservices
+2026-10-13 06:35:09.816 Df MedJars[25181:119d2] [com.apple.BoardServices:XPCErrors] [C:2] Alloc com.apple.backboard.hid-services.xpc
+2026-10-13 06:35:19.916 Df MedJars[25376:11bfc] [com.apple.BoardServices:XPCErrors] [C:1] Alloc com.apple.frontboard.systemappservices
+2026-10-13 06:35:20.022 Df MedJars[25376:11bf8] [com.apple.BoardServices:XPCErrors] [C:2] Alloc com.apple.backboard.hid-services.xpc
+2026-10-13 06:36:00.110 Df MedJars[25879:12d7d] [com.apple.BoardServices:XPCErrors] [C:1] Alloc com.apple.frontboard.systemappservices
+2026-10-13 06:36:00.249 Df MedJars[25879:12d65] [com.apple.BoardServices:XPCErrors] [C:2] Alloc com.apple.backboard.hid-services.xpc
+2026-10-13 06:36:10.799 Df MedJars[28123:135a8] [com.apple.BoardServices:XPCErrors] [C:1] Alloc com.apple.frontboard.systemappservices
+2026-10-13 06:36:10.878 Df MedJars[28123:135a0] [com.apple.BoardServices:XPCErrors] [C:2] Alloc com.apple.backboard.hid-services.xpc
