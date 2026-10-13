@@ -1,6 +1,8 @@
 import SwiftUI
+import UIKit
 import LocalAuthentication
 import UniformTypeIdentifiers
+import UserNotifications
 
 struct BackupFile: Transferable {
     let data: Data
@@ -29,6 +31,9 @@ private struct SettingsIcon: View {
 
 struct SettingsView: View {
     @Environment(AppStore.self) private var store
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var notificationStatus: UNAuthorizationStatus = .notDetermined
+    @State private var timeSensitive: UNNotificationSetting = .notSupported
     @State private var importText = ""
     @State private var importResult: String?
     @State private var reminderNote: String?
@@ -61,8 +66,28 @@ struct SettingsView: View {
                 Toggle(isOn: Binding(get: { store.settings.faceIDLock }, set: { toggleFaceID($0) })) {
                     Label { Text("Face ID Lock") } icon: { SettingsIcon(symbol: "faceid", color: .green) }
                 }
+            } footer: {
+                Text("Asks for Face ID when you open Med Jars and hides your jars in the app switcher.")
+            }
+
+            Section {
+                LabeledContent {
+                    Text(notificationStatusText)
+                } label: {
+                    Label { Text("Notifications") } icon: { SettingsIcon(symbol: "bell.fill", color: .red) }
+                }
+                switch notificationStatus {
+                case .notDetermined:
+                    Button("Allow Notifications") { toggleReminders(true) }
+                case .denied:
+                    Button("Turn On in iOS Settings") { openNotificationSettings() }
+                default:
+                    if timeSensitive == .disabled {
+                        Button("Turn On Time Sensitive in iOS Settings") { openNotificationSettings() }
+                    }
+                }
                 Toggle(isOn: Binding(get: { store.settings.reminders }, set: { toggleReminders($0) })) {
-                    Label { Text("Dose Reminders") } icon: { SettingsIcon(symbol: "bell.badge.fill", color: .red) }
+                    Label { Text("Dose Reminders") } icon: { SettingsIcon(symbol: "alarm.fill", color: .orange) }
                 }
                 if let reminderNote {
                     Text(reminderNote).font(.footnote).foregroundStyle(Palette.missed)
@@ -71,8 +96,10 @@ struct SettingsView: View {
                     Label { Text("Group Same-Time Reminders") } icon: { SettingsIcon(symbol: "square.stack.fill", color: .purple) }
                 }
                 .disabled(!store.settings.reminders)
+            } header: {
+                Text("Notifications")
             } footer: {
-                Text("Reminders arrive at each dose time with Log and Skip buttons, and skip doses you already logged. When several jars are due at the same minute, grouping sends one reminder with Log All. Opening the app keeps the next week scheduled.")
+                Text("Reminders arrive at each dose time with Log Dose, Log a Different Amount and Skip, and skip doses you already logged. When several jars are due at the same minute, grouping sends one reminder with Log All. Time Sensitive lets reminders through Focus. Opening the app keeps the next week scheduled.")
             }
 
             Section {
@@ -146,7 +173,7 @@ struct SettingsView: View {
                         step(1, "Open Shortcuts, tap Automation, then +.")
                         step(2, "Choose NFC, tap Scan and hold your iPhone to the jar.")
                         step(3, "Choose Run Immediately.")
-                        step(4, "Add the Med Jars action Open Jar and pick the jar. Use Log Next Dose instead if the tap should log it.")
+                        step(4, "Add the Med Jars action Log Dose and Choose Amount and pick the jar. Use Open Jar to only open it, or Log Next Dose to log your usual amount without opening the app.")
                     }
                     .padding(.vertical, 4)
                 } label: {
@@ -194,6 +221,10 @@ struct SettingsView: View {
             }
         }
         .navigationTitle("Settings")
+        .task { await refreshNotificationStatus() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { Task { await refreshNotificationStatus() } }
+        }
         .fileImporter(isPresented: $picking, allowedContentTypes: pickingFolder ? [.folder] : [.json]) { result in
             guard case .success(let url) = result else { return }
             if pickingFolder {
@@ -257,6 +288,28 @@ struct SettingsView: View {
         }
     }
 
+    private var notificationStatusText: String {
+        switch notificationStatus {
+        case .authorized, .ephemeral: return timeSensitive == .enabled ? "On, Time Sensitive" : "On"
+        case .provisional: return "Delivered Quietly"
+        case .denied: return "Off"
+        default: return "Not Set Up"
+        }
+    }
+
+    private func refreshNotificationStatus() async {
+        let settings = await UNUserNotificationCenter.current().notificationSettings()
+        notificationStatus = settings.authorizationStatus
+        timeSensitive = settings.timeSensitiveSetting
+        if settings.authorizationStatus == .authorized { reminderNote = nil }
+    }
+
+    private func openNotificationSettings() {
+        if let url = URL(string: UIApplication.openNotificationSettingsURLString) {
+            UIApplication.shared.open(url)
+        }
+    }
+
     private func toggleReminders(_ on: Bool) {
         guard on else { store.setReminders(false); reminderNote = nil; return }
         Task { @MainActor in
@@ -264,8 +317,9 @@ struct SettingsView: View {
                 store.setReminders(true)
                 reminderNote = nil
             } else {
-                reminderNote = "Notifications are off for Med Jars. Turn them on in the Settings app under Notifications, then try again."
+                reminderNote = "Notifications are off for Med Jars. Tap Turn On in iOS Settings, allow notifications, then come back."
             }
+            await refreshNotificationStatus()
         }
     }
 }

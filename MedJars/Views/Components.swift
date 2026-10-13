@@ -57,3 +57,58 @@ extension DoseEntry {
         [amount, Format.pills(pills, form)].filter { !$0.isEmpty }.joined(separator: " \u{00B7} ").ifEmpty("Dose")
     }
 }
+
+/// Big minus / count / plus control for how many pills a dose is, in half-pill steps.
+struct PillCounter: View {
+    @Binding var count: Double
+    let form: PillForm
+
+    static func step(_ n: Double, up: Bool) -> Double {
+        let halves = n * 2
+        let next = up ? (halves + 0.0001).rounded(.down) + 1 : (halves - 0.0001).rounded(.up) - 1
+        return min(50, max(0.5, next / 2))
+    }
+
+    private func change(up: Bool) {
+        withAnimation(.snappy) { count = Self.step(count, up: up) }
+        UISelectionFeedbackGenerator().selectionChanged()
+    }
+
+    var body: some View {
+        HStack {
+            Button { change(up: false) } label: {
+                Image(systemName: "minus").font(.title2.weight(.semibold)).frame(width: 44, height: 44)
+            }
+            .buttonStyle(.bordered)
+            .buttonBorderShape(.circle)
+            .disabled(count <= 0.5)
+            Spacer()
+            VStack(spacing: 0) {
+                Text(Format.count(count))
+                    .font(.system(size: 46, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .contentTransition(.numericText(value: count))
+                Text(count <= 1 ? form.singular : form.plural)
+                    .font(.subheadline).foregroundStyle(Palette.secondary)
+            }
+            Spacer()
+            Button { change(up: true) } label: {
+                Image(systemName: "plus").font(.title2.weight(.semibold)).frame(width: 44, height: 44)
+            }
+            .buttonStyle(.bordered)
+            .buttonBorderShape(.circle)
+            .disabled(count >= 50)
+        }
+        .padding(.vertical, 4)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Amount")
+        .accessibilityValue(Format.pills(count, form))
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment: change(up: true)
+            case .decrement: change(up: false)
+            @unknown default: break
+            }
+        }
+    }
+}

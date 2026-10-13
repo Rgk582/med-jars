@@ -17,6 +17,7 @@ struct HistoryView: View {
     @Environment(AppStore.self) private var store
     @Environment(Router.self) private var router
     @State private var lastRemoved: DoseEntry?
+    @State private var editing: LogTarget?
 
     private struct DayGroup: Identifiable {
         let day: Date
@@ -44,6 +45,10 @@ struct HistoryView: View {
                         Section {
                             ForEach(group.entries) { e in
                                 row(e)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        if !e.skipped, store.jar(e.jarId) != nil { editing = LogTarget(jarId: e.jarId, editing: e) }
+                                    }
                                     .swipeActions {
                                         Button(role: .destructive) {
                                             withAnimation { lastRemoved = e }
@@ -69,6 +74,11 @@ struct HistoryView: View {
         }
         .background(Palette.background)
         .navigationTitle("Dose Log")
+        .sheet(item: $editing) { target in
+            if let jar = store.jar(target.jarId) {
+                LogDoseSheet(jar: jar, slotId: target.slotId, editing: target.editing)
+            }
+        }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 ShareLink(item: DoseLogCSV(csv: store.csv), preview: SharePreview("Dose Log")) {

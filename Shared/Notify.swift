@@ -9,6 +9,7 @@ enum Notify {
     static let refillCategory = "REFILL"
     static let infoCategory = "INFO"
     static let logAction = "LOG_DOSE"
+    static let logCustomAction = "LOG_CUSTOM"
     static let skipAction = "SKIP_DOSE"
     static let logAllAction = "LOG_ALL"
     static let dosePrefix = "dose."

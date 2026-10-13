@@ -5,13 +5,12 @@ struct JarDetailView: View {
     let jarId: String
     @Environment(AppStore.self) private var store
     @State private var editing: EditorTarget?
-    @State private var loggingOther = false
+    @State private var logging: LogTarget?
     @State private var toast: DoseEntry?
     @State private var scanAlert: ScanAlert?
     @State private var confirmUnpair = false
     @State private var refilling = false
     @State private var checkInFor: CheckInTarget?
-    @State private var pending: PendingLog?
     @State private var skipping: DoseSlot?
     @State private var schedulingBreak = false
 
@@ -44,7 +43,7 @@ struct JarDetailView: View {
                             schedulingBreak = true
                         }
                         Divider()
-                        Button("Log a Different Dose", systemImage: "square.and.pencil") { loggingOther = true }
+                        Button(jar.asNeeded ? "Log a Dose" : "Log an Extra Dose", systemImage: "plus.circle") { logging = extraTarget(jar) }
                             .disabled(!jar.isActive())
                         if let next = DoseLogic.suggestion(DoseLogic.rows(for: jar, entries: store.entries)), next.slot.minutes != nil {
                             Button("Skip \(Format.time12(next.slot.time)) Dose", systemImage: "forward.end") { skipping = next.slot }
@@ -68,27 +67,18 @@ struct JarDetailView: View {
         .sheet(item: Binding(get: { skipping.map { SkipTarget(slot: $0) } }, set: { skipping = $0?.slot })) { target in
             if let jar = store.jar(jarId) { SkipSheet(jar: jar, slot: target.slot) }
         }
-        .sheet(isPresented: $loggingOther) {
+        .sheet(item: $logging) { target in
             if let jar = store.jar(jarId) {
-                LogDoseSheet(jar: jar) { entry in show(entry) }
+                LogDoseSheet(jar: jar, slotId: target.slotId, editing: target.editing) { entry in
+                    if target.editing == nil { show(entry) }
+                }
             }
         }
-        .onAppear {
-            if let r = store.recentLog, r.jarId == jarId, Date().timeIntervalSince(r.takenAt) < 30 {
-                store.recentLog = nil
-                show(r)
-            }
-        }
+        .onAppear(perform: showRecentLog)
+        .onChange(of: store.recentLog?.id) { _, _ in showRecentLog() }
         .alert("Can't Scan", isPresented: Binding(get: { scanAlert != nil }, set: { if !$0 { scanAlert = nil } })) {
             Button("OK", role: .cancel) {}
         } message: { Text(scanAlert?.message ?? "") }
-        .confirmationDialog(pending?.title ?? "Log This Dose?", isPresented: Binding(get: { pending != nil }, set: { if !$0 { pending = nil } }),
-                            titleVisibility: .visible, presenting: pending) { p in
-            Button("Log Anyway") { commit(p.jar, p.slot) }
-            Button("Cancel", role: .cancel) {}
-        } message: { p in
-            Text(p.warnings.joined(separator: "\n"))
-        }
     }
 
     @ViewBuilder
@@ -271,6 +261,10 @@ struct JarDetailView: View {
                                     .accessibilityLabel("Checked in, focus \(c.focus) of 5")
                             }
                         }
+                        .contentShape(Rectangle())
+                        .onTapGesture { if !e.skipped { logging = LogTarget(jarId: jar.id, editing: e) } }
+                        .accessibilityAddTraits(e.skipped ? [] : .isButton)
+                        .accessibilityHint(Text(e.skipped ? "" : "Change the amount or time"))
                         .swipeActions(edge: .leading) {
                             if !e.skipped {
                                 Button { checkInFor = CheckInTarget(id: e.id) } label: { Label("Check In", systemImage: "face.smiling") }
@@ -282,6 +276,8 @@ struct JarDetailView: View {
                 NavigationLink(value: Route.history) { Text("Show All Doses") }
             } header: {
                 Text("Recent Doses")
+            } footer: {
+                if !recent.isEmpty { Text("Tap a dose to change how much you took or when.") }
             }
 
             Section {
@@ -322,7 +318,7 @@ struct JarDetailView: View {
                 }
                 if active {
                     LogBar(jar: jar, rows: rows, suggestion: suggestion, last: store.lastTaken(for: jar.id), now: now,
-                           onLog: { requestLog(jar, $0) }, onOther: { loggingOther = true },
+                           onLog: { logging = LogTarget(jarId: jar.id, slotId: $0.id) }, onOther: { logging = extraTarget(jar) },
                            onSkip: { skipping = $0 })
                 }
             }
@@ -332,21 +328,16 @@ struct JarDetailView: View {
 
     // MARK: Actions
 
-    private func requestLog(_ jar: Jar, _ slot: DoseSlot) {
-        let warnings = store.logWarnings(jar: jar, slot: slot)
-        if warnings.isEmpty {
-            commit(jar, slot)
-        } else {
-            Haptics.warning()
-            pending = PendingLog(jar: jar, slot: slot, warnings: warnings)
-        }
+    /// An unscheduled dose, or the as-needed dose for as-needed jars.
+    private func extraTarget(_ jar: Jar) -> LogTarget {
+        LogTarget(jarId: jar.id, slotId: jar.asNeededSlot?.id ?? "")
     }
 
-    private func commit(_ jar: Jar, _ slot: DoseSlot) {
-        if let entry = store.log(jarId: jar.id, slot: slot, amount: slot.amount, pills: slot.pills, at: Date()) {
-            Haptics.logged()
-            show(entry)
-        }
+    /// A dose logged from outside this page (Open and Log, a notification) gets its undo toast here.
+    private func showRecentLog() {
+        guard let r = store.recentLog, r.jarId == jarId, Date().timeIntervalSince(r.takenAt) < 120 else { return }
+        store.recentLog = nil
+        show(r)
     }
 
     private func show(_ entry: DoseEntry) {
@@ -756,7 +747,7 @@ struct LogBar: View {
             Spacer(minLength: 8)
             if let s = suggestion?.slot {
                 Menu {
-                    Button("Log a Different Dose", systemImage: "square.and.pencil", action: onOther)
+                    Button(jar.asNeeded ? "Log a Dose" : "Log an Extra Dose", systemImage: "plus.circle", action: onOther)
                     if s.minutes != nil {
                         Button("Skip This Dose", systemImage: "forward.end") { onSkip(s) }
                     }

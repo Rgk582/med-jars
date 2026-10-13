@@ -21,8 +21,7 @@ struct JarEditorView: View {
     @State private var newTagUID: String?
     @State private var removeTags = false
     @State private var scanAlert: ScanAlert?
-    @State private var prnAmount = ""
-    @State private var prnPills = ""
+    @State private var prnSlot = DoseSlot(id: "prn", label: "As Needed", time: nil, amount: "", pills: 1)
     @State private var interactionLevels: [String: InteractionLevel] = [:]
 
     private func effectBinding<T>(_ kp: WritableKeyPath<EffectProfile, T>) -> Binding<T> {
@@ -75,10 +74,12 @@ struct JarEditorView: View {
                             Label(f.title, systemImage: f.symbol).tag(f)
                         }
                     }
-                    LabeledContent("Strength") {
+                    LabeledContent("Strength per \(draft.form.title)") {
                         TextField("e.g. 5 mg", text: $draft.strength)
                             .multilineTextAlignment(.trailing)
                     }
+                } footer: {
+                    Text("Strength per \(draft.form.singular) is what one \(draft.form.singular) contains. Each dose below has its own strength per dose.")
                 }
 
                 Section {
@@ -130,20 +131,14 @@ struct JarEditorView: View {
                     Toggle("As Needed", isOn: $draft.asNeeded)
                         .onChange(of: draft.asNeeded) { _, on in
                             if !on && draft.schedule.allSatisfy({ $0.minutes == nil }) {
-                                draft.schedule = [DoseSlot(label: "Morning", time: "08:00", amount: prnAmount,
-                                                           pills: Double(prnPills.replacingOccurrences(of: ",", with: ".")) ?? 1)]
+                                draft.schedule = [DoseSlot(label: "Morning", time: "08:00", amount: prnSlot.amount, pills: prnSlot.pills ?? 1)]
                             }
                         }
                     if draft.asNeeded {
-                        LabeledContent("Usual Dose") {
-                            TextField("e.g. 200 mg", text: $prnAmount).multilineTextAlignment(.trailing)
-                        }
-                        LabeledContent(draft.form.plural.capitalized) {
-                            TextField("e.g. 1", text: $prnPills).keyboardType(.decimalPad).multilineTextAlignment(.trailing)
-                        }
+                        DoseAmountFields(slot: $prnSlot, form: draft.form, perPill: draft.strength)
                     } else {
                         ForEach($draft.schedule) { $slot in
-                            SlotEditorRow(slot: $slot, form: draft.form)
+                            SlotEditorRow(slot: $slot, form: draft.form, perPill: draft.strength)
                         }
                         .onDelete { draft.schedule.remove(atOffsets: $0) }
                         Button {
@@ -156,8 +151,8 @@ struct JarEditorView: View {
                     Text("Doses")
                 } footer: {
                     Text(draft.asNeeded
-                         ? "No set times. Log a dose whenever you take one."
-                         : "Swipe left on a dose time to remove it. Doses between midnight and 4 AM count toward the day before.")
+                         ? "No set times. Log a dose whenever you take one. The amount here is the default each time you log, and you can change it when you log."
+                         : "The amount on each dose is the default when you log it, and you can change it when you log. Swipe left on a dose time to remove it. Doses between midnight and 4 AM count toward the day before.")
                 }
 
                 if draft.asNeeded {
@@ -401,8 +396,8 @@ struct JarEditorView: View {
             trackSupply = jar.pillsLeft != nil
             supplyText = Format.number(jar.pillsLeft)
             if let prn = jar.asNeededSlot {
-                prnAmount = prn.amount
-                prnPills = Format.number(prn.pills)
+                prnSlot = prn
+                if prnSlot.pills == nil { prnSlot.pills = 1 }
             }
             for (other, level) in store.interactions(for: jar.id) { interactionLevels[other.id] = level }
         } else {
@@ -438,8 +433,7 @@ struct JarEditorView: View {
         if jar.asNeeded {
             let existing = jar.schedule.first { $0.minutes == nil }
             jar.schedule = [DoseSlot(id: existing?.id ?? "prn", label: "As Needed", time: nil,
-                                     amount: prnAmount.trimmingCharacters(in: .whitespaces),
-                                     pills: Double(prnPills.replacingOccurrences(of: ",", with: ".").trimmingCharacters(in: .whitespaces)))]
+                                     amount: prnSlot.amount.trimmingCharacters(in: .whitespaces), pills: prnSlot.pills ?? 1)]
         } else {
             jar.minGapMinutes = 0
             jar.maxPerDay = 0
@@ -491,8 +485,7 @@ private func minutesLabel(_ m: Int) -> String {
 struct SlotEditorRow: View {
     @Binding var slot: DoseSlot
     let form: PillForm
-    @State private var pillsText = ""
-    @State private var loaded = false
+    let perPill: String
 
     private var hasTime: Binding<Bool> {
         Binding(get: { slot.time != nil },
@@ -514,24 +507,52 @@ struct SlotEditorRow: View {
             if slot.time != nil {
                 DatePicker("Time", selection: timeDate, displayedComponents: .hourAndMinute)
             }
-            HStack(spacing: 12) {
-                TextField("Amount, e.g. 15 mg", text: $slot.amount)
-                Divider()
-                TextField(form.plural.capitalized, text: $pillsText)
-                    .keyboardType(.decimalPad)
-                    .multilineTextAlignment(.trailing)
-                    .frame(width: 90)
-                    .onChange(of: pillsText) { _, v in
-                        let t = v.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: ".")
-                        slot.pills = t.isEmpty ? nil : Double(t)
-                    }
-            }
+            DoseAmountFields(slot: $slot, form: form, perPill: perPill)
         }
         .padding(.vertical, 4)
+    }
+}
+
+/// How many pills a dose is (half steps, default 1) and its strength per dose.
+/// The strength follows strength per pill times the pill count until you type your own.
+struct DoseAmountFields: View {
+    @Binding var slot: DoseSlot
+    let form: PillForm
+    let perPill: String
+    @State private var auto = false
+    @State private var loaded = false
+
+    private var pills: Binding<Double> {
+        Binding(get: { slot.pills ?? 1 }, set: { slot.pills = $0 })
+    }
+
+    private var computed: String { Format.doseStrength("", basePills: 1, pills: slot.pills ?? 1, perPill: perPill) }
+
+    private var amount: Binding<String> {
+        Binding(get: { slot.amount }, set: { new in
+            slot.amount = new
+            auto = new.trimmingCharacters(in: .whitespaces).isEmpty || new == computed
+        })
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Stepper(value: pills, in: 0.5...50, step: 0.5) {
+                LabeledContent("\(form.plural.capitalized) per Dose", value: Format.pills(slot.pills ?? 1, form))
+            }
+            LabeledContent("Strength per Dose") {
+                TextField(computed.isEmpty ? "e.g. 15 mg" : computed, text: amount)
+                    .multilineTextAlignment(.trailing)
+            }
+        }
         .onAppear {
             guard !loaded else { return }
             loaded = true
-            pillsText = Format.number(slot.pills)
+            if slot.pills == nil { slot.pills = 1 }
+            auto = slot.amount.trimmingCharacters(in: .whitespaces).isEmpty || slot.amount == computed
+            if auto { slot.amount = computed }
         }
+        .onChange(of: slot.pills) { _, _ in if auto { slot.amount = computed } }
+        .onChange(of: perPill) { _, _ in if auto { slot.amount = computed } }
     }
 }

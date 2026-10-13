@@ -39,6 +39,30 @@ struct OpenJarIntent: AppIntent {
     }
 }
 
+/// For NFC automations: opens the jar with the log sheet up, so the amount can be checked before logging.
+struct OpenLogSheetIntent: AppIntent {
+    static var title: LocalizedStringResource = "Log Dose and Choose Amount"
+    static var description = IntentDescription("Opens the jar with the log sheet ready, set to your usual amount, so you can change it before logging.")
+    static var openAppWhenRun: Bool = true
+
+    @Parameter(title: "Jar")
+    var jar: JarEntity
+
+    init() {}
+
+    @MainActor
+    func perform() async throws -> some IntentResult {
+        let store = AppStore.shared
+        store.reload()
+        Router.shared.open(jarId: jar.id)
+        if let j = store.jar(jar.id) {
+            let suggested = DoseLogic.suggestion(DoseLogic.rows(for: j, entries: store.entries))?.slot.id
+            Router.shared.logRequest = LogTarget(jarId: j.id, slotId: suggested ?? j.asNeededSlot?.id ?? "")
+        }
+        return .result()
+    }
+}
+
 struct LogNextDoseIntent: AppIntent {
     static var title: LocalizedStringResource = "Log Next Dose"
     static var description = IntentDescription("Logs the jar's next scheduled dose right now, without opening the app.")

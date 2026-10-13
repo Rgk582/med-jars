@@ -221,7 +221,7 @@ struct OpenAndLogControl: ControlWidget {
             }
         }
         .displayName("Open and Log Dose")
-        .description("Opens Med Jars and logs the dose that's due now.")
+        .description("Opens Med Jars to the dose that's due now so you can confirm how much and log it.")
     }
 }
 

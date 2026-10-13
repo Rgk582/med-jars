@@ -1,18 +1,5 @@
 import SwiftUI
 
-/// A dose waiting for "Log Anyway" because something about it needs a second look.
-struct PendingLog: Identifiable {
-    let id = UUID()
-    let jar: Jar
-    let slot: DoseSlot
-    let warnings: [String]
-    var title: String {
-        if warnings.contains(where: { $0.hasPrefix("Major") }) { return "Major Interaction" }
-        if warnings.contains(where: { $0.hasPrefix("Moderate") }) { return "Moderate Interaction" }
-        return "Log This Dose?"
-    }
-}
-
 struct CabinetView: View {
     @Environment(AppStore.self) private var store
     @Environment(Router.self) private var router
@@ -20,7 +7,7 @@ struct CabinetView: View {
     @State private var unknownTag: UnknownTag?
     @State private var scanAlert: ScanAlert?
     @State private var toast: DoseEntry?
-    @State private var pending: PendingLog?
+    @State private var logging: LogTarget?
     @State private var addingCaffeine = false
 
     var body: some View {
@@ -30,7 +17,7 @@ struct CabinetView: View {
                     ContentUnavailableView {
                         Label("No Jars Yet", systemImage: "pills")
                     } description: {
-                        Text("Add a jar to get its dose card, reminders and one tap logging. Then scan its NFC tag to pair it.")
+                        Text("Add a jar to get its dose card, reminders and quick logging. Then scan its NFC tag to pair it.")
                     } actions: {
                         Button("Add Jar") { editing = EditorTarget(jar: nil) }
                             .prominentButton()
@@ -84,12 +71,12 @@ struct CabinetView: View {
         } message: {
             Text(scanAlert?.message ?? "")
         }
-        .confirmationDialog(pending?.title ?? "Log This Dose?", isPresented: Binding(get: { pending != nil }, set: { if !$0 { pending = nil } }),
-                            titleVisibility: .visible, presenting: pending) { p in
-            Button("Log Anyway") { commit(p.jar, p.slot) }
-            Button("Cancel", role: .cancel) {}
-        } message: { p in
-            Text(p.warnings.joined(separator: "\n"))
+        .sheet(item: $logging) { target in
+            if let jar = store.jar(target.jarId) {
+                LogDoseSheet(jar: jar, slotId: target.slotId) { entry in
+                    withAnimation(.snappy) { toast = entry }
+                }
+            }
         }
     }
 
@@ -105,7 +92,7 @@ struct CabinetView: View {
                 Section("Today") {
                     ForEach(items) { item in
                         NavigationLink(value: Route.jar(item.jar.id)) {
-                            TodayRow(jar: item.jar, row: item.row) { requestLog(item.jar, item.row.slot) }
+                            TodayRow(jar: item.jar, row: item.row) { logging = LogTarget(jarId: item.jar.id, slotId: item.row.slot.id) }
                         }
                     }
                 }
@@ -152,17 +139,6 @@ struct CabinetView: View {
             default: return a.jar.name < b.jar.name
             }
         }
-    }
-
-    private func requestLog(_ jar: Jar, _ slot: DoseSlot) {
-        let warnings = store.logWarnings(jar: jar, slot: slot)
-        if warnings.isEmpty { commit(jar, slot) } else { pending = PendingLog(jar: jar, slot: slot, warnings: warnings) }
-    }
-
-    private func commit(_ jar: Jar, _ slot: DoseSlot) {
-        guard let entry = store.log(jarId: jar.id, slot: slot, amount: slot.amount, pills: slot.pills, at: Date()) else { return }
-        Haptics.logged()
-        withAnimation(.snappy) { toast = entry }
     }
 
     private func scan() {

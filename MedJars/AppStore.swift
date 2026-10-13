@@ -271,14 +271,19 @@ final class AppStore {
         for item in items { logSlot(jarId: item.jarId, slotId: item.slotId) }
     }
 
-    /// Logs whichever scheduled dose is due now across all jars.
-    @discardableResult
-    func logDueDose() -> DoseEntry? {
-        reload()
-        guard let due = file.dueDose() else { return nil }
-        let entry = log(jarId: due.0.id, slot: due.1, amount: due.1.amount, pills: due.1.pills, at: Date())
-        recentLog = entry
-        return entry
+    /// The scheduled dose that's due now (or missed in the last 3 hours) across all jars.
+    func dueDose() -> (Jar, DoseSlot)? { file.dueDose() }
+
+    /// Saves changes to a logged dose. Pills left in the jar follow the new pill count.
+    func updateEntry(_ updated: DoseEntry) {
+        var f = file
+        guard let old = f.removeLog(updated.id) else { return }
+        var e = updated
+        e.checkIn = old.checkIn
+        let low = f.applyLog(e)
+        adopt(f)
+        persist()
+        if let low { Notify.lowSupply(low) }
     }
 
     /// A timed dose already taken or skipped in the same dose day. As-needed doses never count as duplicates.

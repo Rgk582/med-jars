@@ -76,10 +76,10 @@ struct LogSlotIntent: AppIntent {
     }
 }
 
-/// Control Center: opens Med Jars and logs the dose that's due. Works with any certificate.
+/// Control Center: opens Med Jars to the dose that's due, ready to confirm the amount. Works with any certificate.
 struct OpenAndLogIntent: AppIntent {
     static var title: LocalizedStringResource = "Open and Log Dose"
-    static var description = IntentDescription("Opens Med Jars and logs the dose that's due now.")
+    static var description = IntentDescription("Opens Med Jars to the dose that's due now so you can confirm how much and log it.")
     static var isDiscoverable: Bool = false
 
     func perform() async throws -> some IntentResult & OpensIntent {

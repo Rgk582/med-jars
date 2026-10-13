@@ -10,9 +10,10 @@ enum Reminders {
 
     static func registerCategories() {
         let log = UNNotificationAction(identifier: Notify.logAction, title: "Log Dose", options: [.authenticationRequired])
+        let custom = UNNotificationAction(identifier: Notify.logCustomAction, title: "Log a Different Amount", options: [.foreground])
         let skip = UNNotificationAction(identifier: Notify.skipAction, title: "Skip", options: [.authenticationRequired])
         let logAll = UNNotificationAction(identifier: Notify.logAllAction, title: "Log All", options: [.authenticationRequired])
-        let dose = UNNotificationCategory(identifier: Notify.doseCategory, actions: [log, skip], intentIdentifiers: [], options: [])
+        let dose = UNNotificationCategory(identifier: Notify.doseCategory, actions: [log, custom, skip], intentIdentifiers: [], options: [])
         let group = UNNotificationCategory(identifier: Notify.groupCategory, actions: [logAll], intentIdentifiers: [], options: [])
         let checkIn = UNNotificationCategory(identifier: Notify.checkInCategory, actions: [], intentIdentifiers: [], options: [])
         let refill = UNNotificationCategory(identifier: Notify.refillCategory, actions: [], intentIdentifiers: [], options: [])

@@ -18,6 +18,8 @@ final class Router {
     var path: [Route] = []
     /// A dose whose check-in sheet should open.
     var checkInEntryId: String?
+    /// A dose to log from outside the app (Open and Log, a notification), shown in the log sheet first.
+    var logRequest: LogTarget?
 
     func open(jarId: String) {
         path = [.jar(jarId)]
@@ -34,8 +36,11 @@ final class Router {
         case "log":
             path = [.history]
         case "log-next":
-            if let entry = AppStore.shared.logDueDose() {
-                open(jarId: entry.jarId)
+            let store = AppStore.shared
+            store.reload()
+            if let due = store.dueDose() {
+                open(jarId: due.0.id)
+                logRequest = LogTarget(jarId: due.0.id, slotId: due.1.id)
             } else {
                 path = []
             }
@@ -82,6 +87,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
             } else if let jarId {
                 if action == Notify.logAction, let slotId {
                     store.logSlot(jarId: jarId, slotId: slotId)
+                } else if action == Notify.logCustomAction, let slotId {
+                    Router.shared.open(jarId: jarId)
+                    Router.shared.logRequest = LogTarget(jarId: jarId, slotId: slotId)
                 } else if action == Notify.skipAction, let slotId, let jar = store.jar(jarId) {
                     store.skip(jarId: jarId, slot: jar.sortedSchedule.first { $0.id == slotId }, reason: "Skipped from notification")
                 } else if action == UNNotificationDefaultActionIdentifier {
@@ -114,6 +122,7 @@ struct RootView: View {
     @Environment(Router.self) private var router
     @Environment(\.scenePhase) private var scenePhase
     @State private var authInFlight = false
+    @AppStorage("askedForNotifications") private var askedForNotifications = false
 
     var body: some View {
         @Bindable var router = router
@@ -133,12 +142,19 @@ struct RootView: View {
                              set: { router.checkInEntryId = $0?.id })) { target in
             CheckInSheet(entryId: target.id)
         }
+        .sheet(item: $router.logRequest) { target in
+            if let jar = store.jar(target.jarId) {
+                LogDoseSheet(jar: jar, slotId: target.slotId) { entry in store.recentLog = entry }
+            }
+        }
         .onAppear {
             store.reload()
             refreshBackgroundWork()
             if store.isLocked {
                 PrivacyShield.shared.show(locked: true, accent: store.accentColor, unlock: authenticate)
                 authenticate()
+            } else {
+                askForNotificationsIfNeeded()
             }
             #if DEBUG
             // Simulator previews: -previewRoute jar:<id> | history | settings
@@ -180,6 +196,17 @@ struct RootView: View {
         LiveDoses.sync(jars: store.jars, entries: store.entries)
     }
 
+    /// First open: the system prompt for notifications. Reminders turn on when they're allowed.
+    private func askForNotificationsIfNeeded() {
+        guard !askedForNotifications else { return }
+        askedForNotifications = true
+        Task { @MainActor in
+            let center = UNUserNotificationCenter.current()
+            guard await center.notificationSettings().authorizationStatus == .notDetermined else { return }
+            if await Reminders.requestPermission() { store.setReminders(true) }
+        }
+    }
+
     private func authenticate() {
         guard !authInFlight else { return }
         let context = LAContext()
@@ -196,6 +223,7 @@ struct RootView: View {
                 if ok {
                     store.isLocked = false
                     PrivacyShield.shared.hide()
+                    askForNotificationsIfNeeded()
                 }
             }
         }

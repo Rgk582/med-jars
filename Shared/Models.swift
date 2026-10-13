@@ -510,7 +510,9 @@ extension StoreFile {
     }
 
     func makeEntry(jar: Jar, slot: DoseSlot?, amount: String, pills: Double?, at date: Date, note: String = "", skipped: Bool = false) -> DoseEntry {
-        DoseEntry(jarId: jar.id, jarName: jar.name, kind: jar.kind, form: jar.form, amount: amount, pills: skipped ? nil : pills,
+        // No strength per dose given: work it out from strength per pill so the log still shows it.
+        let shown = amount.isEmpty && !skipped ? Format.doseStrength("", basePills: 1, pills: pills ?? 1, perPill: jar.strength) : amount
+        return DoseEntry(jarId: jar.id, jarName: jar.name, kind: jar.kind, form: jar.form, amount: shown, pills: skipped ? nil : pills,
                   slotId: slot?.id, slotLabel: slot?.displayLabel ?? "Extra", takenAt: date, note: note,
                   skipped: skipped, skipReason: skipped ? note : "")
     }
@@ -585,12 +587,44 @@ enum Format {
 
     static func pills(_ n: Double?, _ form: PillForm) -> String {
         guard let n, n.isFinite, n > 0 else { return "" }
+        return "\(count(n)) \(n <= 1 ? form.singular : form.plural)"
+    }
+
+    /// 1, 2, ½, 1½, or 0.25 for anything else.
+    static func count(_ n: Double) -> String {
         let whole = floor(n), frac = n - whole
-        let shown: String
-        if frac == 0 { shown = String(Int(whole)) }
-        else if abs(frac - 0.5) < 0.001 { shown = (whole > 0 ? String(Int(whole)) : "") + "\u{00BD}" }
-        else { shown = String(n) }
-        return "\(shown) \(n <= 1 ? form.singular : form.plural)"
+        if frac == 0 { return String(Int(whole)) }
+        if abs(frac - 0.5) < 0.001 { return (whole > 0 ? String(Int(whole)) : "") + "\u{00BD}" }
+        return String(format: "%g", n)
+    }
+
+    /// Splits "15 mg" into 15 and " mg". Nil when the text doesn't start with a number.
+    static func leadingNumber(_ s: String) -> (value: Double, unit: String)? {
+        var rest = Substring(s.trimmingCharacters(in: .whitespaces))
+        var digits = ""
+        while let c = rest.first, c.isASCII, c.isNumber || c == "." || c == "," {
+            if c != "," { digits.append(c) }
+            rest = rest.dropFirst()
+        }
+        guard let n = Double(digits), n > 0 else { return nil }
+        return (n, String(rest))
+    }
+
+    /// Strength per dose for `pills`: scaled from a dose amount given for `basePills`,
+    /// or worked out from the strength per pill when there's no dose amount.
+    static func doseStrength(_ amount: String, basePills: Double, pills: Double, perPill: String) -> String {
+        let a = amount.trimmingCharacters(in: .whitespaces)
+        if a.isEmpty {
+            guard let p = leadingNumber(perPill) else { return "" }
+            return trimmed(p.value * pills) + p.unit
+        }
+        guard basePills > 0, let d = leadingNumber(a) else { return a }
+        return trimmed(d.value * pills / basePills) + d.unit
+    }
+
+    static func trimmed(_ n: Double) -> String {
+        let r = (n * 100).rounded() / 100
+        return r == floor(r) ? String(Int(r)) : String(format: "%g", r)
     }
 
     static func number(_ n: Double?) -> String {
