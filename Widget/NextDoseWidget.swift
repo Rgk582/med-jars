@@ -32,7 +32,7 @@ struct NextDoseProvider: TimelineProvider {
     func getTimeline(in context: Context, completion: @escaping (Timeline<NextDoseEntry>) -> Void) {
         let file = StoreIO.load()
         let now = Date()
-        let times = Array(DoseLogic.refreshDates(jars: file.jars, from: now).prefix(40))
+        let times = Array(([now] + DoseLogic.refreshDates(jars: file.jars, from: now).filter { $0 > now }).prefix(40))
         let entries = times.map { entry(at: $0, file: file) }
         let last = times.last ?? now.addingTimeInterval(3600)
         completion(Timeline(entries: entries, policy: .after(max(last, now.addingTimeInterval(900)))))

@@ -376,7 +376,7 @@ private struct AsNeededStatus: View {
     let jar: Jar
 
     var body: some View {
-        TimelineView(.periodic(from: .now, by: 30)) { context in
+        TimelineView(.everyMinute) { context in
             let now = context.date
             let taken = store.entries.filter { $0.jarId == jar.id && !$0.skipped }
             let today = taken.filter { $0.takenAt >= DoseLogic.doseDayStart(for: now) }.count
@@ -428,7 +428,7 @@ struct EffectTimelineView: View {
 
     var body: some View {
         let p = (jar.effect ?? EffectProfile()).normalized
-        TimelineView(.periodic(from: .now, by: 60)) { context in
+        TimelineView(.everyMinute) { context in
             let now = context.date
             VStack(alignment: .leading, spacing: 12) {
                 if let dose {

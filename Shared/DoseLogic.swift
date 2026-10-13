@@ -154,22 +154,23 @@ enum DoseLogic {
     }
 
     /// Moments when a status on screen changes (a dose becomes due, missed, or a new dose day starts),
-    /// so lists only redraw when something actually changes.
+    /// so lists only redraw when something actually changes. The list starts at the dose day's start and
+    /// never contains the current second, so rebuilding a view with it doesn't restart its timeline.
     static func refreshDates(jars: [Jar], from now: Date = Date()) -> [Date] {
-        var out: [Date] = [now]
+        var upcoming = Set<Date>()
         let cal = Calendar.current
         let today = doseDayStart(for: now)
-        for offset in 0...1 {
+        for offset in 0...2 {
             guard let dayStart = cal.date(byAdding: .day, value: offset, to: today) else { continue }
-            out.append(dayStart)
+            upcoming.insert(dayStart)
+            guard offset < 2 else { continue }
             for jar in jars {
                 for slot in jar.timedSlots {
                     guard let t = occurrence(of: slot, dayStart: dayStart) else { continue }
-                    out.append(contentsOf: [t.addingTimeInterval(-45 * 60), t, t.addingTimeInterval(60 * 60 + 1)])
+                    upcoming.formUnion([t.addingTimeInterval(-45 * 60), t, t.addingTimeInterval(60 * 60 + 1)])
                 }
             }
         }
-        out.append(doseDayEnd(for: now))
-        return Array(Set(out.filter { $0 >= now.addingTimeInterval(-1) })).sorted()
+        return [today] + upcoming.filter { $0 > now }.sorted()
     }
 }

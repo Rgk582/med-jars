@@ -14,10 +14,15 @@ final class AddJarTests: XCTestCase {
         if allow.waitForExistence(timeout: 4) { allow.tap() }
     }
 
-    private func assertAlive(_ step: String, wait: UInt32 = 4) {
+    /// Running and responsive: a hung main thread makes this query take a minute or time out.
+    private func assertAlive(_ step: String, wait: UInt32 = 3) {
         sleep(wait)
-        XCTAssertEqual(app.state, .runningForeground, "App not running after: \(step)")
-        print("STEP OK? \(app.state == .runningForeground) :: \(step)")
+        let start = Date()
+        _ = app.navigationBars.firstMatch.waitForExistence(timeout: 20)
+        let took = Date().timeIntervalSince(start)
+        let ok = app.state == .runningForeground && took < 15
+        XCTAssertTrue(ok, "App hung or not running after: \(step) (query took \(Int(took))s)")
+        print("STEP OK? \(ok) (\(Int(took))s) :: \(step)")
     }
 
     private func scrollTo(_ element: XCUIElement, max: Int = 12) {
@@ -105,6 +110,16 @@ final class AddJarTests: XCTestCase {
         assertAlive("interaction set", wait: 1)
         save()
         assertAlive("saved effect jar")
+        let log = app.buttons["Log"].firstMatch
+        if log.waitForExistence(timeout: 5) {
+            log.tap()
+            assertAlive("opened log sheet", wait: 2)
+            let inc = app.buttons["Increment"].firstMatch
+            if inc.exists { inc.tap() }
+            let confirm = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Log '")).firstMatch
+            if confirm.waitForExistence(timeout: 3) { confirm.tap() }
+            assertAlive("logged from sheet")
+        }
         relaunch("effect jar")
     }
 }

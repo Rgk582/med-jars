@@ -6,7 +6,7 @@ struct CaffeineSummaryRow: View {
     let onAdd: () -> Void
 
     var body: some View {
-        TimelineView(.periodic(from: .now, by: 300)) { context in
+        TimelineView(.everyMinute) { context in
             HStack(spacing: 12) {
                 Image(systemName: "cup.and.heat.waves.fill")
                     .font(.title3)
@@ -103,7 +103,7 @@ struct CaffeineView: View {
     var body: some View {
         List {
             Section {
-                TimelineView(.periodic(from: .now, by: 300)) { context in
+                TimelineView(.everyMinute) { context in
                     LabeledContent("In your system now", value: "\(Int(store.caffeineInSystem(at: context.date).rounded())) mg")
                 }
             } footer: {

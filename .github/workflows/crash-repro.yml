@@ -40,7 +40,7 @@ jobs:
           xcodebuild test -project MedJars.xcodeproj -scheme MedJars -configuration Debug \
             -destination "platform=iOS Simulator,id=$UDID" -derivedDataPath build \
             -resultBundlePath out/result.xcresult CODE_SIGNING_ALLOWED=NO > out/test.log 2>&1 || echo "TESTS FAILED" >> out/summary.txt
-          grep -E "error:|STEP OK|Test Case|failed|crash|Crash" out/test.log | head -150 >> out/summary.txt || true
+          grep -E "error:|STEP OK|Test Case|failed|crash|Crash|idle notification not received" out/test.log | head -150 >> out/summary.txt || true
           cat out/summary.txt
 
       - name: Collect crash reports
