@@ -97,7 +97,7 @@ struct RootView: View {
                     }
                 }
         }
-        .tint(Palette.amber)
+        .tint(Palette.accent)
         .overlay {
             if store.isLocked {
                 LockView(unlock: authenticate)
@@ -108,6 +108,14 @@ struct RootView: View {
             store.reload()
             Reminders.reschedule(jars: store.jars, entries: store.entries, enabled: store.settings.reminders)
             if store.isLocked { authenticate() }
+            #if DEBUG
+            // Simulator previews: -previewRoute jar:<id> | history | settings
+            if let r = UserDefaults.standard.string(forKey: "previewRoute") {
+                if r.hasPrefix("jar:") { router.open(jarId: String(r.dropFirst(4))) }
+                else if r == "history" { router.path = [.history] }
+                else if r == "settings" { router.path = [.settings] }
+            }
+            #endif
         }
         .onChange(of: scenePhase) { _, phase in
             switch phase {
@@ -144,19 +152,21 @@ struct LockView: View {
     let unlock: () -> Void
     var body: some View {
         ZStack {
-            Palette.bg.ignoresSafeArea()
-            VStack(spacing: 18) {
-                LidView(lid: .amber, text: "", size: 84)
-                Text("MED CABINET").font(Typo.display(30)).foregroundStyle(Palette.ink)
-                Text("Locked with Face ID").font(.subheadline).foregroundStyle(Palette.muted)
+            Color(uiColor: .systemBackground).ignoresSafeArea()
+            VStack(spacing: 14) {
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 44, weight: .semibold))
+                    .foregroundStyle(Palette.secondary)
+                Text("Med Jars Is Locked").font(.title2.weight(.bold))
+                Text("Unlock to see your jars and dose log.").font(.subheadline).foregroundStyle(Palette.secondary)
                 Button(action: unlock) {
-                    Label("Unlock", systemImage: "faceid")
-                        .font(.headline)
-                        .padding(.horizontal, 26).padding(.vertical, 14)
-                        .background(Palette.amber, in: Capsule())
-                        .foregroundStyle(Palette.onAmber)
+                    Label("Unlock with Face ID", systemImage: "faceid").font(.headline).padding(.horizontal, 6)
                 }
+                .prominentButton()
+                .controlSize(.large)
+                .padding(.top, 8)
             }
+            .padding(32)
         }
     }
 }

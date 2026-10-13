@@ -58,7 +58,11 @@ struct NextDoseWidgetView: View {
     private var timeText: String {
         guard let n = entry.next else { return "" }
         let isTomorrow = !Calendar.current.isDate(n.time, inSameDayAs: entry.date)
-        return (isTomorrow ? "Tomorrow " : "") + Format.time12(n.time)
+        return (isTomorrow ? "Tomorrow, " : "") + Format.time12(n.time)
+    }
+
+    private func amountLine(_ n: NextDose) -> String {
+        [n.slot.amount, Format.pills(n.slot.pills, n.jar.form)].filter { !$0.isEmpty }.joined(separator: " \u{00B7} ")
     }
 
     var body: some View {
@@ -71,12 +75,12 @@ struct NextDoseWidgetView: View {
             }
         }
         .widgetURL(URL(string: entry.next.map { "medjars://jar/\($0.jar.id)" } ?? "medjars://home"))
-        .containerBackground(for: .widget) { Palette.bg }
+        .containerBackground(for: .widget) { Color(uiColor: .systemBackground) }
     }
 
     @ViewBuilder private var inline: some View {
         if let n = entry.next {
-            Text("\(Format.time12(n.time)) \(n.jar.name) \(n.slot.amount)").privacySensitive()
+            Label("\(Format.time12(n.time)) \(n.jar.name)", systemImage: "pills.fill").privacySensitive()
         } else {
             Text(entry.canRead ? "No doses due" : "Open Med Jars")
         }
@@ -85,10 +89,9 @@ struct NextDoseWidgetView: View {
     @ViewBuilder private var rectangular: some View {
         if let n = entry.next {
             VStack(alignment: .leading, spacing: 1) {
-                Text("NEXT \(timeText.uppercased())").font(Typo.mono(11, .semibold))
-                Text(n.jar.name).font(Typo.display(17)).lineLimit(1).privacySensitive()
-                Text([n.slot.amount, Format.pills(n.slot.pills, n.jar.form)].filter { !$0.isEmpty }.joined(separator: " \u{00B7} "))
-                    .font(.caption).lineLimit(1).privacySensitive()
+                Label(timeText, systemImage: "pills.fill").font(.caption.weight(.semibold)).widgetAccentable()
+                Text(n.jar.name).font(.headline).lineLimit(1).privacySensitive()
+                Text(amountLine(n)).font(.caption).lineLimit(1).privacySensitive()
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         } else {
@@ -98,21 +101,20 @@ struct NextDoseWidgetView: View {
 
     @ViewBuilder private var small: some View {
         if let n = entry.next {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 6) {
-                    Circle().fill(n.jar.lid.color).frame(width: 10, height: 10)
-                    Text("NEXT \(timeText.uppercased())").font(Typo.mono(11, .semibold)).foregroundStyle(Palette.muted)
-                        .lineLimit(1).minimumScaleFactor(0.7)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    JarIcon(jar: n.jar, size: 34)
+                    Spacer()
+                    Text("\(entry.taken)/\(entry.total)").font(.caption.weight(.semibold)).monospacedDigit().foregroundStyle(.secondary)
                 }
-                Text(n.jar.name.uppercased()).font(Typo.display(22)).foregroundStyle(Palette.ink)
-                    .lineLimit(2).minimumScaleFactor(0.7).privacySensitive()
-                Text(n.slot.amount.ifEmptyFallback("Dose")).font(.subheadline.weight(.semibold)).foregroundStyle(Palette.ink).privacySensitive()
                 Spacer(minLength: 0)
-                Text("\(entry.taken) of \(entry.total) today").font(Typo.mono(11)).foregroundStyle(Palette.muted)
+                Text(timeText.uppercased()).font(.caption2.weight(.semibold)).foregroundStyle(Palette.accent).widgetAccentable()
+                Text(n.jar.name).font(.headline).lineLimit(2).minimumScaleFactor(0.8).privacySensitive()
+                Text(amountLine(n).ifEmptyFallback("Dose")).font(.subheadline).foregroundStyle(.secondary).lineLimit(1).privacySensitive()
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         } else {
-            Text(message).font(.subheadline).foregroundStyle(Palette.muted)
+            Text(message).font(.subheadline).foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
     }
@@ -120,18 +122,18 @@ struct NextDoseWidgetView: View {
     @ViewBuilder private var medium: some View {
         if let n = entry.next {
             HStack(spacing: 14) {
-                LidView(lid: n.jar.lid, text: n.jar.initials, size: 56)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("NEXT \(timeText.uppercased())").font(Typo.mono(12, .semibold)).foregroundStyle(Palette.muted)
-                    Text(n.jar.name.uppercased()).font(Typo.display(24)).foregroundStyle(Palette.ink).lineLimit(1).minimumScaleFactor(0.7).privacySensitive()
-                    Text([n.slot.amount, Format.pills(n.slot.pills, n.jar.form), n.slot.label].filter { !$0.isEmpty }.joined(separator: " \u{00B7} "))
-                        .font(.subheadline).foregroundStyle(Palette.ink).lineLimit(1).privacySensitive()
-                    Text("\(entry.taken) of \(entry.total) scheduled doses logged today").font(.caption).foregroundStyle(Palette.muted)
+                JarIcon(jar: n.jar, size: 56)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("NEXT \u{00B7} \(timeText.uppercased())").font(.caption2.weight(.semibold)).foregroundStyle(Palette.accent).widgetAccentable()
+                    Text(n.jar.name).font(.title3.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.8).privacySensitive()
+                    Text([amountLine(n), n.slot.label].filter { !$0.isEmpty }.joined(separator: " \u{00B7} "))
+                        .font(.subheadline).foregroundStyle(.secondary).lineLimit(1).privacySensitive()
+                    Text("\(entry.taken) of \(entry.total) doses logged today").font(.caption).foregroundStyle(.tertiary)
                 }
                 Spacer(minLength: 0)
             }
         } else {
-            Text(message).font(.subheadline).foregroundStyle(Palette.muted)
+            Text(message).font(.subheadline).foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         }
     }

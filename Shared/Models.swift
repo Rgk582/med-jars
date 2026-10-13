@@ -19,6 +19,18 @@ enum PillForm: String, Codable, CaseIterable, Identifiable {
         }
     }
     var title: String { singular.capitalized }
+    /// SF Symbol shown in the jar's icon.
+    var symbol: String {
+        switch self {
+        case .tablet: return "pills.fill"
+        case .capsule: return "pill.fill"
+        case .softgel: return "capsule.portrait.fill"
+        case .gummy: return "heart.fill"
+        case .scoop: return "cup.and.saucer.fill"
+        case .drop: return "drop.fill"
+        case .other: return "cross.vial.fill"
+        }
+    }
 }
 
 enum FoodRule: String, Codable, CaseIterable, Identifiable {
@@ -31,11 +43,27 @@ enum FoodRule: String, Codable, CaseIterable, Identifiable {
         case .without: return "Take on an empty stomach"
         }
     }
+    var symbol: String {
+        switch self {
+        case .either: return "fork.knife.circle"
+        case .with: return "fork.knife"
+        case .without: return "clock.badge.exclamationmark"
+        }
+    }
 }
 
+/// Jar color. Old names (amber, plum, slate) map to the nearest system color.
 enum LidColor: String, Codable, CaseIterable, Identifiable {
-    case amber, teal, plum, blue, green, red, slate
+    case amber, red, pink, plum, indigo, blue, cyan, teal, mint, green, yellow, slate
     var id: String { rawValue }
+    var name: String {
+        switch self {
+        case .amber: return "Orange"
+        case .plum: return "Purple"
+        case .slate: return "Gray"
+        default: return rawValue.capitalized
+        }
+    }
 }
 
 /// One scheduled dose. `time` is "HH:mm" (24 h) or nil for "as needed".
@@ -87,11 +115,13 @@ struct Jar: Codable, Identifiable, Hashable {
     var absorb: [String] = []
     var summary: String = ""
     var order: Int = 0
+    /// NFC tag hardware IDs (hex) paired with this jar.
+    var tagIds: [String] = []
 
     init(id: String, name: String) { self.id = id; self.name = name }
 
     enum CodingKeys: String, CodingKey {
-        case id, name, kind, form, strength, lid, schedule, howTo, food, avoid, absorb, summary, order
+        case id, name, kind, form, strength, lid, schedule, howTo, food, avoid, absorb, summary, order, tagIds
     }
 
     /// Tolerant decoding so jars pasted from the web cabinet (or older files) import cleanly.
@@ -113,6 +143,7 @@ struct Jar: Codable, Identifiable, Hashable {
         absorb = (try? c.decodeIfPresent([String].self, forKey: .absorb)) ?? []
         summary = (try? c.decodeIfPresent(String.self, forKey: .summary)) ?? ""
         order = (try? c.decodeIfPresent(Int.self, forKey: .order)) ?? 0
+        tagIds = (try? c.decodeIfPresent([String].self, forKey: .tagIds)) ?? []
     }
 
     var initials: String {

@@ -23,21 +23,60 @@ struct JarEditorView: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Name on the jar", text: $draft.name)
-                        .font(.title3.weight(.semibold))
+                    HStack {
+                        Spacer()
+                        VStack(spacing: 8) {
+                            JarIcon(jar: draft, size: 72)
+                            Text(draft.name.ifEmpty("New Jar")).font(.headline).foregroundStyle(draft.name.isEmpty ? Palette.tertiary : Palette.label)
+                        }
+                        Spacer()
+                    }
+                    .listRowBackground(Color.clear)
+                }
+
+                Section {
+                    TextField("Name on the Jar", text: $draft.name)
                         .onChange(of: draft.name) { _, newValue in
                             if isNew && !tagIdTouched { tagId = Format.slug(newValue) }
                         }
                     Picker("Type", selection: $draft.kind) {
                         ForEach(JarKind.allCases) { Text($0.label).tag($0) }
                     }
-                    .pickerStyle(.segmented)
                     Picker("Form", selection: $draft.form) {
-                        ForEach(PillForm.allCases) { Text($0.title).tag($0) }
+                        ForEach(PillForm.allCases) { f in
+                            Label(f.title, systemImage: f.symbol).tag(f)
+                        }
                     }
-                    TextField("Strength per \(draft.form.singular), like 5 mg", text: $draft.strength)
-                    lidPicker
-                } header: { Text("Jar") }
+                    LabeledContent("Strength") {
+                        TextField("e.g. 5 mg", text: $draft.strength)
+                            .multilineTextAlignment(.trailing)
+                    }
+                }
+
+                Section("Color") {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 6), spacing: 12) {
+                        ForEach(LidColor.allCases) { lid in
+                            Button {
+                                draft.lid = lid
+                            } label: {
+                                Circle()
+                                    .fill(lid.color.gradient)
+                                    .frame(width: 36, height: 36)
+                                    .overlay {
+                                        if draft.lid == lid {
+                                            Image(systemName: "checkmark").font(.footnote.weight(.bold)).foregroundStyle(.white)
+                                        }
+                                    }
+                                    .padding(3)
+                                    .overlay(Circle().strokeBorder(draft.lid == lid ? lid.color : .clear, lineWidth: 2))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(lid.name)
+                            .accessibilityAddTraits(draft.lid == lid ? .isSelected : [])
+                        }
+                    }
+                    .padding(.vertical, 6)
+                }
 
                 Section {
                     ForEach($draft.schedule) { $slot in
@@ -47,64 +86,71 @@ struct JarEditorView: View {
                     Button {
                         draft.schedule.append(DoseSlot(label: "", time: "08:00", amount: "", pills: 1))
                     } label: {
-                        Label("Add dose time", systemImage: "plus.circle.fill")
+                        Label("Add Dose Time", systemImage: "plus.circle.fill")
                     }
                 } header: {
-                    Text("Dose times")
+                    Text("Dose Times")
                 } footer: {
-                    Text("Swipe left on a dose time to remove it. Turn off Set time for an as needed dose.")
+                    Text("Swipe left on a dose time to remove it. Turn off Set Time for an as needed dose.")
                 }
 
                 Section {
-                    TextField("Swallow whole with a full glass of water.", text: $draft.howTo, axis: .vertical)
+                    TextField("e.g. Swallow whole with water", text: $draft.howTo, axis: .vertical)
                         .lineLimit(2...6)
                     Picker("Food", selection: $draft.food) {
                         ForEach(FoodRule.allCases) { Text($0.label).tag($0) }
                     }
-                } header: { Text("How to take it") }
+                } header: { Text("How to Take") }
 
                 Section {
                     TextField("One warning per line", text: $avoidText, axis: .vertical)
                         .lineLimit(3...10)
-                } header: { Text("Avoid") } footer: { Text("Each line becomes its own warning sticker.") }
+                } header: { Text("Avoid") } footer: { Text("Each line shows as its own warning.") }
 
                 Section {
                     TextField("One tip per line", text: $absorbText, axis: .vertical)
                         .lineLimit(3...10)
-                } header: { Text("Better absorption") }
+                } header: { Text("Better Absorption") }
 
                 Section {
-                    TextField("Paste your summary here", text: $draft.summary, axis: .vertical)
+                    TextField("Paste your summary", text: $draft.summary, axis: .vertical)
                         .lineLimit(4...20)
-                } header: { Text("What it does") }
+                } header: { Text("What It Does") }
 
                 if isNew {
                     Section {
-                        TextField("tag-name", text: $tagId)
+                        TextField("link-name", text: $tagId)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
-                            .font(Typo.mono(15))
+                            .fontDesign(.monospaced)
                             .onChange(of: tagId) { _, newValue in
                                 if newValue != Format.slug(draft.name) { tagIdTouched = true }
                             }
-                    } header: { Text("Link name") } footer: {
-                        Text("Used in this jar's link (medjars://jar/\(Format.slug(tagId).ifEmpty("name"))). It can't change later.")
+                    } header: { Text("Link Name") } footer: {
+                        Text("Used in this jar's link, medjars://jar/\(Format.slug(tagId).ifEmpty("name")). It can't change later.")
+                    }
+                }
+
+                if !target.pairTagUID.isEmpty {
+                    Section {
+                        Label("The tag you scanned will be paired with this jar.", systemImage: "wave.3.right")
+                            .foregroundStyle(Palette.secondary)
                     }
                 }
 
                 if let problem {
-                    Section { Text(problem).foregroundStyle(Palette.alert).font(.subheadline.weight(.semibold)) }
+                    Section { Label(problem, systemImage: "exclamationmark.circle.fill").foregroundStyle(Palette.missed) }
                 }
 
                 if !isNew {
                     Section {
-                        Button("Delete jar", role: .destructive) { confirmDelete = true }
+                        Button("Delete Jar", role: .destructive) { confirmDelete = true }
                     } footer: {
                         Text("Its past doses stay in the dose log.")
                     }
                 }
             }
-            .navigationTitle(isNew ? "New jar" : "Edit jar")
+            .navigationTitle(isNew ? "New Jar" : "Edit Jar")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
@@ -115,7 +161,7 @@ struct JarEditorView: View {
                 }
             }
             .confirmationDialog("Delete \(draft.name)?", isPresented: $confirmDelete, titleVisibility: .visible) {
-                Button("Delete jar", role: .destructive) {
+                Button("Delete Jar", role: .destructive) {
                     store.deleteJar(draft.id)
                     router.path = []
                     dismiss()
@@ -125,27 +171,6 @@ struct JarEditorView: View {
             }
             .onAppear(perform: setup)
         }
-    }
-
-    private var lidPicker: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Lid color").font(.subheadline).foregroundStyle(Palette.muted)
-            HStack(spacing: 10) {
-                ForEach(LidColor.allCases) { lid in
-                    Button {
-                        draft.lid = lid
-                    } label: {
-                        LidView(lid: lid, text: "", size: 34)
-                            .overlay(Circle().strokeBorder(Palette.ink, lineWidth: draft.lid == lid ? 3 : 0).padding(-4))
-                            .padding(4)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("\(lid.name) lid")
-                    .accessibilityAddTraits(draft.lid == lid ? .isSelected : [])
-                }
-            }
-        }
-        .padding(.vertical, 4)
     }
 
     private func setup() {
@@ -193,6 +218,7 @@ struct JarEditorView: View {
             }
             .filter { !$0.label.isEmpty || $0.time != nil || !$0.amount.isEmpty || $0.pills != nil }
         store.upsert(jar)
+        if !target.pairTagUID.isEmpty { store.pair(tagUID: target.pairTagUID, toJar: jar.id) }
         if isNew { router.open(jarId: jar.id) }
         dismiss()
     }
@@ -219,17 +245,18 @@ struct SlotEditorRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            TextField("Name, like On waking", text: $slot.label)
-                .font(.body.weight(.semibold))
-            Toggle("Set time", isOn: hasTime)
+            TextField("Name, e.g. On Waking", text: $slot.label)
+                .font(.headline)
+            Toggle("Set Time", isOn: hasTime)
             if slot.time != nil {
                 DatePicker("Time", selection: timeDate, displayedComponents: .hourAndMinute)
             }
             HStack(spacing: 12) {
-                TextField("Amount, like 15 mg", text: $slot.amount)
+                TextField("Amount, e.g. 15 mg", text: $slot.amount)
                 Divider()
                 TextField(form.plural.capitalized, text: $pillsText)
                     .keyboardType(.decimalPad)
+                    .multilineTextAlignment(.trailing)
                     .frame(width: 90)
                     .onChange(of: pillsText) { _, v in
                         let t = v.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: ".")

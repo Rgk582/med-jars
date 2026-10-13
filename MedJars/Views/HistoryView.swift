@@ -30,83 +30,79 @@ struct HistoryView: View {
     }
 
     var body: some View {
-        List {
+        Group {
             if store.entries.isEmpty {
-                Section {
-                    EmptyCard(title: "Nothing logged yet",
-                              message: "Open a jar and tap Log dose. Each entry shows up here with its date, time and amount.")
-                        .listRowInsets(EdgeInsets())
-                        .listRowBackground(Color.clear)
+                ContentUnavailableView {
+                    Label("No Doses Logged", systemImage: "list.bullet.clipboard")
+                } description: {
+                    Text("Open a jar and tap Log. Each dose shows up here with its date, time and amount.")
                 }
-            }
-            ForEach(groups) { group in
-                Section {
-                    ForEach(group.entries) { e in
-                        row(e)
-                            .swipeActions {
-                                Button(role: .destructive) {
-                                    lastRemoved = e
-                                    store.deleteEntry(e.id)
-                                } label: { Label("Remove", systemImage: "trash") }
+            } else {
+                List {
+                    ForEach(groups) { group in
+                        Section {
+                            ForEach(group.entries) { e in
+                                row(e)
+                                    .swipeActions {
+                                        Button(role: .destructive) {
+                                            withAnimation { lastRemoved = e }
+                                            store.deleteEntry(e.id)
+                                        } label: { Label("Delete", systemImage: "trash") }
+                                    }
                             }
-                    }
-                } header: {
-                    HStack {
-                        Text(Format.dayLabel(group.day))
-                        Spacer()
-                        Text("\(group.entries.count) dose\(group.entries.count == 1 ? "" : "s")").font(Typo.mono(12))
+                        } header: {
+                            HStack {
+                                Text(Format.dayLabel(group.day))
+                                Spacer()
+                                Text("\(group.entries.count) dose\(group.entries.count == 1 ? "" : "s")")
+                            }
+                        }
                     }
                 }
+                .listStyle(.insetGrouped)
             }
         }
-        .scrollContentBackground(.hidden)
-        .background(Palette.bg.ignoresSafeArea())
-        .navigationTitle("Dose log")
+        .background(Palette.background)
+        .navigationTitle("Dose Log")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                ShareLink(item: DoseLogCSV(csv: store.csv), preview: SharePreview("Dose log CSV")) {
-                    Label("Export", systemImage: "square.and.arrow.up")
+                ShareLink(item: DoseLogCSV(csv: store.csv), preview: SharePreview("Dose Log")) {
+                    Image(systemName: "square.and.arrow.up")
                 }
                 .disabled(store.entries.isEmpty)
+                .accessibilityLabel("Export as CSV")
             }
         }
         .safeAreaInset(edge: .bottom) {
             if let removed = lastRemoved {
-                HStack {
-                    Text("Removed \(removed.jarName) at \(Format.time12(removed.takenAt))").font(.subheadline.weight(.semibold))
-                    Spacer()
-                    Button("Undo") {
-                        store.restore(removed)
-                        lastRemoved = nil
-                    }
-                    .font(.subheadline.weight(.semibold))
+                UndoToast(text: "Deleted \(removed.jarName) at \(Format.time12(removed.takenAt))") {
+                    store.restore(removed)
+                    withAnimation { lastRemoved = nil }
                 }
-                .foregroundStyle(Palette.paper)
-                .padding(.horizontal, 16).padding(.vertical, 12)
-                .background(Palette.ink, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .padding(.horizontal, 16).padding(.bottom, 8)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
                 .task(id: removed.id) {
-                    try? await Task.sleep(nanoseconds: 7_000_000_000)
-                    if lastRemoved?.id == removed.id { lastRemoved = nil }
+                    try? await Task.sleep(nanoseconds: 6_000_000_000)
+                    withAnimation { if lastRemoved?.id == removed.id { lastRemoved = nil } }
                 }
+                .padding(.bottom, 8)
             }
         }
     }
 
     private func row(_ e: DoseEntry) -> some View {
-        let jar = store.jar(e.jarId)
+        let jar = store.jar(e.jarId) ?? {
+            var j = Jar(id: e.jarId, name: e.jarName); j.form = e.form; j.lid = .slate; return j
+        }()
         return HStack(spacing: 12) {
-            Text(Format.time12(e.takenAt))
-                .font(Typo.mono(13)).foregroundStyle(Palette.muted)
-                .frame(width: 74, alignment: .leading)
-            Circle().fill((jar?.lid ?? .slate).color).frame(width: 12, height: 12)
-            VStack(alignment: .leading, spacing: 1) {
-                Text("\(e.jarName) \u{00B7} \([e.amount, Format.pills(e.pills, e.form)].filter { !$0.isEmpty }.joined(separator: ", ").ifEmpty("Dose"))")
-                    .font(.body.weight(.semibold)).foregroundStyle(Palette.ink)
-                Text([e.slotLabel, e.note].filter { !$0.isEmpty }.joined(separator: " \u{00B7} "))
-                    .font(.footnote).foregroundStyle(Palette.muted)
+            JarIcon(jar: jar, size: 36)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(e.jarName).font(.headline)
+                Text([e.amountLine, e.slotLabel, e.note].filter { !$0.isEmpty }.joined(separator: " \u{00B7} "))
+                    .font(.subheadline).foregroundStyle(Palette.secondary)
             }
+            Spacer(minLength: 8)
+            Text(Format.time12(e.takenAt)).font(.subheadline).monospacedDigit().foregroundStyle(Palette.secondary)
         }
-        .listRowBackground(Palette.paper)
+        .padding(.vertical, 2)
     }
 }

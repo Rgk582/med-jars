@@ -26,7 +26,7 @@ struct LogDoseSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Which dose") {
+                Section("Dose") {
                     Picker("Dose", selection: $slotId) {
                         ForEach(jar.sortedSchedule) { s in
                             Text(s.displayLabel + (s.minutes != nil ? " \u{00B7} " + Format.time12(s.time) : "")).tag(s.id)
@@ -38,7 +38,7 @@ struct LogDoseSheet: View {
                     }
                 }
                 Section("Amount") {
-                    TextField("Amount, like 15 mg", text: $amount)
+                    TextField("Amount, e.g. 15 mg", text: $amount)
                     TextField("How many \(jar.form.plural)", text: $pillsText)
                         .keyboardType(.decimalPad)
                 }
@@ -46,29 +46,30 @@ struct LogDoseSheet: View {
                     DatePicker("Taken", selection: $takenAt, in: ...Date().addingTimeInterval(300))
                 }
                 Section("Note") {
-                    TextField("Optional, like took with breakfast", text: $note)
+                    TextField("Optional, e.g. took with breakfast", text: $note)
                 }
                 if let dup = duplicate {
                     Section {
                         Text("You already logged this dose at \(Format.time12(dup.takenAt))\(Calendar.current.isDateInToday(takenAt) ? " today" : " that day"). Saving logs it again.")
-                            .foregroundStyle(Palette.alert)
+                            .foregroundStyle(Palette.missed)
                             .font(.subheadline.weight(.semibold))
                     }
                 }
                 if let problem {
-                    Section { Text(problem).foregroundStyle(Palette.alert) }
+                    Section { Text(problem).foregroundStyle(Palette.missed) }
                 }
             }
-            .navigationTitle("Log \(jar.name)")
+            .navigationTitle(jar.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(duplicate == nil ? "Save" : "Log again") { save() }.fontWeight(.semibold)
+                    Button(duplicate == nil ? "Log" : "Log Again") { save() }.fontWeight(.semibold)
                 }
             }
             .onAppear(perform: setup)
         }
+        .presentationDetents([.medium, .large])
     }
 
     private func setup() {

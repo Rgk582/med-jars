@@ -60,6 +60,36 @@ final class AppStore {
 
     func isIdTaken(_ id: String) -> Bool { jars.contains { $0.id == id } }
 
+    // MARK: NFC tags
+
+    /// Finds the jar for a scanned tag: a paired tag ID first, then a link written on the tag
+    /// (medjars://jar/<id>, or any link ending in #<id> or /<id>, like the web cabinet's).
+    func jar(forTag tag: ScannedTag) -> Jar? {
+        if let j = jars.first(where: { $0.tagIds.contains(tag.uid) }) { return j }
+        guard let url = tag.url else { return nil }
+        var candidates: [String] = []
+        if url.scheme?.lowercased() == "medjars", let id = url.pathComponents.dropFirst().first { candidates.append(id) }
+        if let fragment = url.fragment { candidates.append(fragment) }
+        candidates.append(url.lastPathComponent)
+        for c in candidates {
+            let id = Format.slug(c)
+            if let j = jars.first(where: { $0.id == id }) { return j }
+        }
+        return nil
+    }
+
+    func pair(tagUID uid: String, toJar jarId: String) {
+        guard !uid.isEmpty else { return }
+        for i in jars.indices { jars[i].tagIds.removeAll { $0 == uid } }
+        if let i = jars.firstIndex(where: { $0.id == jarId }) { jars[i].tagIds.append(uid) }
+        persist()
+    }
+
+    func unpairTags(jarId: String) {
+        if let i = jars.firstIndex(where: { $0.id == jarId }) { jars[i].tagIds = [] }
+        persist()
+    }
+
     /// Imports jars from JSON: one jar object or an array of them (web cabinet format works).
     func importJars(from text: String) -> String {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
