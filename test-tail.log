@@ -1,0 +1,300 @@
+    t =    21.15s     Checking `Expect predicate `existsNoRetry == 1` for object NavigationBar (First Match)`
+    t =    21.15s         Checking existence of `NavigationBar (First Match)`
+STEP OK? true (1s) :: first launch
+    t =    21.24s Waiting 10.0s for "Add Jar" Button to exist
+    t =    22.28s     Checking `Expect predicate `existsNoRetry == 1` for object "Add Jar" Button`
+    t =    22.28s         Checking existence of `"Add Jar" Button`
+    t =    22.35s Tap "Add Jar" Button
+    t =    22.35s     Wait for com.medjars.app to idle
+    t =    22.35s     Find the "Add Jar" Button
+    t =    22.41s     Check for interrupting elements affecting "plus" Button
+    t =    22.52s     Synthesize event
+    t =    22.89s     Wait for com.medjars.app to idle
+    t =    24.09s Waiting 6.0s for "Medication or Supplement" TextField to exist
+    t =    25.15s     Checking `Expect predicate `existsNoRetry == 1` for object "Medication or Supplement" TextField`
+    t =    25.15s         Checking existence of `"Medication or Supplement" TextField`
+    t =    25.33s Checking existence of `"Medication or Supplement" TextField`
+    t =    25.42s Find the "Medication or Supplement" TextField
+    t =    25.53s Tap "Medication or Supplement" TextField
+    t =    25.53s     Wait for com.medjars.app to idle
+    t =    25.53s     Find the "Medication or Supplement" TextField
+    t =    25.64s     Check for interrupting elements affecting "Medication or Supplement" TextField
+    t =    25.74s     Synthesize event
+    t =    26.04s     Wait for com.medjars.app to idle
+    t =    27.64s Type 'Vitamin D3' into "Medication or Supplement" TextField
+    t =    27.64s     Wait for com.medjars.app to idle
+    t =    28.02s     Find the "Medication or Supplement" TextField
+    t =    28.51s     Check for interrupting elements affecting "Medication or Supplement" TextField
+    t =    28.70s     Synthesize event
+    t =    29.57s     Wait for com.medjars.app to idle
+    t =    29.77s Checking existence of `"e.g. 5 mg" TextField`
+    t =    30.14s Find the "e.g. 5 mg" TextField
+    t =    30.28s Swipe up Target Application 'com.medjars.app'
+    t =    30.28s     Wait for com.medjars.app to idle
+    t =    30.29s     Find the Target Application 'com.medjars.app'
+    t =    30.36s     Check for interrupting elements affecting "Med Jars" Application
+    t =    30.53s     Synthesize event
+    t =    31.04s     Wait for com.medjars.app to idle
+    t =    31.05s Checking existence of `"e.g. 5 mg" TextField`
+    t =    31.42s Find the "e.g. 5 mg" TextField
+    t =    31.64s Swipe up Target Application 'com.medjars.app'
+    t =    31.64s     Wait for com.medjars.app to idle
+    t =    31.65s     Find the Target Application 'com.medjars.app'
+    t =    31.77s     Check for interrupting elements affecting "Med Jars" Application
+    t =    31.87s     Synthesize event
+    t =    32.30s     Wait for com.medjars.app to idle
+    t =    32.31s Checking existence of `"e.g. 5 mg" TextField`
+    t =    32.64s Find the "e.g. 5 mg" TextField
+    t =    32.86s Swipe up Target Application 'com.medjars.app'
+    t =    32.86s     Wait for com.medjars.app to idle
+    t =    32.86s     Find the Target Application 'com.medjars.app'
+    t =    33.03s     Check for interrupting elements affecting "Med Jars" Application
+    t =    33.36s     Synthesize event
+    t =    33.81s     Wait for com.medjars.app to idle
+    t =    33.81s Checking existence of `"e.g. 5 mg" TextField`
+    t =    34.00s Find the "e.g. 5 mg" TextField
+    t =    34.22s Swipe up Target Application 'com.medjars.app'
+    t =    34.22s     Wait for com.medjars.app to idle
+    t =    34.23s     Find the Target Application 'com.medjars.app'
+    t =    34.36s     Check for interrupting elements affecting "Med Jars" Application
+    t =    34.47s     Synthesize event
+    t =    34.90s     Wait for com.medjars.app to idle
+    t =    34.90s Checking existence of `"e.g. 5 mg" TextField`
+    t =    35.17s Find the "e.g. 5 mg" TextField
+    t =    35.35s Swipe up Target Application 'com.medjars.app'
+    t =    35.35s     Wait for com.medjars.app to idle
+    t =    35.35s     Find the Target Application 'com.medjars.app'
+    t =    35.45s     Check for interrupting elements affecting "Med Jars" Application
+    t =    35.67s     Synthesize event
+    t =    36.10s     Wait for com.medjars.app to idle
+    t =    36.10s Checking existence of `"e.g. 5 mg" TextField`
+    t =    36.27s Find the "e.g. 5 mg" TextField
+    t =    36.51s Swipe up Target Application 'com.medjars.app'
+    t =    36.51s     Wait for com.medjars.app to idle
+    t =    36.51s     Find the Target Application 'com.medjars.app'
+    t =    36.62s     Check for interrupting elements affecting "Med Jars" Application
+    t =    37.16s     Synthesize event
+    t =    37.63s     Wait for com.medjars.app to idle
+    t =    37.63s Checking existence of `"e.g. 5 mg" TextField`
+    t =    38.08s Find the "e.g. 5 mg" TextField
+    t =    39.48s Swipe up Target Application 'com.medjars.app'
+    t =    39.48s     Wait for com.medjars.app to idle
+    t =    39.50s     Find the Target Application 'com.medjars.app'
+    t =    40.24s     Check for interrupting elements affecting "Med Jars" Application
+    t =    42.24s     Synthesize event
+    t =    43.11s     Wait for com.medjars.app to idle
+    t =    43.11s Checking existence of `"e.g. 5 mg" TextField`
+    t =    44.49s Find the "e.g. 5 mg" TextField
+    t =    45.40s Swipe up Target Application 'com.medjars.app'
+    t =    45.40s     Wait for com.medjars.app to idle
+    t =    45.41s     Find the Target Application 'com.medjars.app'
+    t =    45.81s     Check for interrupting elements affecting "Med Jars" Application
+    t =    46.40s     Synthesize event
+    t =    46.98s     Wait for com.medjars.app to idle
+    t =    46.98s Checking existence of `"e.g. 5 mg" TextField`
+    t =    47.68s Find the "e.g. 5 mg" TextField
+    t =    48.07s Swipe up Target Application 'com.medjars.app'
+    t =    48.07s     Wait for com.medjars.app to idle
+    t =    48.07s     Find the Target Application 'com.medjars.app'
+    t =    48.25s     Check for interrupting elements affecting "Med Jars" Application
+    t =    49.07s     Synthesize event
+    t =    50.59s     Wait for com.medjars.app to idle
+    t =    50.59s Checking existence of `"e.g. 5 mg" TextField`
+    t =    51.09s Find the "e.g. 5 mg" TextField
+    t =    51.34s Swipe up Target Application 'com.medjars.app'
+    t =    51.34s     Wait for com.medjars.app to idle
+    t =    51.38s     Find the Target Application 'com.medjars.app'
+    t =    51.53s     Check for interrupting elements affecting "Med Jars" Application
+    t =    51.83s     Synthesize event
+    t =    52.26s     Wait for com.medjars.app to idle
+    t =    52.27s Checking existence of `"e.g. 5 mg" TextField`
+    t =    52.49s Find the "e.g. 5 mg" TextField
+    t =    52.73s Swipe up Target Application 'com.medjars.app'
+    t =    52.73s     Wait for com.medjars.app to idle
+    t =    52.74s     Find the Target Application 'com.medjars.app'
+    t =    52.89s     Check for interrupting elements affecting "Med Jars" Application
+    t =    53.05s     Synthesize event
+    t =    53.60s     Wait for com.medjars.app to idle
+    t =    53.61s Checking existence of `"e.g. 5 mg" TextField`
+    t =    53.81s Find the "e.g. 5 mg" TextField
+    t =    53.97s Swipe up Target Application 'com.medjars.app'
+    t =    53.97s     Wait for com.medjars.app to idle
+    t =    53.97s     Find the Target Application 'com.medjars.app'
+    t =    54.06s     Check for interrupting elements affecting "Med Jars" Application
+    t =    54.16s     Synthesize event
+    t =    54.59s     Wait for com.medjars.app to idle
+    t =    54.60s Checking existence of `"e.g. 5 mg" TextField`
+    t =    54.72s Find the "e.g. 5 mg" TextField
+    t =    54.88s Tap "e.g. 5 mg" TextField
+    t =    54.88s     Wait for com.medjars.app to idle
+    t =    54.88s     Find the "e.g. 5 mg" TextField
+    t =    55.05s     Check for interrupting elements affecting "e.g. 5 mg" TextField
+    t =    55.19s     Synthesize event
+    t =    55.22s         Scroll element to visible
+    t =    55.26s         Find the "e.g. 5 mg" TextField
+    t =    56.21s         Computed hit point {187.5, 126} after scrolling to visible
+    t =    56.54s     Wait for com.medjars.app to idle
+    t =    56.81s Type '2000 IU' into "e.g. 5 mg" TextField
+    t =    56.82s     Wait for com.medjars.app to idle
+    t =    57.04s     Find the "e.g. 5 mg" TextField
+    t =    57.68s     Check for interrupting elements affecting "e.g. 5 mg" TextField
+    t =    57.86s     Synthesize event
+    t =    58.18s     Wait for com.medjars.app to idle
+    t =    59.55s Waiting 20.0s for NavigationBar (First Match) to exist
+    t =    60.59s     Checking `Expect predicate `existsNoRetry == 1` for object NavigationBar (First Match)`
+    t =    60.59s         Checking existence of `NavigationBar (First Match)`
+STEP OK? true (1s) :: typed plain jar
+    t =    60.69s Tap "Save" Button
+    t =    60.69s     Wait for com.medjars.app to idle
+    t =    60.69s     Find the "Save" Button
+    t =    60.98s     Check for interrupting elements affecting "Save" Button
+    t =    61.13s     Synthesize event
+    t =    61.60s     Wait for com.medjars.app to idle
+    t =    93.57s Waiting 20.0s for NavigationBar (First Match) to exist
+    t =    94.65s     Checking `Expect predicate `existsNoRetry == 1` for object NavigationBar (First Match)`
+    t =    94.65s         Checking existence of `NavigationBar (First Match)`
+STEP OK? true (1s) :: saved plain jar
+    t =    94.77s Terminate com.medjars.app:14208
+    t =    95.80s Open com.medjars.app
+    t =    95.80s     Launch com.medjars.app
+    t =    98.51s         Setting up automation session
+    t =   102.40s         Wait for com.medjars.app to idle
+    t =   162.45s             App event loop idle notification not received, will attempt to continue.
+    t =   169.48s Waiting 20.0s for NavigationBar (First Match) to exist
+    t =   170.51s     Checking `Expect predicate `existsNoRetry == 1` for object NavigationBar (First Match)`
+    t =   170.51s         Checking existence of `NavigationBar (First Match)`
+    t =   189.76s         Capturing element debug description
+    t =   189.76s     Checking existence of `NavigationBar (First Match)`
+/Users/runner/work/med-jars/med-jars/ci/UITests/AddJarTests.swift:24: error: -[MedJarsUITests.AddJarTests test1_PlainJar] : XCTAssertTrue failed - App hung or not running after: relaunch after plain jar (query took 39s)
+STEP OK? false (39s) :: relaunch after plain jar
+    t =   210.14s Requesting snapshot of accessibility hierarchy for app with pid 17002
+Query chain:
+ →Find: Target Application 'com.medjars.app'
+
+    t =   270.20s Tear Down
+Test Case '-[MedJarsUITests.AddJarTests test1_PlainJar]' failed (300.450 seconds).
+Test Case '-[MedJarsUITests.AddJarTests test2_AsNeededJar]' started.
+    t =     0.01s Start Test at 2026-10-13 09:23:31.513
+    t =     0.05s Set Up
+    t =     0.07s Open com.medjars.app
+    t =     0.08s     Launch com.medjars.app
+    t =     0.08s         Terminate com.medjars.app:17002
+    t =     7.15s         Setting up automation session
+    t =    10.75s         Wait for com.medjars.app to idle
+    t =    70.92s             App event loop idle notification not received, will attempt to continue.
+    t =    71.94s Waiting 4.0s for "Allow" Button to exist
+    t =    72.97s     Checking `Expect predicate `existsNoRetry == 1` for object "Allow" Button`
+    t =    72.98s         Checking existence of `"Allow" Button`
+    t =    73.13s         Capturing element debug description
+    t =    73.97s     Checking `Expect predicate `existsNoRetry == 1` for object "Allow" Button`
+    t =    73.97s         Checking existence of `"Allow" Button`
+    t =    74.00s         Capturing element debug description
+    t =    74.95s     Checking `Expect predicate `existsNoRetry == 1` for object "Allow" Button`
+    t =    74.95s         Checking existence of `"Allow" Button`
+    t =    74.97s         Capturing element debug description
+    t =    75.94s     Checking `Expect predicate `existsNoRetry == 1` for object "Allow" Button`
+    t =    75.94s         Checking existence of `"Allow" Button`
+    t =    75.97s         Capturing element debug description
+    t =    75.97s     Checking existence of `"Allow" Button`
+    t =    76.01s Collecting debug information to assist test failure triage
+    t =    76.01s     Requesting snapshot of accessibility hierarchy for app with pid 3233
+    t =    76.17s Waiting 10.0s for "Add Jar" Button to exist
+    t =    77.24s     Checking `Expect predicate `existsNoRetry == 1` for object "Add Jar" Button`
+    t =    77.24s         Checking existence of `"Add Jar" Button`
+    t =    86.49s         Capturing element debug description
+    t =    86.49s     Checking existence of `"Add Jar" Button`
+    t =    89.06s Tap "Add Jar" Button
+    t =    89.06s     Wait for com.medjars.app to idle
+    t =    89.14s     Find the "Add Jar" Button
+    t =   120.19s         Find the "Add Jar" Button (retry 1)
+    t =   148.58s     Check for interrupting elements affecting "plus" Button
+    t =   268.37s     Synthesize event
+    t =   328.40s         Failed: Failed to compute hit point for Button, {{inf, inf}, {0.0, 0.0}}, identifier: 'plus', label: 'Add Jar': Activation point invalid and no suggested hit points based on element frame
+    t =   328.40s         Requesting snapshot of accessibility hierarchy for app with pid 26382
+    t =   389.37s     Retrying `Tap "Add Jar" Button` (attempt #2)
+    t =   389.37s         Wait for com.medjars.app to idle
+    t =   448.28s         Find the "plus" Button
+    t =   448.57s         Check for interrupting elements affecting "plus" Button
+    t =   508.38s         Synthesize event
+    t =   568.30s             Failed: Failed to compute hit point for Button, {{inf, inf}, {0.0, 0.0}}, identifier: 'plus', label: 'Add Jar': Activation point invalid and no suggested hit points based on element frame
+    t =   568.30s             Requesting snapshot of accessibility hierarchy for app with pid 26382
+    t =   569.48s     Retrying `Tap "Add Jar" Button` (attempt #3)
+    t =   569.48s         Wait for com.medjars.app to idle
+    t =   628.28s         Find the "plus" Button
+    t =   628.39s         Check for interrupting elements affecting "plus" Button
+    t =   688.29s         Synthesize event
+    t =   688.80s         Wait for com.medjars.app to idle
+    t =   748.31s Waiting 6.0s for "Medication or Supplement" TextField to exist
+    t =   749.32s     Checking `Expect predicate `existsNoRetry == 1` for object "Medication or Supplement" TextField`
+    t =   749.35s         Checking existence of `"Medication or Supplement" TextField`
+    t =   754.59s         Capturing element debug description
+    t =   754.59s     Checking existence of `"Medication or Supplement" TextField`
+    t =   785.61s     Checking existence of `"Medication or Supplement" TextField` (retry 1)
+    t =   816.63s     Checking existence of `"Medication or Supplement" TextField` (retry 2)
+/Users/runner/work/med-jars/med-jars/ci/UITests/AddJarTests.swift:41: error: -[MedJarsUITests.AddJarTests test2_AsNeededJar] : Failed to get matching snapshots: Timed out while evaluating UI query.
+    t =   846.68s Tear Down
+Test Case '-[MedJarsUITests.AddJarTests test2_AsNeededJar]' failed (846.887 seconds).
+Test Case '-[MedJarsUITests.AddJarTests test3_EffectAndInteraction]' started.
+    t =     0.00s Start Test at 2026-10-13 09:37:38.396
+    t =     0.17s Set Up
+    t =     0.17s     Open com.medjars.app
+    t =     0.17s         Launch com.medjars.app
+    t =     0.17s             Terminate com.medjars.app:26382
+    t =     1.91s             Setting up automation session
+    t =     4.79s             Wait for com.medjars.app to idle
+    t =    64.81s                 App event loop idle notification not received, will attempt to continue.
+    t =    65.82s     Waiting 4.0s for "Allow" Button to exist
+    t =    66.88s         Checking `Expect predicate `existsNoRetry == 1` for object "Allow" Button`
+    t =    66.88s             Checking existence of `"Allow" Button`
+    t =    67.02s             Capturing element debug description
+    t =    67.83s         Checking `Expect predicate `existsNoRetry == 1` for object "Allow" Button`
+    t =    67.83s             Checking existence of `"Allow" Button`
+    t =    67.85s             Capturing element debug description
+    t =    68.86s         Checking `Expect predicate `existsNoRetry == 1` for object "Allow" Button`
+    t =    68.86s             Checking existence of `"Allow" Button`
+    t =    68.88s             Capturing element debug description
+    t =    69.83s         Checking `Expect predicate `existsNoRetry == 1` for object "Allow" Button`
+    t =    69.83s             Checking existence of `"Allow" Button`
+    t =    69.84s             Capturing element debug description
+    t =    69.84s         Checking existence of `"Allow" Button`
+    t =    69.86s     Collecting debug information to assist test failure triage
+    t =    69.86s         Requesting snapshot of accessibility hierarchy for app with pid 3233
+    t =    69.91s     Waiting 10.0s for "Add Jar" Button to exist
+    t =    70.93s         Checking `Expect predicate `existsNoRetry == 1` for object "Add Jar" Button`
+    t =    70.93s             Checking existence of `"Add Jar" Button`
+    t =    80.20s             Capturing element debug description
+    t =    80.20s         Checking existence of `"Add Jar" Button`
+    t =    82.11s     Tap "Add Jar" Button
+    t =    82.11s         Wait for com.medjars.app to idle
+    t =   141.47s         Find the "Add Jar" Button
+    t =   141.59s         Check for interrupting elements affecting "plus" Button
+    t =   201.44s         Synthesize event
+    t =   201.86s         Wait for com.medjars.app to idle
+    t =   261.88s             App event loop idle notification not received, will attempt to continue.
+    t =   261.89s App animations complete notification not received, will attempt to continue.
+    t =   261.91s     Waiting 6.0s for "Medication or Supplement" TextField to exist
+    t =   262.97s         Checking `Expect predicate `existsNoRetry == 1` for object "Medication or Supplement" TextField`
+    t =   262.97s             Checking existence of `"Medication or Supplement" TextField`
+    t =   268.17s             Capturing element debug description
+    t =   268.17s         Checking existence of `"Medication or Supplement" TextField`
+    t =   299.20s         Checking existence of `"Medication or Supplement" TextField` (retry 1)
+    t =   330.23s         Checking existence of `"Medication or Supplement" TextField` (retry 2)
+/Users/runner/work/med-jars/med-jars/ci/UITests/AddJarTests.swift:41: error: -[MedJarsUITests.AddJarTests test3_EffectAndInteraction] : Failed to get matching snapshots: Timed out while evaluating UI query.
+    t =   360.30s Tear Down
+Test Case '-[MedJarsUITests.AddJarTests test3_EffectAndInteraction]' failed (361.066 seconds).
+Test Suite 'AddJarTests' failed at 2026-10-13 09:43:39.462.
+	 Executed 3 tests, with 3 failures (0 unexpected) in 1508.403 (1508.414) seconds
+Test Suite 'MedJarsUITests.xctest' failed at 2026-10-13 09:43:39.463.
+	 Executed 3 tests, with 3 failures (0 unexpected) in 1508.403 (1508.415) seconds
+Test Suite 'All tests' failed at 2026-10-13 09:43:39.463.
+	 Executed 3 tests, with 3 failures (0 unexpected) in 1508.403 (1508.416) seconds
+2026-10-13 09:44:10.560 xcodebuild[5006:20655] [MT] IDETestOperationsObserverDebug: 1576.815 elapsed -- Testing started completed.
+2026-10-13 09:44:10.561 xcodebuild[5006:20655] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-10-13 09:44:10.561 xcodebuild[5006:20655] [MT] IDETestOperationsObserverDebug: 1576.815 sec, +1576.815 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/runner/work/med-jars/med-jars/out/result.xcresult
+
+** TEST FAILED **
+
+Testing started

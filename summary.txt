@@ -1,0 +1,21 @@
+TESTS FAILED
+Test Case '-[MedJarsUITests.AddJarTests test1_PlainJar]' started.
+STEP OK? true (1s) :: first launch
+STEP OK? true (1s) :: typed plain jar
+STEP OK? true (1s) :: saved plain jar
+    t =   162.45s             App event loop idle notification not received, will attempt to continue.
+/Users/runner/work/med-jars/med-jars/ci/UITests/AddJarTests.swift:24: error: -[MedJarsUITests.AddJarTests test1_PlainJar] : XCTAssertTrue failed - App hung or not running after: relaunch after plain jar (query took 39s)
+STEP OK? false (39s) :: relaunch after plain jar
+Test Case '-[MedJarsUITests.AddJarTests test1_PlainJar]' failed (300.450 seconds).
+Test Case '-[MedJarsUITests.AddJarTests test2_AsNeededJar]' started.
+    t =    70.92s             App event loop idle notification not received, will attempt to continue.
+/Users/runner/work/med-jars/med-jars/ci/UITests/AddJarTests.swift:41: error: -[MedJarsUITests.AddJarTests test2_AsNeededJar] : Failed to get matching snapshots: Timed out while evaluating UI query.
+Test Case '-[MedJarsUITests.AddJarTests test2_AsNeededJar]' failed (846.887 seconds).
+Test Case '-[MedJarsUITests.AddJarTests test3_EffectAndInteraction]' started.
+    t =    64.81s                 App event loop idle notification not received, will attempt to continue.
+    t =   261.88s             App event loop idle notification not received, will attempt to continue.
+/Users/runner/work/med-jars/med-jars/ci/UITests/AddJarTests.swift:41: error: -[MedJarsUITests.AddJarTests test3_EffectAndInteraction] : Failed to get matching snapshots: Timed out while evaluating UI query.
+Test Case '-[MedJarsUITests.AddJarTests test3_EffectAndInteraction]' failed (361.066 seconds).
+Test Suite 'AddJarTests' failed at 2026-10-13 09:43:39.462.
+Test Suite 'MedJarsUITests.xctest' failed at 2026-10-13 09:43:39.463.
+Test Suite 'All tests' failed at 2026-10-13 09:43:39.463.
