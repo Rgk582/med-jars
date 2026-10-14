@@ -180,6 +180,51 @@ struct TodayDosesIntent: AppIntent {
     }
 }
 
+/// For Shortcuts and automations: Discreet Mode on, off, back to its schedule, or flipped.
+enum DiscreetChoice: String, AppEnum {
+    case on, off, scheduled, toggle
+
+    static var typeDisplayRepresentation: TypeDisplayRepresentation = "Discreet Mode"
+    static var caseDisplayRepresentations: [DiscreetChoice: DisplayRepresentation] = [
+        .on: "On",
+        .off: "Off",
+        .scheduled: "On a Schedule",
+        .toggle: "Toggle"
+    ]
+}
+
+/// Runs quietly in the background, so an automation can switch Discreet Mode without opening the app.
+struct SetDiscreetModeIntent: AppIntent {
+    static var title: LocalizedStringResource = "Set Discreet Mode"
+    static var description = IntentDescription("Turns Discreet Mode on or off, puts it back on its schedule, or flips it. Discreet Mode hides the name, icon and words in the Live Activity and Dynamic Island.")
+    static var openAppWhenRun: Bool = false
+
+    @Parameter(title: "Discreet Mode", default: .on)
+    var mode: DiscreetChoice
+
+    static var parameterSummary: some ParameterSummary {
+        Summary("Set Discreet Mode to \(\.$mode)")
+    }
+
+    init() {}
+
+    @MainActor
+    func perform() async throws -> some IntentResult {
+        let store = AppStore.shared
+        store.reload()
+        var d = store.discreet
+        switch mode {
+        case .on: d.mode = .on
+        case .off: d.mode = .off
+        case .scheduled: d.mode = .scheduled
+        case .toggle: d.mode = d.isOn() ? .off : .on
+        }
+        store.setDiscreet(d)
+        await LiveDoses.lastSync?.value
+        return .result()
+    }
+}
+
 struct MedJarsShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(intent: DoseStatusIntent(), phrases: [
@@ -198,5 +243,9 @@ struct MedJarsShortcuts: AppShortcutsProvider {
                     shortTitle: "Open Jar", systemImageName: "pills")
         AppShortcut(intent: LogNextDoseIntent(), phrases: ["Log a dose in \(.applicationName)"],
                     shortTitle: "Log Next Dose", systemImageName: "checkmark.circle")
+        AppShortcut(intent: SetDiscreetModeIntent(), phrases: [
+            "Set \(.applicationName) discreet mode to \(\.$mode)",
+            "Discreet mode \(\.$mode) in \(.applicationName)"
+        ], shortTitle: "Discreet Mode", systemImageName: "eye.slash")
     }
 }

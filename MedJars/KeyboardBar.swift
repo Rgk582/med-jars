@@ -1,3 +1,4 @@
+import SwiftUI
 import UIKit
 
 /// Cancel and Done above the keyboard for every text box in the app. Done keeps what you typed.
@@ -9,10 +10,11 @@ final class KeyboardBar: NSObject {
     private weak var field: UIView?
     private var original = ""
 
+    private lazy var done = UIBarButtonItem(title: "Done", style: .done, target: self, action: #selector(doneTapped))
+
     private lazy var bar: UIToolbar = {
         let toolbar = UIToolbar(frame: CGRect(x: 0, y: 0, width: 320, height: 44))
         let cancel = UIBarButtonItem(title: "Cancel", style: .plain, target: self, action: #selector(cancelTapped))
-        let done = UIBarButtonItem(title: "Done", style: .done, target: self, action: #selector(doneTapped))
         toolbar.items = [cancel, UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil), done]
         toolbar.sizeToFit()
         return toolbar
@@ -24,6 +26,8 @@ final class KeyboardBar: NSObject {
     }
 
     @objc private func began(_ note: Notification) {
+        // Done follows the theme color picked in Settings.
+        done.tintColor = UIColor(AppStore.shared.accentColor)
         if let textField = note.object as? UITextField {
             field = textField
             original = textField.text ?? ""

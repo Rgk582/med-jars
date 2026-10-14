@@ -25,6 +25,8 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.medjars.app
         PRODUCT_NAME: MedJars
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES: AppIconDiscreet
+        ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: "YES"
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         CODE_SIGN_ENTITLEMENTS: MedJars/MedJars.entitlements
     info:
@@ -43,7 +45,7 @@ targets:
         NSHealthUpdateUsageDescription: Med Jars does not write to the Health app.
         NSSupportsLiveActivities: true
         UIBackgroundModes: [fetch]
-        BGTaskSchedulerPermittedIdentifiers: [com.medjars.app.wakecheck]
+        BGTaskSchedulerPermittedIdentifiers: [com.medjars.app.wakecheck, com.medjars.app.liveupdate]
         com.apple.developer.nfc.readersession.iso7816.select-identifiers: [D2760000850101]
         CFBundleURLTypes:
           - CFBundleURLName: com.medjars.app

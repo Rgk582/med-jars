@@ -71,6 +71,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         Reminders.registerCategories()
         KeyboardBar.shared.start()
         WakeDetector.launch()
+        LiveDoses.registerBackground()
         return true
     }
 
@@ -215,7 +216,7 @@ struct RootView: View {
     private func refreshBackgroundWork() {
         Reminders.reschedule(jars: store.jars, entries: store.entries, planned: store.planned,
                              enabled: store.settings.reminders, grouped: store.groupRemindersOn)
-        LiveDoses.sync(jars: store.jars, entries: store.entries)
+        LiveDoses.sync(jars: store.jars, entries: store.entries, discreet: store.settings.discreet)
         WakeDetector.refresh()
     }
 

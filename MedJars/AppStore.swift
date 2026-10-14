@@ -158,6 +158,14 @@ final class AppStore {
         persist()
     }
 
+    /// Discreet Mode for the Live Activity and Dynamic Island.
+    var discreet: DiscreetSettings { settings.discreet ?? DiscreetSettings() }
+
+    func setDiscreet(_ value: DiscreetSettings) {
+        settings.discreet = value
+        persist()
+    }
+
     func jar(_ id: String) -> Jar? { jars.first { $0.id == id } }
 
     func lastEntry(for jarId: String) -> DoseEntry? { entries.first { $0.jarId == jarId } }
@@ -608,7 +616,7 @@ final class AppStore {
         ControlCenter.shared.reloadAllControls()
         Reminders.reschedule(jars: jars, entries: entries, planned: planned, enabled: settings.reminders, grouped: groupRemindersOn)
         MedJarsShortcuts.updateAppShortcutParameters()
-        LiveDoses.sync(jars: jars, entries: entries)
+        LiveDoses.sync(jars: jars, entries: entries, discreet: settings.discreet)
         backupNow()
     }
 }

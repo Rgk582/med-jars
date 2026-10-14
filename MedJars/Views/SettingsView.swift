@@ -44,6 +44,8 @@ struct SettingsView: View {
     @State private var healthBusy = false
     @State private var healthMessage: String?
     @State private var healthAsked = false
+    @State private var iconName: String? = UIApplication.shared.alternateIconName
+    @State private var iconMessage: String?
 
     var body: some View {
         Form {
@@ -69,6 +71,29 @@ struct SettingsView: View {
                 }
             } footer: {
                 Text("Asks for Face ID when you open Med Jars and hides your jars in the app switcher.")
+            }
+
+            Section {
+                Picker(selection: discreetBinding(\.mode)) {
+                    ForEach(DiscreetMode.allCases, id: \.self) { Text($0.title).tag($0) }
+                } label: {
+                    Label { Text("Discreet Mode") } icon: { SettingsIcon(symbol: "eye.slash.fill", color: .gray) }
+                }
+                if store.discreet.mode == .scheduled {
+                    DatePicker("From", selection: discreetTime(\.fromMinutes), displayedComponents: .hourAndMinute)
+                    DatePicker("Until", selection: discreetTime(\.untilMinutes), displayedComponents: .hourAndMinute)
+                    WeekdayPicker(days: discreetBinding(\.days))
+                    LabeledContent("Right Now", value: discreetStatus)
+                }
+                iconRow(nil, title: "Standard Icon")
+                iconRow(Self.discreetIcon, title: "Discreet Icon")
+                if let iconMessage {
+                    Text(iconMessage).font(.footnote).foregroundStyle(Palette.missed)
+                }
+            } header: {
+                Text("Discreet Mode")
+            } footer: {
+                Text("Takes the name, icon and words off the Live Activity and Dynamic Island and leaves only the timers on the curve. A small mountain shows once a dose has peaked. To switch it from a Shortcut or an automation, use Set Discreet Mode in the Shortcuts app. The Discreet Icon is a white circle on black.")
             }
 
             Section {
@@ -317,6 +342,82 @@ struct SettingsView: View {
                 healthMessage = "Importing from Health needs iOS 26."
             case .failure(.denied(let text)):
                 healthMessage = text
+            }
+        }
+    }
+
+    // MARK: Discreet Mode
+
+    static let discreetIcon = "AppIconDiscreet"
+
+    private func discreetBinding<T>(_ key: WritableKeyPath<DiscreetSettings, T>) -> Binding<T> {
+        Binding(get: { store.discreet[keyPath: key] }, set: { value in
+            var d = store.discreet
+            d[keyPath: key] = value
+            store.setDiscreet(d)
+        })
+    }
+
+    private func discreetTime(_ key: WritableKeyPath<DiscreetSettings, Int>) -> Binding<Date> {
+        Binding(get: {
+            let m = store.discreet[keyPath: key]
+            return Calendar.current.date(bySettingHour: m / 60, minute: m % 60, second: 0, of: Date()) ?? Date()
+        }, set: { date in
+            let c = Calendar.current.dateComponents([.hour, .minute], from: date)
+            var d = store.discreet
+            d[keyPath: key] = (c.hour ?? 0) * 60 + (c.minute ?? 0)
+            store.setDiscreet(d)
+        })
+    }
+
+    private var discreetStatus: String {
+        let d = store.discreet
+        let now = Date()
+        let state = d.isOn(at: now) ? "On" : "Off"
+        guard let next = d.nextChange(after: now) else { return state }
+        let when = Calendar.current.isDate(next, inSameDayAs: now)
+            ? Format.time12(next)
+            : "\(next.formatted(.dateTime.weekday(.abbreviated))) \(Format.time12(next))"
+        return "\(state) until \(when)"
+    }
+
+    private func iconRow(_ name: String?, title: String) -> some View {
+        Button {
+            setIcon(name)
+        } label: {
+            HStack(spacing: 12) {
+                Group {
+                    if name == nil {
+                        Image("IconPreview").resizable().scaledToFill()
+                    } else {
+                        ZStack {
+                            Color.black
+                            Circle().fill(Color.white).padding(7)
+                        }
+                    }
+                }
+                .frame(width: 29, height: 29)
+                .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 7, style: .continuous).stroke(Color.white.opacity(0.15), lineWidth: 0.5))
+                Text(title).foregroundStyle(Palette.label)
+                Spacer()
+                if iconName == name {
+                    Image(systemName: "checkmark").font(.body.weight(.semibold)).foregroundStyle(store.accentColor)
+                }
+            }
+        }
+        .disabled(!UIApplication.shared.supportsAlternateIcons)
+    }
+
+    private func setIcon(_ name: String?) {
+        guard name != iconName else { return }
+        Task { @MainActor in
+            do {
+                try await UIApplication.shared.setAlternateIconName(name)
+                iconName = UIApplication.shared.alternateIconName
+                iconMessage = nil
+            } catch {
+                iconMessage = "Couldn't change the icon: \(error.localizedDescription)"
             }
         }
     }

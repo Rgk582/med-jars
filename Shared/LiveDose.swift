@@ -21,6 +21,12 @@ struct ActiveDose: Codable, Hashable, Identifiable {
 struct DoseActivityAttributes: ActivityAttributes {
     struct ContentState: Codable, Hashable {
         var doses: [ActiveDose]
+        /// Discreet Mode settings, so the view can check the schedule each time iOS draws it.
+        var discreet: DiscreetSettings? = nil
+        /// When the app last sent this, so every update draws fresh.
+        var updated: Date? = nil
+
+        var isDiscreet: Bool { discreet?.isOn(at: Date()) ?? false }
     }
 }
 

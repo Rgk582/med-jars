@@ -798,10 +798,12 @@ struct AppSettings: Codable, Hashable {
     var bedtime: Int? = nil
     /// Usual wake time in minutes after midnight, for doses taken upon waking. Nil means 7:00 AM.
     var usualWake: Int? = nil
+    /// Discreet Mode for the Live Activity and Dynamic Island. Nil means off.
+    var discreet: DiscreetSettings? = nil
 }
 
 extension AppSettings {
-    enum CodingKeys: String, CodingKey { case faceIDLock, reminders, backupBookmark, accent, caffeineTracker, groupReminders, bedtime, usualWake }
+    enum CodingKeys: String, CodingKey { case faceIDLock, reminders, backupBookmark, accent, caffeineTracker, groupReminders, bedtime, usualWake, discreet }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -813,6 +815,76 @@ extension AppSettings {
         groupReminders = try? c.decodeIfPresent(Bool.self, forKey: .groupReminders)
         bedtime = try? c.decodeIfPresent(Int.self, forKey: .bedtime)
         usualWake = try? c.decodeIfPresent(Int.self, forKey: .usualWake)
+        discreet = try? c.decodeIfPresent(DiscreetSettings.self, forKey: .discreet)
+    }
+}
+
+enum DiscreetMode: String, Codable, CaseIterable, Hashable {
+    case off, on, scheduled
+
+    var title: String {
+        switch self {
+        case .off: return "Off"
+        case .on: return "On"
+        case .scheduled: return "On a Schedule"
+        }
+    }
+}
+
+/// Discreet Mode: the Live Activity and Dynamic Island drop the name, icon and words and keep only the timers.
+/// It can be on until turned off, or on during a daily window on chosen days.
+struct DiscreetSettings: Codable, Hashable {
+    var mode: DiscreetMode = .off
+    /// The scheduled window in minutes after midnight. An end before the start runs past midnight.
+    var fromMinutes: Int = 9 * 60
+    var untilMinutes: Int = 17 * 60
+    /// Weekdays (1 is Sunday) the window starts on.
+    var days: [Int] = DoseSlot.everyDay
+
+    init() {}
+
+    enum CodingKeys: String, CodingKey { case mode, fromMinutes, untilMinutes, days }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        mode = (try? c.decodeIfPresent(DiscreetMode.self, forKey: .mode)) ?? .off
+        fromMinutes = (try? c.decodeIfPresent(Int.self, forKey: .fromMinutes)) ?? 9 * 60
+        untilMinutes = (try? c.decodeIfPresent(Int.self, forKey: .untilMinutes)) ?? 17 * 60
+        let d = (try? c.decodeIfPresent([Int].self, forKey: .days)) ?? DoseSlot.everyDay
+        days = d.isEmpty ? DoseSlot.everyDay : d
+    }
+
+    func isOn(at date: Date = Date()) -> Bool {
+        switch mode {
+        case .off: return false
+        case .on: return true
+        case .scheduled: return windows(around: date).contains { $0.contains(date) }
+        }
+    }
+
+    /// The next time a schedule switches Discreet Mode on or off.
+    func nextChange(after date: Date) -> Date? {
+        guard mode == .scheduled else { return nil }
+        let edges = windows(around: date, ahead: 8).flatMap { [$0.lowerBound, $0.upperBound] }
+        return edges.filter { $0 > date }.min()
+    }
+
+    /// The scheduled windows that start from yesterday through `ahead` days out. The same start and end means all day.
+    private func windows(around date: Date, ahead: Int = 0) -> [Range<Date>] {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: date)
+        var out: [Range<Date>] = []
+        for offset in -1...ahead {
+            guard let day = cal.date(byAdding: .day, value: offset, to: today),
+                  days.contains(cal.component(.weekday, from: day)) else { continue }
+            let from = max(0, min(fromMinutes, 24 * 60 - 1)), until = max(0, min(untilMinutes, 24 * 60 - 1))
+            guard let start = cal.date(byAdding: .minute, value: from == until ? 0 : from, to: day) else { continue }
+            let endDay: Date? = from == until || until < from ? cal.date(byAdding: .day, value: 1, to: day) : day
+            guard let endDay, let end = cal.date(byAdding: .minute, value: from == until ? 0 : until, to: endDay),
+                  end > start else { continue }
+            out.append(start..<end)
+        }
+        return out
     }
 }
 

@@ -291,28 +291,132 @@ struct LiveDoseRow: View {
     }
 }
 
+/// Discreet Mode: no name, icon or words. The stopwatch since the dose sits on top, the countdown to the peak sits
+/// over the top of the curve (a small mountain once it has peaked) and the time left sits where the curve ends.
+struct DiscreetDoseRow: View {
+    let dose: ActiveDose
+    var compact = false
+
+    private let labelWidth: CGFloat = 60
+
+    var body: some View {
+        let p = dose.profile.normalized
+        let total = Double(p.durationMinutes) * 1.12
+        let peakX = CGFloat(Double(p.peakMinutes) / total)
+        let endX = CGFloat(Double(p.durationMinutes) / total)
+        let endLevel = CGFloat(p.level(at: Double(p.durationMinutes)))
+        let band: CGFloat = compact ? 15 : 19
+        let curve: CGFloat = compact ? 24 : 44
+        // Live Activities only redraw when the app updates them or they go out of date, which is set for the peak.
+        let peaked = Date() >= dose.peak
+        VStack(spacing: compact ? 2 : 4) {
+            Text(dose.start, style: .timer)
+                .font(compact ? .subheadline.weight(.semibold) : .headline)
+                .monospacedDigit()
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+            GeometryReader { geo in
+                let w = geo.size.width
+                let endY = band + curve * (1 - endLevel)
+                ZStack(alignment: .topLeading) {
+                    VStack(spacing: 0) {
+                        Color.clear.frame(height: band)
+                        ZStack(alignment: .bottom) {
+                            EffectCurveShape(profile: dose.profile)
+                                .fill(LinearGradient(colors: [dose.color.opacity(0.55), dose.color.opacity(0.08)], startPoint: .top, endPoint: .bottom))
+                            ProgressView(timerInterval: dose.start...dose.start.addingTimeInterval(total * 60), countsDown: false) {
+                                EmptyView()
+                            } currentValueLabel: {
+                                EmptyView()
+                            }
+                            .progressViewStyle(.linear)
+                            .tint(dose.color)
+                        }
+                        .frame(height: curve)
+                    }
+                    Circle().fill(dose.color)
+                        .frame(width: 5, height: 5)
+                        .position(x: peakX * w, y: band)
+                    Circle().fill(dose.color)
+                        .frame(width: 5, height: 5)
+                        .position(x: endX * w, y: endY)
+                    Group {
+                        if peaked {
+                            Image(systemName: "mountain.2.fill").foregroundStyle(dose.color)
+                        } else {
+                            Text(timerInterval: dose.start...dose.peak, countsDown: true)
+                                .multilineTextAlignment(.center)
+                        }
+                    }
+                    .frame(width: labelWidth)
+                    .position(x: clamp(peakX * w, w), y: band / 2 - 1)
+                    Text(timerInterval: dose.start...dose.end, countsDown: true)
+                        .multilineTextAlignment(.center)
+                        .frame(width: labelWidth)
+                        .position(x: clamp(endX * w, w), y: endY - (compact ? 9 : 11))
+                }
+                .font((compact ? Font.caption2 : Font.caption).weight(.medium))
+                .monospacedDigit()
+                .foregroundStyle(.secondary)
+            }
+            .frame(height: band + curve)
+        }
+    }
+
+    /// Keeps a label inside the row when its spot is near an edge.
+    private func clamp(_ x: CGFloat, _ width: CGFloat) -> CGFloat {
+        min(max(x, labelWidth / 2), max(labelWidth / 2, width - labelWidth / 2))
+    }
+}
+
 struct DoseLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: DoseActivityAttributes.self) { context in
-            VStack(spacing: 12) {
-                ForEach(context.state.doses.prefix(3)) { dose in
-                    LiveDoseRow(dose: dose)
+            let doses = context.state.doses
+            if context.state.isDiscreet {
+                VStack(spacing: 8) {
+                    ForEach(doses.prefix(2)) { dose in
+                        DiscreetDoseRow(dose: dose, compact: doses.count > 1)
+                    }
                 }
+                .padding(14)
+            } else {
+                VStack(spacing: 12) {
+                    ForEach(doses.prefix(3)) { dose in
+                        LiveDoseRow(dose: dose)
+                    }
+                }
+                .padding(16)
             }
-            .padding(16)
         } dynamicIsland: { context in
             let doses = context.state.doses
             let soonest = doses.min { $0.end < $1.end }
+            let discreet = context.state.isDiscreet
             return DynamicIsland {
                 DynamicIslandExpandedRegion(.bottom) {
                     VStack(spacing: 10) {
                         ForEach(doses.prefix(2)) { dose in
-                            LiveDoseRow(dose: dose, compact: true)
+                            if discreet {
+                                DiscreetDoseRow(dose: dose, compact: true)
+                            } else {
+                                LiveDoseRow(dose: dose, compact: true)
+                            }
                         }
                     }
                 }
             } compactLeading: {
-                Image(systemName: "pills.fill").foregroundStyle(soonest?.color ?? .orange)
+                if discreet, let s = soonest {
+                    if Date() < s.peak {
+                        Text(timerInterval: s.start...s.peak, countsDown: true)
+                            .monospacedDigit()
+                            .frame(maxWidth: 56)
+                            .foregroundStyle(s.color)
+                    } else {
+                        Image(systemName: "mountain.2.fill").foregroundStyle(s.color)
+                    }
+                } else {
+                    Image(systemName: "pills.fill").foregroundStyle(soonest?.color ?? .orange)
+                }
             } compactTrailing: {
                 if let s = soonest {
                     Text(timerInterval: s.start...s.end, countsDown: true)
@@ -321,7 +425,21 @@ struct DoseLiveActivity: Widget {
                         .foregroundStyle(s.color)
                 }
             } minimal: {
-                Image(systemName: "pills.fill").foregroundStyle(soonest?.color ?? .orange)
+                if discreet, let s = soonest {
+                    if Date() < s.peak {
+                        ProgressView(timerInterval: s.start...s.peak, countsDown: false) {
+                            EmptyView()
+                        } currentValueLabel: {
+                            EmptyView()
+                        }
+                        .progressViewStyle(.circular)
+                        .tint(s.color)
+                    } else {
+                        Image(systemName: "mountain.2.fill").foregroundStyle(s.color)
+                    }
+                } else {
+                    Image(systemName: "pills.fill").foregroundStyle(soonest?.color ?? .orange)
+                }
             }
         }
     }
