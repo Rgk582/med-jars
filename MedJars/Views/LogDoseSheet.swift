@@ -109,7 +109,7 @@ struct LogDoseSheet: View {
                 }
 
                 Section {
-                    PillCounter(count: $pills, form: jar.form)
+                    AmountInput(amount: $pills, form: jar.form)
                     if pills != basePills {
                         Button("Back to \(Format.pills(basePills, jar.form))") {
                             withAnimation(.snappy) { pills = basePills }
@@ -180,6 +180,7 @@ struct LogDoseSheet: View {
     private var buttonTitle: String {
         if isEdit { return "Save Changes" }
         if !warnings.isEmpty { return "Log Anyway" }
+        if jar.form.isMeasured { return "Log \(Format.pills(pills, jar.form))" }
         return "Log \(Format.count(pills)) \(pills <= 1 ? jar.form.title : jar.form.plural.capitalized)"
     }
 

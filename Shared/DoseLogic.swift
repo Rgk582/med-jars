@@ -75,6 +75,7 @@ enum DoseLogic {
 
     /// When a slot happens within the dose day that starts at `dayStart`.
     static func occurrence(of slot: DoseSlot, dayStart: Date) -> Date? {
+        if slot.uponWaking, slot.time != nil, let woke = WakeTimes.detected(onDayStarting: dayStart) { return woke }
         guard let m = slot.minutes else { return nil }
         let cal = Calendar.current
         guard var d = cal.date(bySettingHour: m / 60, minute: m % 60, second: 0, of: dayStart) else { return nil }
@@ -132,7 +133,12 @@ enum DoseLogic {
             for slot in jar.slots(onDayStarting: dayStart) {
                 guard let at = occurrence(of: slot, dayStart: dayStart) else { continue }
                 let hits = todays.filter { $0.slotId == slot.id }
-                let result = status(at: at, hit: hits.first(where: { !$0.skipped }) ?? hits.first, now: now)
+                let hit = hits.first(where: { !$0.skipped }) ?? hits.first
+                var result = status(at: at, hit: hit, now: now)
+                // Upon waking: until today's wake-up shows up in Apple Health, the dose is still to come.
+                if slot.uponWaking, hit == nil, WakeTimes.detected(onDayStarting: dayStart) == nil, dayStart >= doseDayStart(for: now) {
+                    result = (.later, result.1)
+                }
                 out.append(SlotRow(slot: slot, status: result.0, distance: result.1, at: at))
             }
         }

@@ -43,6 +43,7 @@ struct SettingsView: View {
     @State private var backupMessage: String?
     @State private var healthBusy = false
     @State private var healthMessage: String?
+    @State private var healthAsked = false
 
     var body: some View {
         Form {
@@ -108,6 +109,30 @@ struct SettingsView: View {
                 }
             } footer: {
                 Text("Doses set to a time before bed move with this. Change it and their reminders, the Schedule and the widget follow.")
+            }
+
+            Section {
+                Button {
+                    Task { @MainActor in
+                        healthAsked = await WakeDetector.requestAccess()
+                    }
+                } label: {
+                    Label { Text("Connect Apple Health Sleep").foregroundStyle(Palette.label) } icon: { SettingsIcon(symbol: "bed.double.circle.fill", color: .teal) }
+                }
+                .disabled(!WakeDetector.isAvailable)
+                DatePicker(selection: wakeBinding, displayedComponents: .hourAndMinute) {
+                    Label { Text("Usual Wake Time") } icon: { SettingsIcon(symbol: "sunrise.fill", color: .orange) }
+                }
+                LabeledContent("Today", value: store.wakeTime(on: Date()).map { "Woke at \(Format.time12($0))" } ?? "No wake-up seen yet")
+                if let instant = WakeDetector.instantUpdates {
+                    LabeledContent("Updates", value: instant ? "As soon as sleep data arrives" : "When iOS runs a check or you open the app")
+                }
+            } header: {
+                Text("Upon Waking")
+            } footer: {
+                Text(healthAsked
+                     ? "Med Jars reads your sleep from Apple Health. Between 5 AM and 12 PM, when the night's sleep shows up, you get the reminder for doses set to Upon Waking. Until then they sit at your usual wake time in the Schedule."
+                     : "For doses set to Upon Waking. Connect Apple Health so Med Jars can see when you wake up between 5 AM and 12 PM and remind you right after. Until it sees you up, those doses sit at your usual wake time in the Schedule.")
             }
 
             Section {
@@ -294,6 +319,16 @@ struct SettingsView: View {
                 healthMessage = text
             }
         }
+    }
+
+    private var wakeBinding: Binding<Date> {
+        Binding(get: {
+            let m = store.usualWakeMinutes
+            return Calendar.current.date(bySettingHour: m / 60, minute: m % 60, second: 0, of: Date()) ?? Date()
+        }, set: { date in
+            let c = Calendar.current.dateComponents([.hour, .minute], from: date)
+            store.setUsualWake((c.hour ?? 7) * 60 + (c.minute ?? 0))
+        })
     }
 
     private var bedtimeBinding: Binding<Date> {

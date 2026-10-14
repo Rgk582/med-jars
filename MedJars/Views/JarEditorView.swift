@@ -23,6 +23,7 @@ struct JarEditorView: View {
     @State private var scanAlert: ScanAlert?
     @State private var prnSlot = DoseSlot(id: "prn", label: "As Needed", time: nil, amount: "", pills: 1)
     @State private var interactionLevels: [String: InteractionLevel] = [:]
+    @State private var editingPlanId: String?
 
     private func effectBinding<T>(_ kp: WritableKeyPath<EffectProfile, T>) -> Binding<T> {
         Binding(get: { (draft.effect ?? EffectProfile())[keyPath: kp] },
@@ -35,76 +36,32 @@ struct JarEditorView: View {
 
     private var otherJars: [Jar] { store.jars.filter { $0.id != draft.id || isNew } }
 
-    // MARK: Split dose
+    // MARK: Day plans
 
-    private var totalBinding: Binding<Double> {
-        Binding(get: { draft.dailyPills ?? 1 }, set: { draft.dailyPills = $0; recomputeSplit() })
+    /// One dose a day at 8 AM, every day.
+    private func defaultPlan(days: [Int] = DoseSlot.everyDay) -> DosePlan {
+        let p = prnSlot.pills ?? 1
+        return DosePlan(days: days, dailyPills: p, splitEqual: true,
+                        doses: [DoseSlot(label: "", time: "08:00", amount: prnSlot.amount, pills: p, share: 1)])
     }
 
-    private var countBinding: Binding<Int> {
-        Binding(get: { draft.schedule.count }, set: { setDoseCount($0) })
+    /// A scheduled jar always starts with at least one plan.
+    private func ensurePlans() {
+        if draft.weekdayPlans.isEmpty { draft.plans.append(defaultPlan()) }
     }
 
-    /// Strength for the whole day, from strength per pill.
-    private var dailyStrength: String? {
-        let s = Format.doseStrength("", basePills: 1, pills: draft.dailyPills ?? 1, perPill: draft.strength)
-        return s.isEmpty ? nil : s
+    private func addDayPlan() {
+        var plan = defaultPlan(days: draft.uncoveredDays)
+        if plan.days.isEmpty { plan.days = [] }
+        draft.plans.append(plan)
+        editingPlanId = plan.id
     }
 
-    /// Days where the doses' shares don't add up to the whole daily dose.
-    private var shareIssues: [String] {
-        guard !draft.asNeeded, draft.schedule.count > 1 else { return [] }
-        var byTotal: [String: [Int]] = [:]
-        for d in DoseSlot.everyDay {
-            let slots = draft.schedule.filter { $0.days.contains(d) }
-            guard !slots.isEmpty else { continue }
-            let sum = slots.reduce(0.0) { $0 + ($1.share ?? 0) }
-            if abs(sum - 1) > 0.01 { byTotal[Format.share(sum), default: []].append(d) }
-        }
-        return byTotal.keys.sorted().map { total in
-            let days = byTotal[total] ?? []
-            let when = days.count == 7 ? "The shares" : "On \(Format.days(days)), the shares"
-            return "\(when) add up to \(total) of the daily dose, not the whole dose."
-        }
-    }
-
-    /// A scheduled jar always has at least one dose time and a daily total.
-    private func ensureSplit() {
-        draft.schedule = draft.schedule.filter { $0.time != nil }
-        if draft.schedule.isEmpty {
-            let p = prnSlot.pills ?? 1
-            draft.schedule = [DoseSlot(label: "Morning", time: "08:00", amount: prnSlot.amount, pills: p, share: 1)]
-            draft.dailyPills = p
-        }
-        if draft.dailyPills == nil { draft.adoptSplitFromDoses() }
-        if draft.dailyPills == nil { draft.dailyPills = 1 }
-        recomputeSplit()
-    }
-
-    private func setDoseCount(_ requested: Int) {
-        let n = min(6, max(1, requested))
-        while draft.schedule.count > n { draft.schedule.removeLast() }
-        while draft.schedule.count < n {
-            let last = draft.schedule.last?.minutes ?? 8 * 60
-            let next = min(last + 4 * 60, 23 * 60)
-            let used = draft.schedule.reduce(0.0) { $0 + ($1.share ?? 0) }
-            draft.schedule.append(DoseSlot(time: String(format: "%02d:%02d", next / 60, next % 60),
-                                           share: draft.splitEqual ? nil : max(0, 1 - used)))
-        }
-        recomputeSplit()
-    }
-
-    /// Equal split gives every dose the same share. Each dose's pills are its share of the daily total.
-    private func recomputeSplit() {
-        guard !draft.asNeeded, !draft.schedule.isEmpty else { return }
-        let total = draft.dailyPills ?? 1
-        let n = Double(draft.schedule.count)
-        for i in draft.schedule.indices {
-            if draft.splitEqual || draft.schedule.count == 1 { draft.schedule[i].share = draft.schedule.count == 1 ? 1 : 1 / n }
-            let share = draft.schedule[i].share ?? 1 / n
-            draft.schedule[i].share = share
-            draft.schedule[i].pills = (total * share * 1_000_000).rounded() / 1_000_000
-        }
+    private func addDatePlan() {
+        let tomorrow = DoseLogic.doseDayStart(for: Date().addingTimeInterval(86400))
+        let plan = draft.plan(onDayStarting: tomorrow)?.copy(for: tomorrow) ?? DosePlan(date: tomorrow, dailyPills: 1, doses: [])
+        draft.plans.append(plan)
+        editingPlanId = plan.id
     }
 
     private var isNew: Bool { target.jar == nil }
@@ -120,7 +77,7 @@ struct JarEditorView: View {
                     HStack {
                         Spacer()
                         VStack(spacing: 8) {
-                            JarIcon(jar: draft, size: 72)
+                            JarIcon(jar: draft, size: 96)
                             if draft.name.isEmpty {
                                 Text("New Jar").font(.headline).foregroundStyle(Palette.tertiary)
                             } else {
@@ -150,12 +107,16 @@ struct JarEditorView: View {
                             Label(f.name, systemImage: f.symbol).tag(f)
                         }
                     }
-                    LabeledContent("Strength per \(draft.form.title)") {
-                        TextField("e.g. 5 mg", text: $draft.strength)
-                            .multilineTextAlignment(.trailing)
+                    if !draft.form.isMeasured {
+                        LabeledContent("Strength per \(draft.form.title)") {
+                            TextField("e.g. 5 mg", text: $draft.strength)
+                                .multilineTextAlignment(.trailing)
+                        }
                     }
                 } footer: {
-                    Text("Strength per \(draft.form.singular) is what one \(draft.form.singular) contains. Each dose below has its own strength per dose.")
+                    Text(draft.form.isMeasured
+                         ? "Powder amounts are typed in \(draft.form.unitName.lowercased())."
+                         : "Strength per \(draft.form.singular) is what one \(draft.form.singular) contains. Each dose has its own strength per dose.")
                 }
 
                 Section {
@@ -178,7 +139,7 @@ struct JarEditorView: View {
                          : "This iPhone can't scan NFC tags.")
                 }
 
-                Section("Color") {
+                Section {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 6), spacing: 12) {
                         ForEach(LidColor.allCases) { lid in
                             Button {
@@ -189,7 +150,8 @@ struct JarEditorView: View {
                                     .frame(width: 36, height: 36)
                                     .overlay {
                                         if draft.lid == lid {
-                                            Image(systemName: "checkmark").font(.footnote.weight(.bold)).foregroundStyle(.white)
+                                            Image(systemName: "checkmark").font(.footnote.weight(.bold))
+                                                .foregroundStyle(lid.color.mix(with: .black, by: 0.7))
                                         }
                                     }
                                     .padding(3)
@@ -201,64 +163,82 @@ struct JarEditorView: View {
                         }
                     }
                     .padding(.vertical, 6)
+                    if draft.form == .tablet {
+                        Picker("Tablet Shape", selection: $draft.pillShape) {
+                            ForEach(PillShape.allCases) { Text($0.name).tag($0) }
+                        }
+                        .pickerStyle(.segmented)
+                        Toggle("Score Line", isOn: $draft.scoreLine)
+                    }
+                    if draft.form.hasImprint {
+                        LabeledContent("Imprint") {
+                            TextField("e.g. dp 10", text: $draft.imprint)
+                                .multilineTextAlignment(.trailing)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                        }
+                    }
+                } header: {
+                    Text("Look")
+                } footer: {
+                    Text("Match the pill in the jar so you can tell it apart at a glance. The picture at the top updates as you go.")
                 }
 
                 Section {
                     if draft.kind.allowsSchedule {
                         Toggle("As Needed", isOn: $draft.asNeeded)
-                            .onChange(of: draft.asNeeded) { _, on in if !on { ensureSplit() } }
+                            .onChange(of: draft.asNeeded) { _, on in if !on { ensurePlans() } }
                     }
                     if draft.asNeeded {
                         DoseAmountFields(slot: $prnSlot, form: draft.form, perPill: draft.strength)
-                    } else {
-                        Stepper(value: totalBinding, in: draft.form.step...100, step: draft.form.step) {
-                            LabeledContent("Total Daily Dose", value: Format.pills(draft.dailyPills ?? 1, draft.form))
-                        }
-                        if let perDay = dailyStrength {
-                            LabeledContent("Strength per Day", value: perDay)
-                        }
-                        Stepper(value: countBinding, in: 1...6) {
-                            LabeledContent("Doses per Day", value: "\(draft.schedule.count)")
-                        }
-                        if draft.schedule.count > 1 {
-                            Picker("Split", selection: $draft.splitEqual) {
-                                Text("Equal").tag(true)
-                                Text("Custom").tag(false)
-                            }
-                            .pickerStyle(.segmented)
-                            .onChange(of: draft.splitEqual) { _, _ in recomputeSplit() }
-                            if !draft.splitEqual {
-                                LabeledContent("Shares Add Up To", value: Format.share(draft.schedule.reduce(0.0) { $0 + ($1.share ?? 0) }))
-                            }
-                        }
-                        ForEach(shareIssues, id: \.self) { issue in
-                            Label(issue, systemImage: "exclamationmark.triangle.fill")
-                                .font(.footnote.weight(.semibold))
-                                .foregroundStyle(Palette.due)
-                        }
                     }
                 } header: {
-                    Text(draft.asNeeded ? "Usual Dose" : "Daily Dose")
+                    Text(draft.asNeeded ? "Usual Dose" : "Doses")
                 } footer: {
                     Text(!draft.kind.allowsSchedule
                          ? "Recreational substances are always as needed. Plan a one-time dose from the jar page if you want a reminder."
                          : draft.asNeeded
                          ? "No set times. This amount is the default each time you log, and you can change it when you log."
-                         : "Set the whole day's amount, how many times you take it, and how it's split. Each dose's amount is the default when you log it, and you can change it when you log.")
+                         : "Each day plan covers some days of the week with its own total, split and times. Days in no plan are as needed.")
                 }
 
                 if !draft.asNeeded {
-                    ForEach($draft.schedule) { $slot in
-                        Section {
-                            SplitDoseRow(slot: $slot, form: draft.form, perPill: draft.strength, total: draft.dailyPills ?? 1,
-                                         custom: !draft.splitEqual, showShare: draft.schedule.count > 1)
-                        } header: {
-                            Text("Dose \((draft.schedule.firstIndex(where: { $0.id == slot.id }) ?? 0) + 1)")
-                        } footer: {
-                            if slot.id == draft.schedule.last?.id {
-                                Text("Doses between midnight and 4 AM count toward the day before. On days with no doses, this jar shows as as needed in the Schedule.")
+                    Section {
+                        ForEach(draft.weekdayPlans) { plan in
+                            Button { editingPlanId = plan.id } label: {
+                                PlanSummaryRow(plan: plan, form: draft.form)
                             }
                         }
+                        .onDelete { offsets in
+                            let ids = offsets.map { draft.weekdayPlans[$0].id }
+                            draft.plans.removeAll { ids.contains($0.id) }
+                        }
+                        if !draft.uncoveredDays.isEmpty && !draft.weekdayPlans.isEmpty {
+                            Label("\(Format.days(draft.uncoveredDays)): as needed", systemImage: "circle.dashed")
+                                .font(.footnote).foregroundStyle(Palette.secondary)
+                        }
+                        Button { addDayPlan() } label: { Label("Add Day Plan", systemImage: "plus.circle.fill") }
+                    } header: {
+                        Text("Day Plans")
+                    } footer: {
+                        Text("Like Weekdays at 8 AM and 3 PM, and Weekends at 10 AM. Swipe left on a plan to remove it.")
+                    }
+
+                    Section {
+                        ForEach(draft.datePlans) { plan in
+                            Button { editingPlanId = plan.id } label: {
+                                PlanSummaryRow(plan: plan, form: draft.form)
+                            }
+                        }
+                        .onDelete { offsets in
+                            let ids = offsets.map { draft.datePlans[$0].id }
+                            draft.plans.removeAll { ids.contains($0.id) }
+                        }
+                        Button { addDatePlan() } label: { Label("Add a Specific Date", systemImage: "calendar.badge.plus") }
+                    } header: {
+                        Text("Specific Dates")
+                    } footer: {
+                        Text("Change the times or amounts for one day without touching the regular plan. You can also do this from that day in the Schedule tab.")
                     }
                 }
 
@@ -308,7 +288,7 @@ struct JarEditorView: View {
                 Section {
                     Toggle("Track Pills Left", isOn: $trackSupply)
                     if trackSupply {
-                        LabeledContent("\(draft.form.plural.capitalized) in Jar") {
+                        LabeledContent("\(draft.form.unitName) in Jar") {
                             TextField("e.g. 90", text: $supplyText)
                                 .keyboardType(.decimalPad)
                                 .multilineTextAlignment(.trailing)
@@ -448,6 +428,9 @@ struct JarEditorView: View {
                 }
             }
             .navigationTitle(isNew ? "New Jar" : "Edit Jar")
+            .navigationDestination(item: $editingPlanId) { id in
+                PlanEditorView(plans: $draft.plans, planId: id, form: draft.form, perPill: draft.strength)
+            }
             .tint(store.accentColor)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -507,19 +490,15 @@ struct JarEditorView: View {
                 prnSlot = prn
                 if prnSlot.pills == nil { prnSlot.pills = 1 }
             }
-            if !jar.asNeeded {
-                draft.schedule = jar.sortedSchedule.filter { $0.time != nil }
-                if draft.dailyPills == nil { draft.adoptSplitFromDoses() }
-                if draft.schedule.isEmpty { ensureSplit() } else { recomputeSplit() }
-            }
+            if !jar.asNeeded { ensurePlans() }
             for (other, level) in store.interactions(for: jar.id) { interactionLevels[other.id] = level }
         } else {
             var j = Jar(id: "", name: "")
             let used = Set(store.jars.map(\.lid))
             j.lid = LidColor.allCases.first { !used.contains($0) } ?? .slate
-            j.schedule = [DoseSlot(label: "Morning", time: "08:00", amount: "", pills: 1, share: 1)]
-            j.dailyPills = 1
             draft = j
+            draft.plans = [defaultPlan()]
+            draft.plans[0].doses[0].label = "Morning"
             if !target.presetId.isEmpty {
                 tagId = target.presetId
                 tagIdTouched = true
@@ -558,13 +537,32 @@ struct JarEditorView: View {
             jar.minGapMinutes = 0
             jar.maxPerDay = 0
             jar.followUpMinutes = 0
-            if let bad = jar.schedule.firstIndex(where: { !jar.form.fits($0.pills ?? 1) }) {
-                let pills = jar.schedule[bad].pills ?? 1
-                let near = jar.form.nearest(pills).map { Format.pills($0, jar.form) }.joined(separator: " or ")
-                problem = "Dose \(bad + 1) comes to \(Format.pills(pills, jar.form)), which \(jar.form.plural) can't do. The nearest that works is \(near). Change the total or the split."
-                return
+            // Plans with no days do nothing, and only one change per date counts.
+            jar.plans.removeAll { $0.date == nil && $0.days.isEmpty }
+            var seenDays = Set<Date>()
+            jar.plans = jar.plans.reversed().filter { p in
+                guard let d = p.date else { return true }
+                return seenDays.insert(DoseLogic.doseDayStart(for: d)).inserted
+            }.reversed()
+            for plan in jar.plans {
+                if let bad = plan.doses.firstIndex(where: { !jar.form.fits($0.pills ?? 1) }) {
+                    let pills = plan.doses[bad].pills ?? 1
+                    let near = jar.form.nearest(pills).map { Format.pills($0, jar.form) }.joined(separator: " or ")
+                    problem = "\(plan.title), dose \(bad + 1) comes to \(Format.pills(pills, jar.form)), which \(jar.form.plural) can't do. The nearest that works is \(near). Change the total or the split."
+                    return
+                }
             }
-            jar.schedule.sort { DoseLogic.order($0.minutes ?? 0) < DoseLogic.order($1.minutes ?? 0) }
+            for i in jar.plans.indices {
+                jar.plans[i].doses = jar.plans[i].doses.map { s -> DoseSlot in
+                    var t = s
+                    t.label = s.label.trimmingCharacters(in: .whitespaces)
+                    t.amount = s.amount.trimmingCharacters(in: .whitespaces)
+                    t.days = DoseSlot.everyDay
+                    return t
+                }
+                .sorted { DoseLogic.order($0.minutes ?? 0) < DoseLogic.order($1.minutes ?? 0) }
+            }
+            jar.schedule = []
         }
         if let from = jar.breakFrom, let until = jar.breakUntil, until < from {
             jar.breakFrom = until
@@ -591,6 +589,9 @@ struct JarEditorView: View {
         store.setInteractions(for: jar.id, interactionLevels.filter { $0.key != jar.id })
         if jar.nudge || jar.checkIn || jar.pillsLeft != nil {
             Task { _ = await Reminders.requestPermission() }
+        }
+        if !jar.asNeeded && jar.plans.contains(where: { $0.doses.contains { $0.uponWaking } }) {
+            Task { await WakeDetector.requestAccess() }
         }
         if removeTags { store.unpairTags(jarId: jar.id) }
         if let uid = newTagUID ?? (target.pairTagUID.isEmpty || removeTags ? nil : target.pairTagUID) {
@@ -647,17 +648,28 @@ struct SplitDoseRow: View {
         })
     }
 
-    private var bedtimeMode: Binding<Bool> {
-        Binding(get: { slot.bedtimeOffset != nil }, set: { on in
-            if on {
+    private enum TimeMode: Hashable { case clock, bedtime, waking }
+
+    private var timeMode: Binding<TimeMode> {
+        Binding(get: {
+            if slot.uponWaking { return .waking }
+            return slot.bedtimeOffset != nil ? .bedtime : .clock
+        }, set: { mode in
+            switch mode {
+            case .clock:
+                slot.uponWaking = false
+                slot.bedtimeOffset = nil
+            case .bedtime:
+                slot.uponWaking = false
                 let current = slot.minutes ?? 22 * 60
                 var off = (Bedtime.minutes - current + 1440) % 1440
                 if off > 720 { off = 60 }
                 slot.bedtimeOffset = (off / 15) * 15
-            } else {
+                syncTime()
+            case .waking:
                 slot.bedtimeOffset = nil
+                slot.uponWaking = true
             }
-            syncTime()
         })
     }
 
@@ -674,7 +686,8 @@ struct SplitDoseRow: View {
 
     /// Keeps the stored clock time matching a bedtime dose, so it reads right everywhere.
     private func syncTime() {
-        if let m = slot.minutes { slot.time = String(format: "%02d:%02d", m / 60, m % 60) }
+        guard !slot.uponWaking, let m = slot.minutes else { return }
+        slot.time = String(format: "%02d:%02d", m / 60, m % 60)
     }
 
     var body: some View {
@@ -708,25 +721,30 @@ struct SplitDoseRow: View {
             TextField(computed.isEmpty ? "e.g. 5 mg" : computed, text: amount)
                 .multilineTextAlignment(.trailing)
         }
-        Picker("Time", selection: bedtimeMode) {
-            Text("Clock Time").tag(false)
-            Text("Before Bed").tag(true)
+        Picker("Time", selection: timeMode) {
+            Text("Clock").tag(TimeMode.clock)
+            Text("Before Bed").tag(TimeMode.bedtime)
+            Text("Upon Waking").tag(TimeMode.waking)
         }
         .pickerStyle(.segmented)
-        if slot.bedtimeOffset != nil {
+        if slot.uponWaking {
+            Label("Reminds you right after Apple Health shows you woke up, between 5 AM and 12 PM.", systemImage: "sunrise.fill")
+                .font(.footnote).foregroundStyle(Palette.secondary)
+        } else if slot.bedtimeOffset != nil {
             Stepper(value: offset, in: 0...720, step: 15) {
                 LabeledContent(slot.bedtimeText ?? "Before Bed", value: slot.timeText)
             }
         } else {
             DatePicker("Time", selection: timeDate, displayedComponents: .hourAndMinute)
         }
-        WeekdayPicker(days: $slot.days)
     }
 }
 
 /// S M T W T F S toggles for the days a dose happens. At least one day stays on.
 struct WeekdayPicker: View {
     @Binding var days: [Int]
+    /// A day plan can have no days for a moment while you move them around.
+    var allowEmpty = false
     @Environment(AppStore.self) private var store
 
     var body: some View {
@@ -734,13 +752,13 @@ struct WeekdayPicker: View {
             HStack {
                 Text("Days").foregroundStyle(Palette.label)
                 Spacer()
-                Text(Format.days(days)).foregroundStyle(Palette.secondary)
+                Text(days.isEmpty ? "None" : Format.days(days)).foregroundStyle(Palette.secondary)
             }
             HStack(spacing: 6) {
                 ForEach(DoseSlot.everyDay, id: \.self) { d in
                     let on = days.contains(d)
                     Button {
-                        if on { if days.count > 1 { days.removeAll { $0 == d } } } else { days = (days + [d]).sorted() }
+                        if on { if days.count > 1 || allowEmpty { days.removeAll { $0 == d } } } else { days = (days + [d]).sorted() }
                     } label: {
                         Text(Calendar.current.veryShortWeekdaySymbols[d - 1])
                             .font(.subheadline.weight(.semibold))
@@ -782,9 +800,7 @@ struct DoseAmountFields: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Stepper(value: pills, in: form.step...50, step: form.step) {
-                LabeledContent("\(form.plural.capitalized) per Dose", value: Format.pills(slot.pills ?? 1, form))
-            }
+            AmountField(title: "\(form.unitName) per Dose", amount: pills, form: form)
             LabeledContent("Strength per Dose") {
                 TextField(computed.isEmpty ? "e.g. 15 mg" : computed, text: amount)
                     .multilineTextAlignment(.trailing)
@@ -799,5 +815,164 @@ struct DoseAmountFields: View {
         }
         .onChange(of: slot.pills) { _, _ in if auto { slot.amount = computed } }
         .onChange(of: perPill) { _, _ in if auto { slot.amount = computed } }
+    }
+}
+
+
+/// A day plan or specific date in the jar editor's list.
+struct PlanSummaryRow: View {
+    let plan: DosePlan
+    let form: PillForm
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(plan.isDate ? plan.title : (plan.days.isEmpty ? "No days picked" : plan.title))
+                    .font(.headline).foregroundStyle(Palette.label)
+                Text(plan.summary(form)).font(.footnote).foregroundStyle(Palette.secondary)
+            }
+            Spacer(minLength: 8)
+            Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(Palette.tertiary)
+        }
+        .contentShape(Rectangle())
+    }
+}
+
+/// Edits one day plan (its name and weekdays) or one specific date, plus its daily total, split and dose times.
+struct PlanEditorView: View {
+    @Binding var plans: [DosePlan]
+    let planId: String
+    let form: PillForm
+    let perPill: String
+
+    private var current: DosePlan { plans.first { $0.id == planId } ?? DosePlan() }
+
+    private var plan: Binding<DosePlan> {
+        Binding(get: { current }, set: { new in
+            if let i = plans.firstIndex(where: { $0.id == planId }) { plans[i] = new }
+        })
+    }
+
+    /// Picking a day here moves it out of any other weekday plan, so each day has one plan.
+    private var days: Binding<[Int]> {
+        Binding(get: { current.days }, set: { new in
+            let added = Set(new).subtracting(current.days)
+            for i in plans.indices where plans[i].id != planId && plans[i].date == nil {
+                plans[i].days.removeAll { added.contains($0) }
+            }
+            if let i = plans.firstIndex(where: { $0.id == planId }) { plans[i].days = new.sorted() }
+        })
+    }
+
+    private var date: Binding<Date> {
+        Binding(get: { current.date ?? Date() }, set: { new in
+            if let i = plans.firstIndex(where: { $0.id == planId }) { plans[i].date = DoseLogic.doseDayStart(for: new) }
+        })
+    }
+
+    private var hasDoses: Binding<Bool> {
+        Binding(get: { !current.doses.isEmpty }, set: { on in
+            guard let i = plans.firstIndex(where: { $0.id == planId }) else { return }
+            if on { plans[i].setDoseCount(1) } else { plans[i].doses = [] }
+        })
+    }
+
+    var body: some View {
+        Form {
+            if current.isDate {
+                Section {
+                    DatePicker("Date", selection: date, in: DoseLogic.doseDayStart(for: Date())..., displayedComponents: .date)
+                    Toggle("Doses This Day", isOn: hasDoses)
+                } footer: {
+                    Text("Replaces the regular plan on this date only. Turn off Doses This Day and the jar is as needed that day.")
+                }
+            } else {
+                Section {
+                    TextField("Name (optional), e.g. Weekdays", text: plan.name)
+                    WeekdayPicker(days: days, allowEmpty: true)
+                } footer: {
+                    Text("Each day belongs to one plan. Picking a day here moves it from any other plan.")
+                }
+            }
+            if !current.doses.isEmpty || !current.isDate {
+                PlanFields(plan: plan, form: form, perPill: perPill)
+            }
+        }
+        .navigationTitle(current.isDate ? "Specific Date" : (current.days.isEmpty ? "Day Plan" : current.title))
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            if !current.isDate && current.doses.isEmpty, let i = plans.firstIndex(where: { $0.id == planId }) {
+                plans[i].setDoseCount(1)
+            }
+        }
+    }
+}
+
+/// A plan's daily total, doses per day and split, then one section per dose.
+struct PlanFields: View {
+    @Binding var plan: DosePlan
+    let form: PillForm
+    let perPill: String
+
+    private var total: Binding<Double> {
+        Binding(get: { plan.dailyPills }, set: { plan.dailyPills = $0; plan.recompute() })
+    }
+
+    private var count: Binding<Int> {
+        Binding(get: { plan.doses.count }, set: { plan.setDoseCount($0) })
+    }
+
+    private var split: Binding<Bool> {
+        Binding(get: { plan.splitEqual }, set: { plan.splitEqual = $0; plan.recompute() })
+    }
+
+    private var dailyStrength: String? {
+        let s = Format.doseStrength("", basePills: 1, pills: plan.dailyPills, perPill: perPill)
+        return s.isEmpty ? nil : s
+    }
+
+    var body: some View {
+        Section {
+            AmountField(title: "Total Daily Dose", amount: total, form: form)
+            if let perDay = dailyStrength {
+                LabeledContent("Strength per Day", value: perDay)
+            }
+            Stepper(value: count, in: 1...6) {
+                LabeledContent("Doses per Day", value: "\(plan.doses.count)")
+            }
+            if plan.doses.count > 1 {
+                Picker("Split", selection: split) {
+                    Text("Equal").tag(true)
+                    Text("Custom").tag(false)
+                }
+                .pickerStyle(.segmented)
+                if !plan.splitEqual {
+                    LabeledContent("Shares Add Up To", value: Format.share(plan.shareTotal))
+                }
+                if abs(plan.shareTotal - 1) > 0.01 {
+                    Label("The shares add up to \(Format.share(plan.shareTotal)) of the daily dose, not the whole dose.",
+                          systemImage: "exclamationmark.triangle.fill")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(Palette.due)
+                }
+            }
+        } header: {
+            Text("Daily Dose")
+        } footer: {
+            Text("Each dose's amount is the default when you log it, and you can change it when you log.")
+        }
+
+        ForEach($plan.doses) { $slot in
+            Section {
+                SplitDoseRow(slot: $slot, form: form, perPill: perPill, total: plan.dailyPills,
+                             custom: !plan.splitEqual, showShare: plan.doses.count > 1)
+            } header: {
+                Text("Dose \((plan.doses.firstIndex(where: { $0.id == slot.id }) ?? 0) + 1)")
+            } footer: {
+                if slot.id == plan.doses.last?.id {
+                    Text("Doses between midnight and 4 AM count toward the day before.")
+                }
+            }
+        }
     }
 }

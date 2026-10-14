@@ -31,25 +31,252 @@ extension LidColor {
         case .green: return .green
         case .yellow: return .yellow
         case .slate: return .gray
+        case .white: return Color(red: 0.97, green: 0.97, blue: 0.96)
+        case .cream: return Color(red: 0.96, green: 0.92, blue: 0.80)
+        case .peach: return Color(red: 1.0, green: 0.78, blue: 0.62)
+        case .brown: return .brown
+        case .lightBlue: return Color(red: 0.62, green: 0.80, blue: 1.0)
+        case .lavender: return Color(red: 0.78, green: 0.72, blue: 1.0)
         }
     }
 }
 
-/// The jar's icon: its form's SF Symbol on a tinted circle, like the Health app's medication icons.
+/// The jar's icon: a drawing of the pill itself on black, in its color and shape, so it's easy to tell jars apart.
 struct JarIcon: View {
     let jar: Jar
     var size: CGFloat = 40
 
     var body: some View {
+        PillArt(form: jar.form, shape: jar.pillShape, color: jar.lid.color, scoreLine: jar.scoreLine,
+                imprint: jar.imprint, size: size)
+    }
+}
+
+/// A drawing of one dose on a black tile: the form's shape (tablet, capsule, softgel, gummy, scoop,
+/// powder, drop, smoked, other) in the chosen color, with a tablet's shape, score line and imprint.
+struct PillArt: View {
+    let form: PillForm
+    var shape: PillShape = .round
+    let color: Color
+    var scoreLine = false
+    var imprint = ""
+    let size: CGFloat
+
+    private var line: CGFloat { max(0.6, size * 0.014) }
+    private var edge: Color { color.mix(with: .black, by: 0.28) }
+    private var ink: Color { color.mix(with: .black, by: 0.5) }
+    private var body3D: LinearGradient {
+        LinearGradient(colors: [color.mix(with: .white, by: 0.35), color, color.mix(with: .black, by: 0.12)],
+                       startPoint: .topLeading, endPoint: .bottomTrailing)
+    }
+    private var showImprint: Bool { size >= 44 && form.hasImprint && !imprint.trimmingCharacters(in: .whitespaces).isEmpty }
+
+    var body: some View {
         ZStack {
-            Circle().fill(jar.lid.color.gradient.opacity(0.22))
-            Image(systemName: jar.form.symbol)
-                .font(.system(size: size * 0.44, weight: .semibold))
-                .foregroundStyle(jar.lid.color.gradient)
-                .symbolRenderingMode(.hierarchical)
+            RoundedRectangle(cornerRadius: size * 0.26, style: .continuous)
+                .fill(Color.black)
+                .overlay(RoundedRectangle(cornerRadius: size * 0.26, style: .continuous).strokeBorder(Color.white.opacity(0.1), lineWidth: 0.5))
+            art
         }
         .frame(width: size, height: size)
         .accessibilityHidden(true)
+    }
+
+    @ViewBuilder private var art: some View {
+        switch form {
+        case .tablet: tablet
+        case .capsule: capsule
+        case .softgel: softgel
+        case .gummy: gummy
+        case .scoop: scoop
+        case .powderG, .powderMg: powder
+        case .drop: drop
+        case .smoked: smoked
+        case .other: other
+        }
+    }
+
+    private func imprintText(_ maxWidth: CGFloat) -> some View {
+        Text(imprint.trimmingCharacters(in: .whitespaces))
+            .font(.system(size: size * 0.1, weight: .heavy, design: .rounded))
+            .foregroundStyle(ink)
+            .lineLimit(1)
+            .minimumScaleFactor(0.4)
+            .frame(maxWidth: maxWidth)
+    }
+
+    private var tablet: some View {
+        let dims: (CGFloat, CGFloat)
+        let outline: AnyShape
+        switch shape {
+        case .round: dims = (0.62, 0.62); outline = AnyShape(Circle())
+        case .oval: dims = (0.72, 0.48); outline = AnyShape(Ellipse())
+        case .oblong: dims = (0.76, 0.36); outline = AnyShape(Capsule())
+        }
+        let w = dims.0 * size, h = dims.1 * size
+        return ZStack {
+            outline.fill(body3D)
+            outline.stroke(edge, lineWidth: line)
+            // Bevel: a lighter rim inside the edge.
+            outline.scale(0.84).stroke(Color.white.opacity(0.18), lineWidth: line)
+            if scoreLine {
+                Capsule().fill(ink.opacity(0.75)).frame(width: max(1, size * 0.022), height: h * 0.86)
+            }
+            if showImprint {
+                imprintText(scoreLine ? w * 0.36 : w * 0.7)
+                    .offset(x: scoreLine ? -w * 0.22 : 0)
+            }
+        }
+        .frame(width: w, height: h)
+        .rotationEffect(.degrees(shape == .round ? 0 : -20))
+    }
+
+    private var capsule: some View {
+        let w = 0.76 * size, h = 0.32 * size
+        return ZStack {
+            HStack(spacing: 0) {
+                Rectangle().fill(color)
+                Rectangle().fill(color.mix(with: .white, by: 0.22))
+            }
+            .clipShape(Capsule())
+            Capsule().fill(LinearGradient(colors: [Color.white.opacity(0.4), .clear, Color.black.opacity(0.22)],
+                                          startPoint: .top, endPoint: .bottom))
+            Rectangle().fill(Color.black.opacity(0.22)).frame(width: max(1, size * 0.016), height: h)
+            Capsule().stroke(edge, lineWidth: line)
+            if showImprint { imprintText(w * 0.34).offset(x: -w * 0.22) }
+        }
+        .frame(width: w, height: h)
+        .rotationEffect(.degrees(-35))
+    }
+
+    private var softgel: some View {
+        let w = 0.70 * size, h = 0.46 * size
+        return ZStack {
+            Ellipse().fill(color.opacity(0.88))
+            Ellipse().fill(RadialGradient(colors: [Color.white.opacity(0.65), .clear], center: UnitPoint(x: 0.32, y: 0.3),
+                                          startRadius: 0, endRadius: size * 0.22))
+            Ellipse().fill(LinearGradient(colors: [.clear, Color.black.opacity(0.25)], startPoint: .top, endPoint: .bottom))
+            Ellipse().stroke(edge.opacity(0.8), lineWidth: line)
+            if showImprint { imprintText(w * 0.6) }
+        }
+        .frame(width: w, height: h)
+        .rotationEffect(.degrees(-25))
+    }
+
+    private var gummy: some View {
+        let u = size
+        return ZStack {
+            Group {
+                Circle().frame(width: u * 0.13).offset(x: -u * 0.11, y: -u * 0.27)
+                Circle().frame(width: u * 0.13).offset(x: u * 0.11, y: -u * 0.27)
+                Circle().frame(width: u * 0.27).offset(y: -u * 0.17)
+                Ellipse().frame(width: u * 0.36, height: u * 0.38).offset(y: u * 0.08)
+                Circle().frame(width: u * 0.13).offset(x: -u * 0.19, y: u * 0.0)
+                Circle().frame(width: u * 0.13).offset(x: u * 0.19, y: u * 0.0)
+                Circle().frame(width: u * 0.15).offset(x: -u * 0.12, y: u * 0.25)
+                Circle().frame(width: u * 0.15).offset(x: u * 0.12, y: u * 0.25)
+            }
+            .foregroundStyle(color.opacity(0.9))
+            Ellipse().fill(Color.white.opacity(0.35)).frame(width: u * 0.08, height: u * 0.05).offset(x: -u * 0.05, y: -u * 0.22)
+            Ellipse().fill(Color.white.opacity(0.25)).frame(width: u * 0.1, height: u * 0.16).offset(x: -u * 0.08, y: u * 0.06)
+        }
+        .compositingGroup()
+    }
+
+    private var scoop: some View {
+        let u = size
+        return ZStack {
+            Capsule().fill(Color(white: 0.75)).frame(width: u * 0.34, height: u * 0.07).offset(x: u * 0.2, y: u * 0.06)
+            UnevenRoundedRectangle(topLeadingRadius: u * 0.02, bottomLeadingRadius: u * 0.1,
+                                   bottomTrailingRadius: u * 0.1, topTrailingRadius: u * 0.02)
+                .fill(Color(white: 0.85))
+                .frame(width: u * 0.36, height: u * 0.24)
+                .offset(x: -u * 0.08, y: u * 0.1)
+            Ellipse().fill(body3D).frame(width: u * 0.38, height: u * 0.2).offset(x: -u * 0.08, y: -u * 0.03)
+        }
+    }
+
+    private var powder: some View {
+        let u = size
+        return ZStack {
+            MoundShape().fill(body3D).frame(width: u * 0.7, height: u * 0.36).offset(y: u * 0.1)
+            ForEach(0..<7, id: \.self) { i in
+                let xs: [CGFloat] = [-0.3, -0.22, 0.26, 0.31, -0.12, 0.16, 0.0]
+                let ys: [CGFloat] = [0.27, 0.22, 0.26, 0.21, -0.02, -0.03, -0.12]
+                Circle().fill(color.opacity(0.85)).frame(width: u * 0.03).offset(x: u * xs[i], y: u * ys[i])
+            }
+        }
+    }
+
+    private var drop: some View {
+        let u = size
+        return ZStack {
+            DropShape().fill(body3D)
+            DropShape().stroke(edge, lineWidth: line)
+            Ellipse().fill(Color.white.opacity(0.45)).frame(width: u * 0.07, height: u * 0.12).offset(x: -u * 0.07, y: u * 0.04)
+        }
+        .frame(width: u * 0.42, height: u * 0.6)
+    }
+
+    private var smoked: some View {
+        let u = size
+        return ZStack {
+            Path { p in
+                p.move(to: CGPoint(x: u * 0.66, y: u * 0.32))
+                p.addCurve(to: CGPoint(x: u * 0.74, y: u * 0.1), control1: CGPoint(x: u * 0.58, y: u * 0.22), control2: CGPoint(x: u * 0.82, y: u * 0.2))
+            }
+            .stroke(Color.white.opacity(0.4), style: StrokeStyle(lineWidth: max(1, u * 0.025), lineCap: .round))
+            .frame(width: u, height: u)
+            HStack(spacing: 0) {
+                Rectangle().fill(Color(red: 0.85, green: 0.7, blue: 0.5)).frame(width: u * 0.14)
+                Rectangle().fill(color)
+                Rectangle().fill(LinearGradient(colors: [.orange, .red], startPoint: .leading, endPoint: .trailing)).frame(width: u * 0.06)
+            }
+            .frame(width: u * 0.66, height: u * 0.13)
+            .clipShape(RoundedRectangle(cornerRadius: u * 0.03))
+            .rotationEffect(.degrees(-30))
+            .offset(x: -u * 0.03, y: u * 0.08)
+        }
+    }
+
+    private var other: some View {
+        let w = 0.6 * size, h = 0.4 * size
+        return ZStack {
+            RoundedRectangle(cornerRadius: size * 0.1, style: .continuous).fill(body3D)
+            RoundedRectangle(cornerRadius: size * 0.1, style: .continuous).stroke(edge, lineWidth: line)
+            if showImprint { imprintText(w * 0.75) }
+        }
+        .frame(width: w, height: h)
+        .rotationEffect(.degrees(-15))
+    }
+}
+
+/// A heap of powder.
+struct MoundShape: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        p.move(to: CGPoint(x: r.minX, y: r.maxY))
+        p.addCurve(to: CGPoint(x: r.midX, y: r.minY), control1: CGPoint(x: r.minX + r.width * 0.2, y: r.maxY),
+                   control2: CGPoint(x: r.midX - r.width * 0.22, y: r.minY))
+        p.addCurve(to: CGPoint(x: r.maxX, y: r.maxY), control1: CGPoint(x: r.midX + r.width * 0.22, y: r.minY),
+                   control2: CGPoint(x: r.maxX - r.width * 0.2, y: r.maxY))
+        p.closeSubpath()
+        return p
+    }
+}
+
+/// A liquid drop, point up.
+struct DropShape: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        let radius = r.width / 2
+        let center = CGPoint(x: r.midX, y: r.maxY - radius)
+        p.move(to: CGPoint(x: r.midX, y: r.minY))
+        p.addQuadCurve(to: CGPoint(x: r.maxX, y: center.y), control: CGPoint(x: r.maxX, y: r.minY + r.height * 0.42))
+        p.addArc(center: center, radius: radius, startAngle: .degrees(0), endAngle: .degrees(180), clockwise: false)
+        p.addQuadCurve(to: CGPoint(x: r.midX, y: r.minY), control: CGPoint(x: r.minX, y: r.minY + r.height * 0.42))
+        p.closeSubpath()
+        return p
     }
 }
 

@@ -60,7 +60,8 @@ struct NextDoseWidgetView: View {
     private var timeText: String {
         guard let n = entry.next else { return "" }
         let isTomorrow = !DoseLogic.sameDoseDay(n.time, entry.date)
-        return (isTomorrow ? "Tomorrow, " : "") + Format.time12(n.time)
+        let waiting = n.slot.uponWaking && WakeTimes.detected(onDayStarting: DoseLogic.doseDayStart(for: n.time)) == nil
+        return (isTomorrow ? "Tomorrow, " : "") + (waiting ? "Upon waking" : Format.time12(n.time))
     }
 
     private func amountLine(_ n: NextDose) -> String {

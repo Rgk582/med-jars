@@ -14,6 +14,8 @@ final class AppStore {
     private(set) var caffeine: [CaffeineEntry] = []
     /// One-time planned doses, soonest first.
     private(set) var planned: [PlannedDose] = []
+    /// Wake-up times seen in Apple Health, by dose day key.
+    private(set) var wakeTimes: [String: Date] = [:]
     var isLocked: Bool = false
     var saveError: String?
 
@@ -24,6 +26,7 @@ final class AppStore {
         settings = file.settings
         caffeine = file.caffeine.sorted { $0.at > $1.at }
         planned = file.planned.sorted { $0.at < $1.at }
+        wakeTimes = file.wakeTimes
         isLocked = file.settings.faceIDLock
         if let copy = StoreIO.unreadableCopy {
             saveError = "Your saved data couldn't be read, so a copy was kept as \(copy.lastPathComponent). Restore from a backup in Settings."
@@ -60,6 +63,87 @@ final class AppStore {
     }
 
     var bedtimeMinutes: Int { settings.bedtime ?? Bedtime.defaultMinutes }
+    var usualWakeMinutes: Int { settings.usualWake ?? WakeTimes.defaultMinutes }
+
+    /// Where doses taken upon waking sit in the Schedule until today's wake-up is seen.
+    func setUsualWake(_ minutes: Int) {
+        settings.usualWake = minutes
+        WakeTimes.usualMinutes = minutes
+        persist()
+    }
+
+    /// True when any active jar has a dose taken upon waking.
+    var hasWakingDoses: Bool {
+        jars.contains { jar in !jar.asNeeded && jar.plans.contains { $0.doses.contains { $0.uponWaking } } }
+    }
+
+    func wakeTime(on day: Date) -> Date? { wakeTimes[WakeTimes.key(day)] }
+
+    /// A wake-up seen in Apple Health. The first one each day sends the reminder for that day's doses taken upon waking.
+    func recordWake(_ woke: Date) {
+        let key = WakeTimes.key(woke)
+        guard wakeTimes[key] == nil else { return }
+        wakeTimes[key] = woke
+        let cutoff = WakeTimes.key(Date().addingTimeInterval(-21 * 86400))
+        wakeTimes = wakeTimes.filter { $0.key >= cutoff }
+        WakeTimes.byDay = wakeTimes
+        persist()
+        remindWakingDoses(woke: woke)
+    }
+
+    private func remindWakingDoses(woke: Date) {
+        guard settings.reminders else { return }
+        let dayStart = DoseLogic.doseDayStart(for: woke)
+        var due: [(Jar, DoseSlot)] = []
+        for jar in jars where jar.isActive(on: dayStart) {
+            for slot in jar.slots(onDayStarting: dayStart) where slot.uponWaking {
+                let done = entries.contains { $0.jarId == jar.id && $0.slotId == slot.id && DoseLogic.sameDoseDay($0.takenAt, woke) }
+                if !done { due.append((jar, slot)) }
+            }
+        }
+        guard !due.isEmpty else { return }
+        if due.count == 1, let first = due.first {
+            let (jar, slot) = first
+            let amount = slot.amountLine(jar.form)
+            Notify.post(id: Notify.doseId(jar: jar.id, slot: slot.id, day: woke), title: "Good morning. Time for \(jar.name)",
+                        body: amount.isEmpty ? "Your dose to take upon waking." : "\(amount), upon waking.",
+                        category: Notify.doseCategory, userInfo: ["jarId": jar.id, "slotId": slot.id], timeSensitive: true)
+        } else {
+            let list = due.map { pair -> String in
+                let (jar, slot) = pair
+                let amount = slot.amountLine(jar.form)
+                return amount.isEmpty ? jar.name : "\(jar.name) \(amount)"
+            }.joined(separator: ", ")
+            Notify.post(id: "\(Notify.groupPrefix)waking.\(WakeTimes.key(woke))", title: "Good morning. \(due.count) doses upon waking",
+                        body: list, category: Notify.groupCategory,
+                        userInfo: ["items": due.map { "\($0.0.id)|\($0.1.id)" }.joined(separator: ";")], timeSensitive: true)
+        }
+        // Keep reminding for jars that ask to, until each dose is logged.
+        for (jar, slot) in due where jar.nudge {
+            for n in 1...min(Notify.maxNudges, max(1, jar.nudgeRepeats)) {
+                Notify.post(id: Notify.nudgeId(jar: jar.id, slot: slot.id, day: woke, n: n), title: "Did you take \(jar.name)?",
+                            body: "Your dose upon waking. Tap Log Dose if you took it.", category: Notify.doseCategory,
+                            userInfo: ["jarId": jar.id, "slotId": slot.id], delay: Double(n * max(5, jar.nudgeMinutes) * 60), timeSensitive: true)
+            }
+        }
+    }
+
+    // MARK: Day plans
+
+    /// Saves a change for one date, replacing any change already made for that day.
+    func saveDatePlan(jarId: String, _ plan: DosePlan) {
+        guard let i = jars.firstIndex(where: { $0.id == jarId }), let date = plan.date else { return }
+        jars[i].plans.removeAll { $0.date.map { DoseLogic.sameDoseDay($0, date) } ?? false }
+        jars[i].plans.append(plan)
+        persist()
+    }
+
+    /// Goes back to the regular plan on a date.
+    func removeDatePlan(jarId: String, on day: Date) {
+        guard let i = jars.firstIndex(where: { $0.id == jarId }) else { return }
+        jars[i].plans.removeAll { $0.date.map { DoseLogic.sameDoseDay($0, day) } ?? false }
+        persist()
+    }
 
     /// Moves every dose timed "before bed" along with it.
     func setBedtime(_ minutes: Int) {
@@ -117,8 +201,8 @@ final class AppStore {
             j.labelName = med.nickname ?? ""
             j.kind = .rx
             j.form = .tablet
-            j.schedule = [DoseSlot(label: "Morning", time: "08:00", amount: "", pills: 1, share: 1)]
-            j.dailyPills = 1
+            j.plans = [DosePlan(days: DoseSlot.everyDay, dailyPills: 1, splitEqual: true,
+                                doses: [DoseSlot(label: "Morning", time: "08:00", amount: "", pills: 1, share: 1)])]
             j.order = (jars.map(\.order).max() ?? 0) + 1
             jars.append(j)
             added += 1
@@ -216,11 +300,10 @@ final class AppStore {
                 existing.kind = j.kind
                 existing.form = j.form
                 if !j.strength.isEmpty { existing.strength = j.strength }
-                if !j.schedule.isEmpty {
+                if !j.schedule.isEmpty || !j.plans.isEmpty {
                     existing.schedule = j.schedule
+                    existing.plans = j.plans
                     existing.asNeeded = j.asNeeded
-                    existing.dailyPills = j.dailyPills
-                    existing.splitEqual = j.splitEqual
                 }
                 if !j.howTo.isEmpty { existing.howTo = j.howTo }
                 existing.food = j.food
@@ -241,13 +324,16 @@ final class AppStore {
 
     // MARK: Logging
 
-    private var file: StoreFile { StoreFile(jars: jars, entries: entries, settings: settings, caffeine: caffeine, planned: planned) }
+    private var file: StoreFile {
+        StoreFile(jars: jars, entries: entries, settings: settings, caffeine: caffeine, planned: planned, wakeTimes: wakeTimes)
+    }
 
     private func adopt(_ f: StoreFile) {
         jars = f.jars.sorted(by: Self.jarOrder)
         entries = f.entries
         caffeine = f.caffeine.sorted { $0.at > $1.at }
         planned = f.planned.sorted { $0.at < $1.at }
+        wakeTimes = f.wakeTimes
     }
 
     /// A jar's dose time or planned dose by id.
@@ -342,7 +428,7 @@ final class AppStore {
     /// A timed dose already taken or skipped in the same dose day. As-needed doses never count as duplicates.
     func alreadyLogged(jarId: String, slotId: String?, on day: Date) -> DoseEntry? {
         guard let slotId, let jar = jar(jarId), !jar.asNeeded,
-              let slot = jar.schedule.first(where: { $0.id == slotId }), slot.minutes != nil else { return nil }
+              let slot = jar.timedSlots.first(where: { $0.id == slotId }), slot.minutes != nil else { return nil }
         return entries.first { $0.jarId == jarId && $0.slotId == slotId && DoseLogic.sameDoseDay($0.takenAt, day) }
     }
 
@@ -441,6 +527,8 @@ final class AppStore {
         entries.sort { $0.takenAt > $1.takenAt }
         settings = f.settings
         Bedtime.minutes = f.settings.bedtime ?? Bedtime.defaultMinutes
+        WakeTimes.usualMinutes = f.settings.usualWake ?? WakeTimes.defaultMinutes
+        WakeTimes.byDay = f.wakeTimes
         saveError = nil
         persist()
         return "Restored \(jars.count) jar\(jars.count == 1 ? "" : "s") and \(entries.count) dose\(entries.count == 1 ? "" : "s")."
@@ -504,7 +592,9 @@ final class AppStore {
         entries = f.entries.sorted { $0.takenAt > $1.takenAt }
         caffeine = f.caffeine.sorted { $0.at > $1.at }
         planned = f.planned.sorted { $0.at < $1.at }
+        wakeTimes = f.wakeTimes
         settings.bedtime = f.settings.bedtime ?? settings.bedtime
+        settings.usualWake = f.settings.usualWake ?? settings.usualWake
     }
 
     private func persist() {

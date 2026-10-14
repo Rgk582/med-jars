@@ -71,7 +71,7 @@ struct PlanDoseSheet: View {
                     }
 
                     Section {
-                        PillCounter(count: $pills, form: jar.form)
+                        AmountInput(amount: $pills, form: jar.form)
                         LabeledContent("Strength per Dose") {
                             TextField("e.g. 10 mg", text: amountBinding)
                                 .multilineTextAlignment(.trailing)

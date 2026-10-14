@@ -16,6 +16,7 @@ struct ScheduleView: View {
     @State private var logging: LogTarget?
     @State private var skipping: SkipRequest?
     @State private var toast: DoseEntry?
+    @State private var editingDay: DayEditTarget?
 
     var body: some View {
         TimelineView(.everyMinute) { context in
@@ -61,6 +62,7 @@ struct ScheduleView: View {
             }
         }
         .sheet(item: $skipping) { SkipSheet(jar: $0.jar, slot: $0.slot) }
+        .sheet(item: $editingDay) { DayPlanSheet(jarId: $0.jarId, day: $0.day) }
     }
 
     /// A new planned dose starts on the selected day, at the next whole hour when that's today.
@@ -112,6 +114,11 @@ struct ScheduleView: View {
                             Button(role: .destructive) { store.deletePlanned(planned.id) } label: {
                                 Label("Delete", systemImage: "trash")
                             }
+                        } else if !item.row.isPlanned && !isPast {
+                            Button { editingDay = DayEditTarget(jarId: item.jar.id, day: day) } label: {
+                                Label("Edit Day", systemImage: "calendar.badge.clock")
+                            }
+                            .tint(.indigo)
                         }
                     }
                 }
@@ -127,11 +134,19 @@ struct ScheduleView: View {
                                 logging = LogTarget(jarId: jar.id, slotId: jar.asNeededSlot?.id ?? "")
                             }
                         }
+                        .swipeActions(edge: .leading) {
+                            if !jar.asNeeded && !isPast {
+                                Button { editingDay = DayEditTarget(jarId: jar.id, day: day) } label: {
+                                    Label("Edit Day", systemImage: "calendar.badge.clock")
+                                }
+                                .tint(.indigo)
+                            }
+                        }
                     }
                 } header: {
                     Text("As Needed")
                 } footer: {
-                    Text("As-needed jars, and jars with no doses on this day. They never count as missed.")
+                    Text("As-needed jars, and jars with no doses on this day. They never count as missed. Swipe right on a jar to change its doses for this day only.")
                 }
             }
         }
@@ -271,6 +286,15 @@ private struct ScheduleRow: View {
         return parts.joined(separator: " \u{00B7} ")
     }
 
+    private var dayStart: Date { DoseLogic.doseDayStart(for: item.row.at ?? Date()) }
+
+    /// "Upon waking" until today's wake-up is seen in Apple Health, then the wake-up time.
+    private var timeText: String {
+        guard let at = item.row.at else { return "" }
+        if item.row.slot.uponWaking && WakeTimes.detected(onDayStarting: dayStart) == nil { return "Upon waking" }
+        return Format.time12(at)
+    }
+
     var body: some View {
         HStack(spacing: 12) {
             JarIcon(jar: item.jar, size: 40)
@@ -284,11 +308,21 @@ private struct ScheduleRow: View {
                     Label(note.isEmpty ? "Planned" : "Planned \u{00B7} \(note)", systemImage: "calendar.badge.clock")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.tint)
+                } else if item.jar.plan(onDayStarting: dayStart)?.isDate == true {
+                    Label("Changed for this day", systemImage: "calendar.badge.exclamationmark")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.tint)
+                }
+                if item.row.slot.uponWaking {
+                    Label(WakeTimes.detected(onDayStarting: dayStart) == nil ? "Upon waking, not up yet" : "Upon waking",
+                          systemImage: "sunrise.fill")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Palette.secondary)
                 }
             }
             Spacer(minLength: 8)
             VStack(alignment: .trailing, spacing: 6) {
-                Text(item.row.at.map { Format.time12($0) } ?? "")
+                Text(timeText)
                     .font(.subheadline.weight(.semibold))
                     .monospacedDigit()
                     .foregroundStyle(item.row.status == .missed ? Palette.missed : Palette.label)
@@ -497,5 +531,117 @@ private struct WeekItemRow: View {
                 .accessibilityLabel(statusText)
         }
         .contentShape(Rectangle())
+    }
+}
+
+
+// MARK: - Change one day
+
+/// A jar and the dose day to change.
+struct DayEditTarget: Identifiable {
+    let id = UUID()
+    let jarId: String
+    let day: Date
+}
+
+/// Changes a jar's doses for one date only, starting from that day's regular plan.
+struct DayPlanSheet: View {
+    let jarId: String
+    let day: Date
+    @Environment(AppStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+    @State private var plan = DosePlan()
+    @State private var didSetup = false
+    @State private var problem: String?
+
+    private var jar: Jar? { store.jar(jarId) }
+    private var hasChange: Bool { jar?.plan(onDayStarting: DoseLogic.doseDayStart(for: day))?.isDate == true }
+
+    private var hasDoses: Binding<Bool> {
+        Binding(get: { !plan.doses.isEmpty }, set: { on in
+            if on { plan.setDoseCount(1) } else { plan.doses = [] }
+        })
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                if let jar {
+                    Section {
+                        HStack(spacing: 14) {
+                            JarIcon(jar: jar, size: 48)
+                            VStack(alignment: .leading, spacing: 2) {
+                                JarNameStack(jar: jar)
+                                Text(day.formatted(.dateTime.weekday(.wide).month(.wide).day()))
+                                    .font(.subheadline).foregroundStyle(Palette.secondary)
+                            }
+                            Spacer(minLength: 0)
+                        }
+                    }
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets(top: 4, leading: 4, bottom: 4, trailing: 4))
+
+                    Section {
+                        Toggle("Doses This Day", isOn: hasDoses)
+                    } footer: {
+                        Text("Changes only this date. Turn it off and the jar is as needed this day.")
+                    }
+
+                    if !plan.doses.isEmpty {
+                        PlanFields(plan: $plan, form: jar.form, perPill: jar.strength)
+                    }
+
+                    if hasChange {
+                        Section {
+                            Button("Go Back to the Regular Plan", role: .destructive) {
+                                store.removeDatePlan(jarId: jarId, on: day)
+                                dismiss()
+                            }
+                        }
+                    }
+                    if let problem {
+                        Section { Label(problem, systemImage: "exclamationmark.circle.fill").foregroundStyle(Palette.missed) }
+                    }
+                }
+            }
+            .navigationTitle("Edit This Day")
+            .navigationBarTitleDisplayMode(.inline)
+            .tint(store.accentColor)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save", action: save).fontWeight(.semibold).disabled(jar == nil)
+                }
+            }
+            .onAppear(perform: setup)
+        }
+        .presentationDetents([.large])
+    }
+
+    private func setup() {
+        guard !didSetup, let jar else { return }
+        didSetup = true
+        let dayStart = DoseLogic.doseDayStart(for: day)
+        if let existing = jar.plan(onDayStarting: dayStart) {
+            plan = existing.isDate ? existing : existing.copy(for: dayStart)
+        } else {
+            plan = DosePlan(date: dayStart, dailyPills: 1, doses: [])
+        }
+    }
+
+    private func save() {
+        guard let jar else { return }
+        if let bad = plan.doses.firstIndex(where: { !jar.form.fits($0.pills ?? 1) }) {
+            let pills = plan.doses[bad].pills ?? 1
+            let near = jar.form.nearest(pills).map { Format.pills($0, jar.form) }.joined(separator: " or ")
+            problem = "Dose \(bad + 1) comes to \(Format.pills(pills, jar.form)), which \(jar.form.plural) can't do. The nearest that works is \(near)."
+            return
+        }
+        var p = plan
+        p.date = DoseLogic.doseDayStart(for: day)
+        p.doses.sort { DoseLogic.order($0.minutes ?? 0) < DoseLogic.order($1.minutes ?? 0) }
+        store.saveDatePlan(jarId: jarId, p)
+        Haptics.logged()
+        dismiss()
     }
 }

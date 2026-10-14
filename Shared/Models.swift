@@ -33,12 +33,16 @@ enum JarKind: String, Codable, CaseIterable, Identifiable {
 }
 
 enum PillForm: String, Codable, CaseIterable, Identifiable {
-    case tablet, capsule, softgel, gummy, scoop, drop, smoked, other
+    case tablet, capsule, softgel, gummy, scoop, powderG, powderMg, drop, smoked, other
     var id: String { rawValue }
+    /// Powders are weighed in grams or milligrams and typed in, not counted.
+    var isMeasured: Bool { self == .powderG || self == .powderMg }
     var singular: String {
         switch self {
         case .other: return "unit"
         case .smoked: return "hit"
+        case .powderG: return "g"
+        case .powderMg: return "mg"
         default: return rawValue
         }
     }
@@ -47,14 +51,37 @@ enum PillForm: String, Codable, CaseIterable, Identifiable {
         case .gummy: return "gummies"
         case .other: return "units"
         case .smoked: return "hits"
+        case .powderG: return "g"
+        case .powderMg: return "mg"
         default: return rawValue + "s"
         }
     }
-    /// The counting unit, capitalized: "Tablet", "Hit".
-    var title: String { singular.capitalized }
+    /// The counting unit, capitalized: "Tablet", "Hit", "Gram".
+    var title: String {
+        switch self {
+        case .powderG: return "Gram"
+        case .powderMg: return "Milligram"
+        default: return singular.capitalized
+        }
+    }
+    /// The unit as a label: "Tablets", "Grams".
+    var unitName: String {
+        switch self {
+        case .powderG: return "Grams"
+        case .powderMg: return "Milligrams"
+        default: return plural.capitalized
+        }
+    }
     /// Name in the Form picker.
-    var name: String { self == .smoked ? "Smoked" : rawValue.capitalized }
-    /// SF Symbol shown in the jar's icon.
+    var name: String {
+        switch self {
+        case .smoked: return "Smoked"
+        case .powderG: return "Powder (g)"
+        case .powderMg: return "Powder (mg)"
+        default: return rawValue.capitalized
+        }
+    }
+    /// SF Symbol for places too small for the drawing, like the Live Activity.
     var symbol: String {
         switch self {
         case .tablet: return "pills.fill"
@@ -62,6 +89,7 @@ enum PillForm: String, Codable, CaseIterable, Identifiable {
         case .softgel: return "capsule.portrait.fill"
         case .gummy: return "heart.fill"
         case .scoop: return "cup.and.saucer.fill"
+        case .powderG, .powderMg: return "circle.hexagongrid.fill"
         case .drop: return "drop.fill"
         case .smoked: return "smoke.fill"
         case .other: return "cross.vial.fill"
@@ -74,10 +102,18 @@ enum PillForm: String, Codable, CaseIterable, Identifiable {
         default: return false
         }
     }
-    /// Smallest step and smallest amount: ½ or 1.
-    var step: Double { allowsHalf ? 0.5 : 1 }
-    /// True when the amount is a whole number of steps (½ for halvable forms, 1 otherwise).
+    /// Imprint text can be drawn on these.
+    var hasImprint: Bool {
+        switch self {
+        case .tablet, .capsule, .softgel, .other: return true
+        default: return false
+        }
+    }
+    /// Smallest step and smallest amount: ½ or 1, or any typed amount for powders.
+    var step: Double { isMeasured ? 0.01 : (allowsHalf ? 0.5 : 1) }
+    /// True when the amount is a whole number of steps (½ for halvable forms, 1 otherwise). Powders take any amount.
     func fits(_ n: Double) -> Bool {
+        if isMeasured { return n > 0 }
         let units = n / step
         return n >= step - 0.0001 && abs(units.rounded() - units) < 0.0001
     }
@@ -91,6 +127,13 @@ enum PillForm: String, Codable, CaseIterable, Identifiable {
     static func options(for kind: JarKind) -> [PillForm] {
         kind == .recreational ? allCases : allCases.filter { $0 != .smoked }
     }
+}
+
+/// The shape of a tablet in its drawing.
+enum PillShape: String, Codable, CaseIterable, Identifiable {
+    case round, oval, oblong
+    var id: String { rawValue }
+    var name: String { rawValue.capitalized }
 }
 
 enum FoodRule: String, Codable, CaseIterable, Identifiable {
@@ -115,12 +158,14 @@ enum FoodRule: String, Codable, CaseIterable, Identifiable {
 /// Jar color. Old names (amber, plum, slate) map to the nearest system color.
 enum LidColor: String, Codable, CaseIterable, Identifiable {
     case amber, red, pink, plum, indigo, blue, cyan, teal, mint, green, yellow, slate
+    case white, cream, peach, brown, lightBlue, lavender
     var id: String { rawValue }
     var name: String {
         switch self {
         case .amber: return "Orange"
         case .plum: return "Purple"
         case .slate: return "Gray"
+        case .lightBlue: return "Light Blue"
         default: return rawValue.capitalized
         }
     }
@@ -131,6 +176,21 @@ enum LidColor: String, Codable, CaseIterable, Identifiable {
 enum Bedtime {
     static let defaultMinutes = 23 * 60
     static var minutes = defaultMinutes
+}
+
+/// Wake-up times seen in Apple Health, by dose day, and your usual wake time for doses taken upon waking
+/// before today's wake-up has been seen. Set whenever data loads.
+enum WakeTimes {
+    static let defaultMinutes = 7 * 60
+    static var usualMinutes = defaultMinutes
+    static var byDay: [String: Date] = [:]
+
+    static func key(_ date: Date) -> String {
+        let f = DateFormatter(); f.dateFormat = "yyyyMMdd"
+        return f.string(from: DoseLogic.doseDayStart(for: date))
+    }
+
+    static func detected(onDayStarting dayStart: Date) -> Date? { byDay[key(dayStart)] }
 }
 
 /// One scheduled dose. `time` is "HH:mm" (24 h) or nil for "as needed".
@@ -147,16 +207,18 @@ struct DoseSlot: Codable, Identifiable, Hashable {
     var days: [Int] = DoseSlot.everyDay
     /// Minutes before bedtime, when the time follows bedtime instead of the clock.
     var bedtimeOffset: Int? = nil
-    /// Part of the jar's total daily dose this dose is, like ⅓.
+    /// Part of the plan's total daily dose this dose is, like ⅓.
     var share: Double? = nil
+    /// Taken when you wake up, as seen in Apple Health, instead of at a clock time.
+    var uponWaking: Bool = false
 
     init(id: String = UUID().uuidString, label: String = "", time: String? = nil, amount: String = "", pills: Double? = nil,
-         days: [Int] = DoseSlot.everyDay, bedtimeOffset: Int? = nil, share: Double? = nil) {
+         days: [Int] = DoseSlot.everyDay, bedtimeOffset: Int? = nil, share: Double? = nil, uponWaking: Bool = false) {
         self.id = id; self.label = label; self.time = time; self.amount = amount; self.pills = pills
-        self.days = days; self.bedtimeOffset = bedtimeOffset; self.share = share
+        self.days = days; self.bedtimeOffset = bedtimeOffset; self.share = share; self.uponWaking = uponWaking
     }
 
-    enum CodingKeys: String, CodingKey { case id, label, time, amount, pills, days, bedtimeOffset, share }
+    enum CodingKeys: String, CodingKey { case id, label, time, amount, pills, days, bedtimeOffset, share, uponWaking }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -170,19 +232,23 @@ struct DoseSlot: Codable, Identifiable, Hashable {
         days = d.isEmpty ? DoseSlot.everyDay : Array(Set(d)).sorted()
         bedtimeOffset = try? c.decodeIfPresent(Int.self, forKey: .bedtimeOffset)
         share = try? c.decodeIfPresent(Double.self, forKey: .share)
+        uponWaking = (try? c.decodeIfPresent(Bool.self, forKey: .uponWaking)) ?? false
     }
 
-    /// Minutes after midnight, or nil when the dose has no set time. Bedtime doses follow the bedtime setting.
+    /// Minutes after midnight, or nil when the dose has no set time. Bedtime doses follow the bedtime setting,
+    /// and doses taken upon waking sit at your usual wake time (the Schedule uses the real wake-up once it's seen).
     var minutes: Int? {
         guard let time else { return nil }
+        if uponWaking { return WakeTimes.usualMinutes }
         if let off = bedtimeOffset { return ((Bedtime.minutes - off) % 1440 + 1440) % 1440 }
         let parts = time.split(separator: ":").compactMap { Int($0) }
         guard parts.count == 2 else { return nil }
         return parts[0] * 60 + parts[1]
     }
 
-    /// "8:00 AM", or "As needed" without a time.
+    /// "8:00 AM", "Upon waking", or "As needed" without a time.
     var timeText: String {
+        if uponWaking && time != nil { return "Upon waking" }
         guard let m = minutes else { return "As needed" }
         return Format.time12(String(format: "%02d:%02d", m / 60, m % 60))
     }
@@ -246,6 +312,91 @@ extension PlannedDose {
         amount = (try? c.decodeIfPresent(String.self, forKey: .amount)) ?? ""
         note = (try? c.decodeIfPresent(String.self, forKey: .note)) ?? ""
         headsUpMinutes = (try? c.decodeIfPresent(Int.self, forKey: .headsUpMinutes)) ?? 0
+    }
+}
+
+/// A jar's doses for a set of weekdays (Weekdays, Weekends…), or for one specific date.
+/// Each plan has its own daily total, how many doses it's split into, the split, and the times.
+struct DosePlan: Codable, Identifiable, Hashable {
+    var id: String = UUID().uuidString
+    var name: String = ""
+    /// Weekdays this plan covers (Calendar weekdays, 1 = Sunday). Not used for a specific date.
+    var days: [Int] = DoseSlot.everyDay
+    /// Set for a one-day change: the dose day it replaces the regular plan on.
+    var date: Date? = nil
+    var dailyPills: Double = 1
+    var splitEqual: Bool = true
+    /// The doses. Empty on a specific date means no doses that day (as needed).
+    var doses: [DoseSlot] = []
+
+    var isDate: Bool { date != nil }
+
+    /// "Weekdays", or the plan's own name.
+    var title: String {
+        if let date { return date.formatted(.dateTime.weekday(.wide).month(.wide).day()) }
+        return name.isEmpty ? Format.days(days) : name
+    }
+
+    /// Shares of the daily total across the doses.
+    var shareTotal: Double { doses.reduce(0.0) { $0 + ($1.share ?? 0) } }
+
+    /// Equal split gives every dose the same share. Each dose's pills are its share of the daily total.
+    mutating func recompute() {
+        guard !doses.isEmpty else { return }
+        let n = Double(doses.count)
+        for i in doses.indices {
+            if splitEqual || doses.count == 1 { doses[i].share = doses.count == 1 ? 1 : 1 / n }
+            let share = doses[i].share ?? 1 / n
+            doses[i].share = share
+            doses[i].pills = (dailyPills * share * 1_000_000).rounded() / 1_000_000
+        }
+    }
+
+    /// Adds or removes doses from the end, spacing new ones four hours apart.
+    mutating func setDoseCount(_ requested: Int) {
+        let n = min(6, max(1, requested))
+        while doses.count > n { doses.removeLast() }
+        while doses.count < n {
+            let last = doses.last?.minutes ?? 8 * 60
+            let next = min(last + 4 * 60, 23 * 60)
+            let used = shareTotal
+            doses.append(DoseSlot(time: String(format: "%02d:%02d", next / 60, next % 60),
+                                  share: splitEqual ? nil : max(0, 1 - used)))
+        }
+        recompute()
+    }
+
+    /// "2 doses · 8:00 AM, 3:00 PM · 1 tablet a day", or "No doses (as needed)".
+    func summary(_ form: PillForm) -> String {
+        if doses.isEmpty { return "No doses, as needed" }
+        let times = doses.sorted { DoseLogic.order($0.minutes ?? 0) < DoseLogic.order($1.minutes ?? 0) }.map(\.timeText).joined(separator: ", ")
+        let count = doses.count == 1 ? "1 dose" : "\(doses.count) doses"
+        return "\(count) \u{00B7} \(times) \u{00B7} \(Format.pills(dailyPills, form)) a day"
+    }
+
+    /// A copy for one date, keeping the dose ids so anything already logged that day still matches.
+    func copy(for day: Date) -> DosePlan {
+        var p = self
+        p.id = UUID().uuidString
+        p.date = DoseLogic.doseDayStart(for: day)
+        p.name = ""
+        return p
+    }
+}
+
+extension DosePlan {
+    enum CodingKeys: String, CodingKey { case id, name, days, date, dailyPills, splitEqual, doses }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = (try? c.decodeIfPresent(String.self, forKey: .id)) ?? UUID().uuidString
+        name = (try? c.decodeIfPresent(String.self, forKey: .name)) ?? ""
+        let d = ((try? c.decodeIfPresent([Int].self, forKey: .days)) ?? nil)?.filter { (1...7).contains($0) } ?? DoseSlot.everyDay
+        days = Array(Set(d)).sorted()
+        date = try? c.decodeIfPresent(Date.self, forKey: .date)
+        dailyPills = (try? c.decodeIfPresent(Double.self, forKey: .dailyPills)) ?? 1
+        splitEqual = (try? c.decodeIfPresent(Bool.self, forKey: .splitEqual)) ?? true
+        doses = ((try? c.decodeIfPresent([Lossy<DoseSlot>].self, forKey: .doses)) ?? []).compactMap(\.value)
     }
 }
 
@@ -384,10 +535,12 @@ struct Jar: Codable, Identifiable, Hashable {
     var breakUntil: Date? = nil
     /// Jars this one interacts with, as set by the user.
     var interactions: [JarInteraction] = []
-    /// Split dose: the total pills a day, shared out across the dose times.
-    var dailyPills: Double? = nil
-    /// Equal split (every dose the same share) or custom shares.
-    var splitEqual: Bool = true
+    /// Weekday plans and one-day changes. Days with no plan are as needed.
+    var plans: [DosePlan] = []
+    /// How the pill is drawn: tablet shape, score line and the code printed on it.
+    var pillShape: PillShape = .round
+    var scoreLine: Bool = false
+    var imprint: String = ""
 
     init(id: String, name: String) { self.id = id; self.name = name }
 
@@ -395,7 +548,7 @@ struct Jar: Codable, Identifiable, Hashable {
         case id, name, labelName, kind, form, strength, lid, schedule, howTo, food, avoid, absorb, summary, order, tagIds
         case pillsLeft, refillWarnDays, lowNotified, nudge, nudgeMinutes, nudgeRepeats, checkIn, checkInMinutes
         case asNeeded, minGapMinutes, maxPerDay, followUpMinutes, effect, paused, breakFrom, breakUntil, interactions
-        case dailyPills, splitEqual
+        case plans, pillShape, scoreLine, imprint
     }
 
     /// Tolerant decoding so jars pasted from the web cabinet (or older files) import cleanly.
@@ -440,21 +593,50 @@ struct Jar: Codable, Identifiable, Hashable {
         if !c.contains(.asNeeded), !schedule.isEmpty, schedule.allSatisfy({ $0.minutes == nil }) { asNeeded = true }
         if kind == .recreational { asNeeded = true }
         if form == .smoked && kind != .recreational { form = .other }
-        dailyPills = try? c.decodeIfPresent(Double.self, forKey: .dailyPills)
-        splitEqual = (try? c.decodeIfPresent(Bool.self, forKey: .splitEqual)) ?? true
-        if dailyPills == nil && !asNeeded { adoptSplitFromDoses() }
+        plans = ((try? c.decodeIfPresent([Lossy<DosePlan>].self, forKey: .plans)) ?? []).compactMap(\.value)
+        pillShape = (try? c.decodeIfPresent(PillShape.self, forKey: .pillShape)) ?? .round
+        scoreLine = (try? c.decodeIfPresent(Bool.self, forKey: .scoreLine)) ?? false
+        imprint = (try? c.decodeIfPresent(String.self, forKey: .imprint)) ?? ""
+        if !c.contains(.plans) { migratePlans() }
     }
 
-    /// Jars saved before split doses: the total is the sum of the dose times' pills and each
-    /// dose's share is its pills over that total, so every dose stays exactly as it was.
-    mutating func adoptSplitFromDoses() {
-        let timed = schedule.indices.filter { schedule[$0].time != nil }
-        let total = timed.reduce(0.0) { $0 + (schedule[$1].pills ?? 1) }
-        guard total > 0 else { return }
-        dailyPills = total
-        for i in timed { schedule[i].share = (schedule[i].pills ?? 1) / total }
-        let shares = timed.compactMap { schedule[$0].share }
-        splitEqual = shares.allSatisfy { abs($0 - (shares.first ?? 0)) < 0.0001 }
+    /// Jars saved before day plans kept every dose time in `schedule`, each with its own days.
+    /// Weekdays that share the same doses become one plan, so every dose stays exactly as it was
+    /// (same ids, times and amounts) and only the as-needed dose stays in `schedule`.
+    mutating func migratePlans() {
+        let timed = schedule.filter { $0.time != nil }
+        guard !timed.isEmpty else { return }
+        var groups: [[String]: [Int]] = [:]
+        for d in DoseSlot.everyDay {
+            let ids = timed.filter { $0.days.contains(d) }.map(\.id)
+            if !ids.isEmpty { groups[ids, default: []].append(d) }
+        }
+        plans = groups.sorted { ($0.value.first ?? 0) < ($1.value.first ?? 0) }.map { group -> DosePlan in
+            var doses = timed.filter { group.key.contains($0.id) }
+            for i in doses.indices { doses[i].days = DoseSlot.everyDay }
+            let total = doses.reduce(0.0) { $0 + ($1.pills ?? 1) }
+            for i in doses.indices { doses[i].share = (doses[i].pills ?? 1) / max(total, 0.0001) }
+            let shares = doses.map { $0.share ?? 0 }
+            let equal = shares.allSatisfy { abs($0 - (shares.first ?? 0)) < 0.0001 }
+            return DosePlan(name: "", days: group.value, dailyPills: total, splitEqual: equal, doses: doses)
+        }
+        schedule = schedule.filter { $0.time == nil }
+    }
+
+    /// The plan for the dose day starting at `dayStart`: a one-day change first, then the weekday plan.
+    func plan(onDayStarting dayStart: Date) -> DosePlan? {
+        if let p = plans.first(where: { $0.date.map { DoseLogic.sameDoseDay($0, dayStart) } ?? false }) { return p }
+        let weekday = Calendar.current.component(.weekday, from: dayStart)
+        return plans.first { $0.date == nil && $0.days.contains(weekday) }
+    }
+
+    var weekdayPlans: [DosePlan] { plans.filter { $0.date == nil } }
+    var datePlans: [DosePlan] { plans.filter { $0.date != nil }.sorted { ($0.date ?? .distantPast) < ($1.date ?? .distantPast) } }
+
+    /// Weekdays that no plan covers, so the jar is as needed on them.
+    var uncoveredDays: [Int] {
+        let covered = Set(weekdayPlans.flatMap(\.days))
+        return DoseSlot.everyDay.filter { !covered.contains($0) }
     }
 
     /// False while paused or during a break.
@@ -476,23 +658,27 @@ struct Jar: Codable, Identifiable, Hashable {
     }
 
     /// The single dose an as-needed jar logs.
-    var asNeededSlot: DoseSlot? { asNeeded ? (schedule.first ?? DoseSlot(id: "prn", label: "As Needed")) : nil }
+    var asNeededSlot: DoseSlot? {
+        asNeeded ? (schedule.first(where: { $0.time == nil }) ?? schedule.first ?? DoseSlot(id: "prn", label: "As Needed")) : nil
+    }
 
-    /// Average pills a day across the timed doses (counting the days each one runs), nil if any count is missing.
+    /// Average pills a day across the week's plans, nil if any count is missing.
     var pillsPerDay: Double? {
-        let slots = timedSlots
-        guard !slots.isEmpty else { return nil }
+        guard !asNeeded, !weekdayPlans.isEmpty else { return nil }
         var weekly = 0.0
-        for s in slots {
-            guard let p = s.pills else { return nil }
-            weekly += p * Double(s.days.count)
+        for p in weekdayPlans {
+            for s in p.doses where s.time != nil {
+                guard let pills = s.pills else { return nil }
+                weekly += pills * Double(p.days.count)
+            }
         }
         return weekly > 0 ? weekly / 7 : nil
     }
 
-    /// The timed doses that happen on the dose day starting at `dayStart`.
+    /// The timed doses on the dose day starting at `dayStart`, from that day's plan.
     func slots(onDayStarting dayStart: Date) -> [DoseSlot] {
-        timedSlots.filter { $0.runs(onDayStarting: dayStart) }
+        guard !asNeeded, let p = plan(onDayStarting: dayStart) else { return [] }
+        return p.doses.filter { $0.time != nil }.sorted { DoseLogic.order($0.minutes ?? 0) < DoseLogic.order($1.minutes ?? 0) }
     }
 
     /// Whole days of supply left, when it can be worked out.
@@ -515,32 +701,30 @@ struct Jar: Codable, Identifiable, Hashable {
         return (String(first.prefix(1)) + String(words[1].prefix(1))).uppercased()
     }
 
+    /// Every dose time across all plans (each id once), in time order. As-needed jars have just their one dose.
     var sortedSchedule: [DoseSlot] {
         if asNeeded { return asNeededSlot.map { [$0] } ?? [] }
-        return schedule.sorted { a, b in
-            switch (a.minutes, b.minutes) {
-            case let (x?, y?): return DoseLogic.order(x) < DoseLogic.order(y)
-            case (_?, nil): return true
-            case (nil, _?): return false
-            default: return false
-            }
+        var seen = Set<String>()
+        var out: [DoseSlot] = []
+        for p in plans {
+            for s in p.doses where s.time != nil && seen.insert(s.id).inserted { out.append(s) }
         }
+        return out.sorted { DoseLogic.order($0.minutes ?? 0) < DoseLogic.order($1.minutes ?? 0) }
     }
 
-    var timedSlots: [DoseSlot] { asNeeded ? [] : sortedSchedule.filter { $0.minutes != nil } }
+    var timedSlots: [DoseSlot] { asNeeded ? [] : sortedSchedule }
 
     var frequencyText: String {
-        let slots = timedSlots
-        if asNeeded || slots.isEmpty { return "As needed" }
-        let daySets = Set(slots.map { Set($0.days) })
-        guard daySets.count == 1, let days = daySets.first else { return "Varies by day" }
+        let week = weekdayPlans.filter { !$0.doses.isEmpty }
+        if asNeeded || week.isEmpty { return "As needed" }
+        guard week.count == 1, let plan = week.first else { return "Varies by day" }
         let count: String
-        switch slots.count {
+        switch plan.doses.count {
         case 1: count = "Once a day"
         case 2: count = "Twice a day"
-        default: count = "\(slots.count) times a day"
+        default: count = "\(plan.doses.count) times a day"
         }
-        return days.count == 7 ? count : "\(count), \(Format.days(Array(days)))"
+        return plan.days.count == 7 ? count : "\(count), \(Format.days(plan.days))"
     }
 }
 
@@ -612,10 +796,12 @@ struct AppSettings: Codable, Hashable {
     var groupReminders: Bool? = nil
     /// Bedtime in minutes after midnight. Nil means 11:00 PM.
     var bedtime: Int? = nil
+    /// Usual wake time in minutes after midnight, for doses taken upon waking. Nil means 7:00 AM.
+    var usualWake: Int? = nil
 }
 
 extension AppSettings {
-    enum CodingKeys: String, CodingKey { case faceIDLock, reminders, backupBookmark, accent, caffeineTracker, groupReminders, bedtime }
+    enum CodingKeys: String, CodingKey { case faceIDLock, reminders, backupBookmark, accent, caffeineTracker, groupReminders, bedtime, usualWake }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -626,6 +812,7 @@ extension AppSettings {
         caffeineTracker = try? c.decodeIfPresent(Bool.self, forKey: .caffeineTracker)
         groupReminders = try? c.decodeIfPresent(Bool.self, forKey: .groupReminders)
         bedtime = try? c.decodeIfPresent(Int.self, forKey: .bedtime)
+        usualWake = try? c.decodeIfPresent(Int.self, forKey: .usualWake)
     }
 }
 
@@ -636,10 +823,12 @@ struct StoreFile: Codable {
     var settings: AppSettings = AppSettings()
     var caffeine: [CaffeineEntry] = []
     var planned: [PlannedDose] = []
+    /// Wake-up times seen in Apple Health, by dose day key (yyyyMMdd).
+    var wakeTimes: [String: Date] = [:]
 }
 
 extension StoreFile {
-    enum CodingKeys: String, CodingKey { case version, jars, entries, settings, caffeine, planned }
+    enum CodingKeys: String, CodingKey { case version, jars, entries, settings, caffeine, planned, wakeTimes }
 
     /// Skips any jar, dose or caffeine entry it can't read rather than losing the whole file.
     init(from decoder: Decoder) throws {
@@ -650,6 +839,7 @@ extension StoreFile {
         settings = (try? c.decodeIfPresent(AppSettings.self, forKey: .settings)) ?? AppSettings()
         caffeine = ((try? c.decodeIfPresent([Lossy<CaffeineEntry>].self, forKey: .caffeine)) ?? []).compactMap(\.value)
         planned = ((try? c.decodeIfPresent([Lossy<PlannedDose>].self, forKey: .planned)) ?? []).compactMap(\.value)
+        wakeTimes = (try? c.decodeIfPresent([String: Date].self, forKey: .wakeTimes)) ?? [:]
     }
 }
 
@@ -778,6 +968,7 @@ enum Format {
 
     static func pills(_ n: Double?, _ form: PillForm) -> String {
         guard let n, n.isFinite, n > 0 else { return "" }
+        if form.isMeasured { return "\(trimmed(n)) \(form.singular)" }
         return "\(count(n)) \(n <= 1 ? form.singular : form.plural)"
     }
 

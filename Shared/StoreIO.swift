@@ -7,18 +7,47 @@ enum StoreIO {
     static let appGroup = "group.com.medjars.app"
     static let fileName = "medjars.json"
 
-    /// The App Group folder, checked once per launch. Nil when the certificate doesn't allow it.
-    static let sharedFolder: URL? = {
-        guard let url = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroup) else { return nil }
-        do {
-            try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-            let probe = url.appendingPathComponent(".probe")
-            try Data("ok".utf8).write(to: probe, options: .atomic)
-            try? FileManager.default.removeItem(at: probe)
-            return url
-        } catch {
-            return nil
+    /// App Groups this copy of the app was signed with, read from its provisioning profile.
+    /// A signing service gives its own group names (like group.9abf2a6b9fb214b6.1) instead of Med Jars' one,
+    /// so the app and the widget both pick the same one from this list.
+    static let profileGroups: [String] = {
+        let main = Bundle.main.bundleURL
+        let candidates = [
+            main.appendingPathComponent("embedded.mobileprovision"),
+            // Inside the widget extension, the app's profile sits two folders up (MedJars.app/PlugIns/MedJarsWidget.appex).
+            main.deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("embedded.mobileprovision")
+        ]
+        for url in candidates {
+            if let groups = groups(inProfile: url), !groups.isEmpty { return groups.sorted() }
         }
+        return []
+    }()
+
+    private static func groups(inProfile url: URL) -> [String]? {
+        guard let data = try? Data(contentsOf: url),
+              let start = data.range(of: Data("<?xml".utf8)),
+              let end = data.range(of: Data("</plist>".utf8), in: start.lowerBound..<data.endIndex) else { return nil }
+        let xml = data.subdata(in: start.lowerBound..<end.upperBound)
+        guard let plist = try? PropertyListSerialization.propertyList(from: xml, format: nil) as? [String: Any],
+              let entitlements = plist["Entitlements"] as? [String: Any] else { return nil }
+        return (entitlements["com.apple.security.application-groups"] as? [String])?.filter { !$0.contains("*") }
+    }
+
+    /// The App Group folder, checked once per launch. Nil when the certificate doesn't allow one.
+    static let sharedFolder: URL? = {
+        for id in [appGroup] + profileGroups.filter({ $0 != appGroup }) {
+            guard let url = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: id) else { continue }
+            do {
+                try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+                let probe = url.appendingPathComponent(".probe")
+                try Data("ok".utf8).write(to: probe, options: .atomic)
+                try? FileManager.default.removeItem(at: probe)
+                return url
+            } catch {
+                continue
+            }
+        }
+        return nil
     }()
 
     static var isShared: Bool { sharedFolder != nil }
@@ -50,6 +79,8 @@ enum StoreIO {
             decoder.dateDecodingStrategy = strategy
             if let file = try? decoder.decode(StoreFile.self, from: data) {
                 Bedtime.minutes = file.settings.bedtime ?? Bedtime.defaultMinutes
+                WakeTimes.usualMinutes = file.settings.usualWake ?? WakeTimes.defaultMinutes
+                WakeTimes.byDay = file.wakeTimes
                 return file
             }
         }

@@ -42,6 +42,8 @@ targets:
         NSHealthShareUsageDescription: Med Jars reads your medication list from the Health app so it can set up jars for you.
         NSHealthUpdateUsageDescription: Med Jars does not write to the Health app.
         NSSupportsLiveActivities: true
+        UIBackgroundModes: [fetch]
+        BGTaskSchedulerPermittedIdentifiers: [com.medjars.app.wakecheck]
         com.apple.developer.nfc.readersession.iso7816.select-identifiers: [D2760000850101]
         CFBundleURLTypes:
           - CFBundleURLName: com.medjars.app
@@ -54,6 +56,7 @@ targets:
         com.apple.developer.nfc.readersession.formats: [TAG]
         com.apple.developer.healthkit: true
         com.apple.developer.healthkit.access: []
+        com.apple.developer.healthkit.background-delivery: true
         com.apple.developer.usernotifications.time-sensitive: true
     dependencies:
       - target: MedJarsWidget

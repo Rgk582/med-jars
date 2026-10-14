@@ -58,7 +58,8 @@ enum Reminders {
                 guard let dayStart = cal.date(byAdding: .day, value: offset, to: today) else { continue }
                 for jar in jars where jar.isActive(on: dayStart) && !jar.asNeeded {
                     guard enabled || jar.nudge else { continue }
-                    for slot in jar.slots(onDayStarting: dayStart) {
+                    // Doses taken upon waking are reminded when Apple Health shows the wake-up, not at a clock time.
+                    for slot in jar.slots(onDayStarting: dayStart) where !slot.uponWaking {
                         guard let at = DoseLogic.occurrence(of: slot, dayStart: dayStart) else { continue }
                         if offset == 0, entries.contains(where: { $0.jarId == jar.id && $0.slotId == slot.id && DoseLogic.sameDoseDay($0.takenAt, now) }) { continue }
                         if enabled && at > now { onTime[at, default: []].append((jar, slot)) }

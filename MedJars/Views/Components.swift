@@ -114,3 +114,65 @@ struct PillCounter: View {
         }
     }
 }
+
+/// The big amount control in the log and plan sheets: the pill counter, or a typed amount for powders in g or mg.
+struct AmountInput: View {
+    @Binding var amount: Double
+    let form: PillForm
+    @State private var text = ""
+
+    var body: some View {
+        if form.isMeasured {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                TextField("0", text: $text)
+                    .keyboardType(.decimalPad)
+                    .font(.system(size: 44, weight: .bold, design: .rounded))
+                    .multilineTextAlignment(.trailing)
+                    .monospacedDigit()
+                Text(form.singular).font(.title2.weight(.semibold)).foregroundStyle(Palette.secondary)
+            }
+            .padding(.vertical, 4)
+            .onAppear { text = Format.trimmed(amount) }
+            .onChange(of: text) { _, new in
+                if let v = Double(new.replacingOccurrences(of: ",", with: ".")), v > 0 { amount = v }
+            }
+            .onChange(of: amount) { _, new in
+                if Double(text.replacingOccurrences(of: ",", with: ".")) != new { text = Format.trimmed(new) }
+            }
+        } else {
+            PillCounter(count: $amount, form: form)
+        }
+    }
+}
+
+/// A form row for an amount: a stepper in the form's steps, or a typed amount for powders in g or mg.
+struct AmountField: View {
+    let title: String
+    @Binding var amount: Double
+    let form: PillForm
+    @State private var text = ""
+
+    var body: some View {
+        if form.isMeasured {
+            LabeledContent(title) {
+                HStack(spacing: 4) {
+                    TextField("0", text: $text)
+                        .keyboardType(.decimalPad)
+                        .multilineTextAlignment(.trailing)
+                    Text(form.singular).foregroundStyle(Palette.secondary)
+                }
+            }
+            .onAppear { text = Format.trimmed(amount) }
+            .onChange(of: text) { _, new in
+                if let v = Double(new.replacingOccurrences(of: ",", with: ".")), v > 0 { amount = v }
+            }
+            .onChange(of: amount) { _, new in
+                if Double(text.replacingOccurrences(of: ",", with: ".")) != new { text = Format.trimmed(new) }
+            }
+        } else {
+            Stepper(value: $amount, in: form.step...100, step: form.step) {
+                LabeledContent(title, value: Format.pills(amount, form))
+            }
+        }
+    }
+}

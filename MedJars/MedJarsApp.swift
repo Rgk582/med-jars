@@ -69,6 +69,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         UNUserNotificationCenter.current().delegate = self
         Reminders.registerCategories()
+        KeyboardBar.shared.start()
+        WakeDetector.launch()
         return true
     }
 
@@ -214,6 +216,7 @@ struct RootView: View {
         Reminders.reschedule(jars: store.jars, entries: store.entries, planned: store.planned,
                              enabled: store.settings.reminders, grouped: store.groupRemindersOn)
         LiveDoses.sync(jars: store.jars, entries: store.entries)
+        WakeDetector.refresh()
     }
 
     /// First open: the system prompt for notifications. Reminders turn on when they're allowed.
