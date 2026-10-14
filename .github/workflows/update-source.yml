@@ -1,0 +1,90 @@
+name: Update Feather source
+
+on:
+  release:
+    types: [published, edited]
+  # Releases made by the Build IPA workflow use its built-in token, which doesn't fire release events,
+  # so also run whenever that build finishes.
+  workflow_run:
+    workflows: ["Build IPA"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Build source.json from latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APP_NAME: "Med Jars"
+          BUNDLE_ID: "com.medjars.app"
+          DEVELOPER: "Ryan"
+          SUBTITLE: "NFC med jars with dose cards, reminders and a dose log"
+          ICON_PATH: "MedJars/Assets.xcassets/AppIcon.appiconset/AppIcon.png"
+        run: |
+          set -e
+          REPO="${{ github.repository }}"
+          rel=$(gh api "repos/$REPO/releases/latest")
+
+          tag=$(echo "$rel" | jq -r '.tag_name')
+          version="${tag#v}"
+          date=$(echo "$rel" | jq -r '.published_at')
+          notes=$(echo "$rel" | jq -r '.body // ""')
+          asset=$(echo "$rel" | jq -c '[.assets[] | select(.name | endswith(".ipa"))][0]')
+
+          if [ "$asset" = "null" ]; then
+            echo "No .ipa asset on latest release"; exit 1
+          fi
+
+          url=$(echo "$asset" | jq -r '.browser_download_url')
+          size=$(echo "$asset" | jq -r '.size')
+          icon="https://raw.githubusercontent.com/$REPO/main/$ICON_PATH"
+
+          jq -n \
+            --arg name "$APP_NAME" --arg bid "$BUNDLE_ID" --arg dev "$DEVELOPER" \
+            --arg sub "$SUBTITLE" --arg icon "$icon" --arg ver "$version" \
+            --arg date "$date" --arg url "$url" --arg notes "$notes" \
+            --argjson size "$size" '
+            {
+              name: $name,
+              identifier: $bid,
+              apps: [{
+                name: $name,
+                bundleIdentifier: $bid,
+                developerName: $dev,
+                subtitle: $sub,
+                localizedDescription: $sub,
+                iconURL: $icon,
+                tintColor: "#3b82f6",
+                version: $ver,
+                versionDate: $date,
+                downloadURL: $url,
+                size: $size,
+                versions: [{
+                  version: $ver,
+                  date: $date,
+                  size: $size,
+                  downloadURL: $url,
+                  localizedDescription: $notes,
+                  minOSVersion: "18.0"
+                }]
+              }],
+              news: []
+            }' > source.json
+
+      - name: Commit source.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add source.json
+          git diff --cached --quiet || git commit -m "Update source.json for latest release"
+          git push

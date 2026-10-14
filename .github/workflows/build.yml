@@ -48,6 +48,7 @@ jobs:
             -destination 'generic/platform=iOS' \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            MARKETING_VERSION="1.0.${{ github.run_number }}" CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
             build > build.log 2>&1
           STATUS=$?
           echo "::group::Errors"
@@ -86,8 +87,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="build-${{ github.run_number }}"
+          # The tag matches the app's version (1.0.<build>) so Feather can tell when there's an update.
+          TAG="v1.0.${{ github.run_number }}"
           gh release create "$TAG" MedJars.ipa \
-            --title "Med Jars build ${{ github.run_number }}" \
+            --title "Med Jars 1.0.${{ github.run_number }}" \
             --notes "Unsigned app file. Sign and install it with your certificate in Feather, ESign or Sideloadly." \
             --latest
