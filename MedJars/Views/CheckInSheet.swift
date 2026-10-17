@@ -109,7 +109,7 @@ struct RatingPicker: View {
                             .font(.headline)
                             .frame(maxWidth: .infinity, minHeight: 40)
                             .foregroundStyle(value == n ? .white : Palette.label)
-                            .background(value == n ? AnyShapeStyle(.tint) : AnyShapeStyle(Palette.inset),
+                            .background(value == n ? AnyShapeStyle(TintShapeStyle()) : AnyShapeStyle(Palette.inset),
                                         in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                     }
                     .buttonStyle(.plain)

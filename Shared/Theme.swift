@@ -44,11 +44,23 @@ extension LidColor {
 /// The jar's icon: a drawing of the pill itself on black, in its color and shape, so it's easy to tell jars apart.
 struct JarIcon: View {
     let jar: Jar
+    /// A specific jar of the substance; the default jar when nil.
+    var bottle: Bottle? = nil
     var size: CGFloat = 40
 
     var body: some View {
-        PillArt(form: jar.form, shape: jar.pillShape, color: jar.lid.color, scoreLine: jar.scoreLine,
-                imprint: jar.imprint, size: size)
+        BottleIcon(bottle: bottle ?? jar.defaultBottle, size: size)
+    }
+}
+
+/// One jar's pill drawing.
+struct BottleIcon: View {
+    let bottle: Bottle
+    var size: CGFloat = 40
+
+    var body: some View {
+        PillArt(form: bottle.form, shape: bottle.pillShape, color: bottle.lid.color, scoreLine: bottle.scoreLine,
+                imprint: bottle.imprint, size: size)
     }
 }
 
@@ -310,6 +322,10 @@ struct StatusLabel: View {
             Label("Missed", systemImage: "exclamationmark.circle.fill").foregroundStyle(Palette.missed)
         case .asNeeded:
             Label("As Needed", systemImage: "circle.dashed").foregroundStyle(Palette.secondary)
+        case .waiting:
+            Label("Waiting", systemImage: "hourglass").foregroundStyle(Palette.secondary)
+        case .reminder:
+            Label("Not Logged", systemImage: "bell").foregroundStyle(Palette.secondary)
         }
     }
 }

@@ -78,9 +78,7 @@ enum StoreIO {
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = strategy
             if let file = try? decoder.decode(StoreFile.self, from: data) {
-                Bedtime.minutes = file.settings.bedtime ?? Bedtime.defaultMinutes
-                WakeTimes.usualMinutes = file.settings.usualWake ?? WakeTimes.defaultMinutes
-                WakeTimes.byDay = file.wakeTimes
+                file.applyContext()
                 return file
             }
         }

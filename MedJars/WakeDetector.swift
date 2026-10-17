@@ -35,14 +35,37 @@ enum WakeDetector {
     /// Asks to read sleep data from Apple Health.
     @discardableResult
     static func requestAccess() async -> Bool {
-        guard isAvailable else { return false }
+        await requestAccessError() == nil
+    }
+
+    /// Asks to read sleep data. Returns why it failed, or nil when iOS took the request.
+    static func requestAccessError() async -> String? {
+        guard isAvailable else { return "Apple Health isn't available on this device." }
         do {
             try await health.requestAuthorization(toShare: [], read: [sleepType])
             refresh()
-            return true
+            return nil
         } catch {
-            return false
+            return error.localizedDescription
         }
+    }
+
+    /// Whether iOS will still show the Apple Health permission screen. It only shows once; after that, access
+    /// is changed in the Health app.
+    static func needsAsking() async -> Bool {
+        guard isAvailable else { return false }
+        let status = try? await health.statusForAuthorizationRequest(toShare: [], read: [sleepType])
+        return status == .shouldRequest
+    }
+
+    /// The end of the most recent sleep in Apple Health from the last week, if Med Jars can see any.
+    static func lastSleepEnd(days: Int = 7) async -> Date? {
+        guard isAvailable else { return nil }
+        let predicate = HKQuery.predicateForSamples(withStart: Date().addingTimeInterval(-Double(days) * 86400), end: Date(), options: [])
+        let descriptor = HKSampleQueryDescriptor(predicates: [.categorySample(type: sleepType, predicate: predicate)],
+                                                 sortDescriptors: [SortDescriptor(\.endDate, order: .reverse)], limit: 100)
+        guard let samples = try? await descriptor.result(for: health) else { return nil }
+        return samples.first(where: { isAsleep($0.value) })?.endDate
     }
 
     private static func startObserving() {

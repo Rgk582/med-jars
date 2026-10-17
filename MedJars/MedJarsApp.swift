@@ -9,30 +9,66 @@ enum Route: Hashable {
     case history
     case settings
     case caffeine
+    case stack(String)
 }
 
 enum AppTab: Hashable {
-    case cabinet, schedule
+    case home, cabinet, schedule, stacks
+}
+
+/// A stack back from a break, waiting for you to choose whether its rotations restart.
+struct StackResumePrompt: Identifiable {
+    let stackId: String
+    let cycle: Int
+    var id: String { "\(stackId).\(cycle)" }
 }
 
 @MainActor
 @Observable
 final class Router {
     static let shared = Router()
-    var tab: AppTab = .cabinet
-    /// The Cabinet tab's navigation.
+    var tab: AppTab = .home
+    /// Each tab's navigation.
+    var homePath: [Route] = []
     var path: [Route] = []
-    /// The Schedule tab's navigation.
     var schedulePath: [Route] = []
+    var stacksPath: [Route] = []
     /// A dose whose check-in sheet should open.
     var checkInEntryId: String?
     /// A dose to log from outside the app (Open and Log, a notification), shown in the log sheet first.
     var logRequest: LogTarget?
+    /// Doses to log together (Log All, Log Next, a scanned jar due with others).
+    var groupRequest: GroupLogTarget?
+    /// Restart rotations or keep counting, for a stack back from a break.
+    var stackPrompt: StackResumePrompt?
+    /// The open tab's navigation.
+    var currentPath: [Route] {
+        switch tab {
+        case .home: return homePath
+        case .cabinet: return path
+        case .schedule: return schedulePath
+        case .stacks: return stacksPath
+        }
+    }
+
+    /// The plus button stays off Settings (and anything opened from it).
+    var plusHidden: Bool { currentPath.contains(.settings) }
+
+    /// A substance's page has a Log bar at the bottom, so the plus button sits above it.
+    var plusLift: CGFloat {
+        if case .jar = currentPath.last { return 84 }
+        return 0
+    }
 
     /// Opens a jar from outside (NFC, a notification, a link) in the Cabinet tab.
     func open(jarId: String) {
         tab = .cabinet
         path = [.jar(jarId)]
+    }
+
+    func open(stackId: String) {
+        tab = .stacks
+        stacksPath = [.stack(stackId)]
     }
 
     /// medjars://jar/<id>, medjars://log, medjars://log-next, medjars://checkin/<entry id>
@@ -43,6 +79,8 @@ final class Router {
         switch host {
         case "jar" where !first.isEmpty:
             open(jarId: first)
+        case "stack" where !first.isEmpty:
+            open(stackId: first)
         case "log":
             tab = .cabinet
             path = [.history]
@@ -59,8 +97,8 @@ final class Router {
         case "checkin" where !first.isEmpty:
             checkInEntryId = first
         default:
-            tab = .cabinet
-            path = []
+            tab = .home
+            homePath = []
         }
     }
 }
@@ -86,6 +124,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         let jarId = info["jarId"] as? String
         let slotId = info["slotId"] as? String
         let entryId = info["entryId"] as? String
+        let stackId = info["stackId"] as? String
+        let cycle = Int((info["cycle"] as? String) ?? "")
+        let tappedAt = Double((info["now"] as? String) ?? "")
         let items = (info["items"] as? String) ?? ""
         let action = response.actionIdentifier
         let category = response.notification.request.content.categoryIdentifier
@@ -94,6 +135,24 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
             store.reload()
             if category == Notify.checkInCategory, let entryId {
                 Router.shared.checkInEntryId = entryId
+            } else if category == Notify.loggedLateCategory, let entryId {
+                if action == Notify.changeToNowAction, let tappedAt {
+                    store.changeTime(entryId: entryId, to: Date(timeIntervalSince1970: tappedAt))
+                } else if let jarId, let e = store.entry(entryId) {
+                    Router.shared.open(jarId: jarId)
+                    Router.shared.logRequest = LogTarget(jarId: jarId, editing: e)
+                }
+            } else if category == Notify.stackResumeCategory, let stackId {
+                if action == Notify.restartAction, let cycle {
+                    store.setRestart(stackId: stackId, cycle: cycle, restart: true)
+                } else if action == Notify.keepCountingAction, let cycle {
+                    store.setRestart(stackId: stackId, cycle: cycle, restart: false)
+                } else {
+                    Router.shared.open(stackId: stackId)
+                    if let cycle { Router.shared.stackPrompt = StackResumePrompt(stackId: stackId, cycle: cycle) }
+                }
+            } else if let stackId, jarId == nil {
+                Router.shared.open(stackId: stackId)
             } else if category == Notify.groupCategory {
                 let pairs: [(jarId: String, slotId: String)] = items.split(separator: ";").compactMap { part in
                     let bits = part.split(separator: "|").map(String.init)
@@ -102,12 +161,21 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
                 if action == Notify.logAllAction {
                     store.logAll(pairs)
                 } else {
-                    Router.shared.tab = .schedule
-                    Router.shared.schedulePath = []
+                    let doses = pairs.compactMap { p -> GroupDose? in
+                        guard let slot = store.slot(jarId: p.jarId, slotId: p.slotId) else { return nil }
+                        if store.alreadyLogged(jarId: p.jarId, slotId: p.slotId, on: Date()) != nil { return nil }
+                        return GroupDose(jarId: p.jarId, slot: slot, scheduled: store.scheduledTime(jarId: p.jarId, slotId: p.slotId))
+                    }
+                    if doses.isEmpty {
+                        Router.shared.tab = .schedule
+                        Router.shared.schedulePath = []
+                    } else {
+                        Router.shared.groupRequest = GroupLogTarget(title: "Log Doses", doses: doses)
+                    }
                 }
             } else if let jarId {
                 if action == Notify.logAction, let slotId {
-                    store.logSlot(jarId: jarId, slotId: slotId)
+                    store.logFromNotification(jarId: jarId, slotId: slotId)
                 } else if action == Notify.logCustomAction, let slotId {
                     Router.shared.open(jarId: jarId)
                     Router.shared.logRequest = LogTarget(jarId: jarId, slotId: slotId, slot: store.slot(jarId: jarId, slotId: slotId))
@@ -148,6 +216,11 @@ struct RootView: View {
     var body: some View {
         @Bindable var router = router
         TabView(selection: $router.tab) {
+            Tab("Home", systemImage: "house.fill", value: AppTab.home) {
+                NavigationStack(path: $router.homePath) {
+                    HomeView().withRoutes()
+                }
+            }
             Tab("Cabinet", systemImage: "pills.fill", value: AppTab.cabinet) {
                 NavigationStack(path: $router.path) {
                     CabinetView().withRoutes()
@@ -158,15 +231,31 @@ struct RootView: View {
                     ScheduleView().withRoutes()
                 }
             }
+            Tab("Stacks", systemImage: "square.stack.3d.up.fill", value: AppTab.stacks) {
+                NavigationStack(path: $router.stacksPath) {
+                    StacksView().withRoutes()
+                }
+            }
         }
         .tint(store.accentColor)
+        .overlay {
+            if !router.plusHidden { PlusLayer() }
+        }
+        .sheet(item: $router.groupRequest) { target in
+            GroupLogSheet(target: target) { entries in store.recentLog = entries.first }
+        }
+        .sheet(item: $router.stackPrompt) { prompt in
+            StackResumeSheet(prompt: prompt)
+        }
         .sheet(item: Binding(get: { router.checkInEntryId.map { CheckInTarget(id: $0) } },
                              set: { router.checkInEntryId = $0?.id })) { target in
             CheckInSheet(entryId: target.id)
         }
         .sheet(item: $router.logRequest) { target in
             if let jar = store.jar(target.jarId) {
-                LogDoseSheet(jar: jar, slotId: target.slotId, slot: target.slot) { entry in store.recentLog = entry }
+                LogDoseSheet(jar: jar, slotId: target.slotId, slot: target.slot, editing: target.editing, bottleId: target.bottleId) { entry in
+                if target.editing == nil { store.recentLog = entry }
+            }
             }
         }
         .onAppear {
@@ -265,6 +354,7 @@ extension View {
             case .history: HistoryView()
             case .settings: SettingsView()
             case .caffeine: CaffeineView()
+            case .stack(let id): StackDetailView(stackId: id)
             }
         }
     }

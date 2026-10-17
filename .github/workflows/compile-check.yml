@@ -1,0 +1,82 @@
+name: Compile Check
+
+# Builds work-in-progress branches without publishing a release.
+on:
+  push:
+    branches: [wip]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: compile-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compile:
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pick the newest Xcode
+        run: |
+          XCODE=$(ls -d /Applications/Xcode_*.app | grep -v beta | sort -V | tail -1)
+          sudo xcode-select -s "$XCODE"
+          xcodebuild -version
+
+      - name: Generate Xcode project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Build (unsigned)
+        run: |
+          set +e
+          xcodebuild \
+            -project MedJars.xcodeproj \
+            -scheme MedJars \
+            -configuration Debug \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build > build.log 2>&1
+          STATUS=$?
+          echo "::group::Errors"
+          grep -E "error:|fatal error" build.log | sort -u | head -150
+          echo "::endgroup::"
+          echo $STATUS > status.txt
+          grep -E "error:|fatal error" build.log | sed "s#$GITHUB_WORKSPACE/##" | sort -u | head -300 > errors.txt || true
+          if [ $STATUS -ne 0 ] && [ ! -s errors.txt ]; then tail -80 build.log > errors.txt; fi
+
+      - name: Publish errors
+        if: always()
+        run: |
+          git config user.name "ci"
+          git config user.email "ci@users.noreply.github.com"
+          SHA=$(git rev-parse --short HEAD)
+          mkdir -p /tmp/out && cp errors.txt status.txt /tmp/out/ 2>/dev/null || true
+          git fetch origin ci-errors 2>/dev/null || true
+          git checkout --orphan ci-errors-tmp
+          git rm -rq --cached . || true
+          rm -rf ./*
+          cp /tmp/out/* . 2>/dev/null || true
+          echo "$SHA" > commit.txt
+          git add errors.txt status.txt commit.txt 2>/dev/null || true
+          git commit -qm "Compile results for $SHA" || true
+          git push -f origin HEAD:ci-errors
+
+      - name: Fail on errors
+        run: |
+          STATUS=$(cat /tmp/out/status.txt 2>/dev/null || echo 1)
+          if [ "$STATUS" -ne 0 ]; then echo "BUILD FAILED"; exit 1; fi
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          if-no-files-found: ignore

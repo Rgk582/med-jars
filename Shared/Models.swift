@@ -28,8 +28,156 @@ enum JarKind: String, Codable, CaseIterable, Identifiable {
         case .recreational: return "Rec"
         }
     }
-    /// Recreational substances never get a recurring schedule, only one-time planned doses.
-    var allowsSchedule: Bool { self != .recreational }
+    /// Every type can be scheduled.
+    var allowsSchedule: Bool { true }
+    /// Recreational doses only remind you. They never count as missed or toward the day's progress.
+    var remindOnly: Bool { self == .recreational }
+}
+
+/// The unit a jar's strength is written in. Mass units convert to each other; IU and mL stand alone.
+enum StrengthUnit: String, Codable, CaseIterable, Identifiable {
+    case mg, mcg, g, iu, ml
+    var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .mg: return "mg"
+        case .mcg: return "mcg"
+        case .g: return "g"
+        case .iu: return "IU"
+        case .ml: return "mL"
+        }
+    }
+    /// Milligrams in one of this unit, nil for IU and mL.
+    var mgFactor: Double? {
+        switch self {
+        case .mg: return 1
+        case .mcg: return 0.001
+        case .g: return 1000
+        case .iu, .ml: return nil
+        }
+    }
+    /// An amount in this unit expressed in `other`, when they can be compared.
+    func convert(_ value: Double, to other: StrengthUnit) -> Double? {
+        if self == other { return value }
+        guard let a = mgFactor, let b = other.mgFactor else { return nil }
+        return value * a / b
+    }
+    /// Reads a unit typed after a number: "mg", "MCG", "µg", "grams", "iu", "ml".
+    static func parse(_ text: String) -> StrengthUnit? {
+        let t = text.trimmingCharacters(in: .whitespacesAndNewlines).lowercased().replacingOccurrences(of: ".", with: "")
+        switch t {
+        case "mg", "milligram", "milligrams": return .mg
+        case "mcg", "µg", "ug", "microgram", "micrograms": return .mcg
+        case "g", "gram", "grams", "gm": return .g
+        case "iu", "ui": return .iu
+        case "ml", "milliliter", "milliliters", "millilitre": return .ml
+        default: return nil
+        }
+    }
+}
+
+/// How the app picks which jar (or jars) make up a dose when a substance has more than one.
+enum PickOrder: String, Codable, CaseIterable, Identifiable {
+    case wholeFirst, fewestFirst
+    var id: String { rawValue }
+    var name: String {
+        switch self {
+        case .wholeFirst: return "Whole Pills First"
+        case .fewestFirst: return "Fewest Pills First"
+        }
+    }
+    var detail: String {
+        switch self {
+        case .wholeFirst: return "15 mg from a 30 mg jar and a 5 mg jar comes out as three 5 mg pills."
+        case .fewestFirst: return "15 mg from a 30 mg jar and a 5 mg jar comes out as half of a 30 mg pill."
+        }
+    }
+}
+
+/// App-wide choices the shared logic reads, set whenever data loads (like Bedtime).
+enum PickPrefs {
+    static var order: PickOrder = .wholeFirst
+}
+
+/// One physical jar of a substance: its pills, their strength and look, its supply and its NFC tags.
+struct Bottle: Codable, Identifiable, Hashable {
+    var id: String = UUID().uuidString
+    var form: PillForm = .capsule
+    /// Strength of one pill (or one unit), nil when it isn't set.
+    var strength: Double? = nil
+    var unit: StrengthUnit = .mg
+    var lid: LidColor = .amber
+    var pillShape: PillShape = .round
+    var scoreLine: Bool = false
+    var imprint: String = ""
+    /// Pills left in the jar, or nil when supply isn't tracked.
+    var pillsLeft: Double? = nil
+    /// Warn when this many days of pills are left.
+    var refillWarnDays: Int = 7
+    /// Set once the low-supply warning has been sent, cleared on refill.
+    var lowNotified: Bool = false
+    /// NFC tag hardware IDs (hex) paired with this jar.
+    var tagIds: [String] = []
+    /// Optional name to tell jars apart, like "Travel jar".
+    var nickname: String = ""
+
+    init(id: String = UUID().uuidString, form: PillForm = .capsule) {
+        self.id = id
+        self.form = form
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, form, strength, unit, lid, pillShape, scoreLine, imprint, pillsLeft, refillWarnDays, lowNotified, tagIds, nickname
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = (try? c.decodeIfPresent(String.self, forKey: .id)) ?? UUID().uuidString
+        form = (try? c.decodeIfPresent(PillForm.self, forKey: .form)) ?? .capsule
+        strength = try? c.decodeIfPresent(Double.self, forKey: .strength)
+        unit = (try? c.decodeIfPresent(StrengthUnit.self, forKey: .unit)) ?? .mg
+        lid = (try? c.decodeIfPresent(LidColor.self, forKey: .lid)) ?? .amber
+        pillShape = (try? c.decodeIfPresent(PillShape.self, forKey: .pillShape)) ?? .round
+        scoreLine = (try? c.decodeIfPresent(Bool.self, forKey: .scoreLine)) ?? false
+        imprint = (try? c.decodeIfPresent(String.self, forKey: .imprint)) ?? ""
+        pillsLeft = try? c.decodeIfPresent(Double.self, forKey: .pillsLeft)
+        refillWarnDays = (try? c.decodeIfPresent(Int.self, forKey: .refillWarnDays)) ?? 7
+        lowNotified = (try? c.decodeIfPresent(Bool.self, forKey: .lowNotified)) ?? false
+        tagIds = (try? c.decodeIfPresent([String].self, forKey: .tagIds)) ?? []
+        nickname = (try? c.decodeIfPresent(String.self, forKey: .nickname)) ?? ""
+    }
+
+    /// "30 mg", or "" when no strength is set.
+    var strengthText: String {
+        guard let strength, !form.isMeasured else { return "" }
+        return "\(Format.trimmed(strength)) \(unit.label)"
+    }
+
+    /// "30 mg tablets", or the jar's nickname.
+    var title: String {
+        if !nickname.isEmpty { return nickname }
+        return strengthText.isEmpty ? form.unitName : "\(strengthText) \(form.plural)"
+    }
+
+    /// Strength of one pill in another unit, when it can be compared.
+    func strength(in target: StrengthUnit) -> Double? {
+        guard let strength, !form.isMeasured else { return nil }
+        return unit.convert(strength, to: target)
+    }
+
+    /// Sets the strength from text like "30 mg" (the unit stays the same when none is typed).
+    mutating func setStrength(text: String) {
+        let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let parsed = Format.leadingNumber(t) else { strength = nil; return }
+        strength = parsed.value
+        if let u = StrengthUnit.parse(parsed.unit) { unit = u }
+    }
+}
+
+/// How many pills of one jar make up part of a dose.
+struct BottlePart: Codable, Hashable {
+    var bottleId: String
+    var pills: Double
 }
 
 enum PillForm: String, Codable, CaseIterable, Identifiable {
@@ -175,7 +323,23 @@ enum LidColor: String, Codable, CaseIterable, Identifiable {
 /// "before bed" resolve the same way in the app, reminders, widgets, Control Center and Siri.
 enum Bedtime {
     static let defaultMinutes = 23 * 60
+    /// The regular bedtime.
     static var minutes = defaultMinutes
+    /// A different regular bedtime on some weekdays (Calendar weekday as text, 1 is Sunday).
+    static var byWeekday: [String: Int] = [:]
+    /// Bedtime changed for one dose day (key yyyyMMdd of the dose day).
+    static var byDate: [String: Int] = [:]
+
+    /// The bedtime on a dose day: a change for that date first, then that weekday's bedtime, then the regular one.
+    static func minutes(onDayStarting dayStart: Date) -> Int {
+        if let m = byDate[WakeTimes.key(dayStart)] { return m }
+        let weekday = Calendar.current.component(.weekday, from: DoseLogic.doseDayStart(for: dayStart))
+        if let m = byWeekday[String(weekday)] { return m }
+        return minutes
+    }
+
+    /// Where the bedtime on a dose day came from.
+    static func isChanged(onDayStarting dayStart: Date) -> Bool { byDate[WakeTimes.key(dayStart)] != nil }
 }
 
 /// Wake-up times seen in Apple Health, by dose day, and your usual wake time for doses taken upon waking
@@ -211,14 +375,28 @@ struct DoseSlot: Codable, Identifiable, Hashable {
     var share: Double? = nil
     /// Taken when you wake up, as seen in Apple Health, instead of at a clock time.
     var uponWaking: Bool = false
+    /// The dose as a strength (in the substance's unit), for substances with more than one jar. The app works out
+    /// which jar and how many pills from it.
+    var dose: Double? = nil
+    /// Set on doses that come from a stack.
+    var stackId: String? = nil
+    /// A stack dose timed after another one: that dose's substance and dose id, and the gap in minutes.
+    /// The time follows when the other one was actually logged.
+    var gapJarId: String? = nil
+    var gapSlotId: String? = nil
+    var gapMinutes: Int? = nil
 
     init(id: String = UUID().uuidString, label: String = "", time: String? = nil, amount: String = "", pills: Double? = nil,
-         days: [Int] = DoseSlot.everyDay, bedtimeOffset: Int? = nil, share: Double? = nil, uponWaking: Bool = false) {
+         days: [Int] = DoseSlot.everyDay, bedtimeOffset: Int? = nil, share: Double? = nil, uponWaking: Bool = false,
+         dose: Double? = nil) {
         self.id = id; self.label = label; self.time = time; self.amount = amount; self.pills = pills
         self.days = days; self.bedtimeOffset = bedtimeOffset; self.share = share; self.uponWaking = uponWaking
+        self.dose = dose
     }
 
-    enum CodingKeys: String, CodingKey { case id, label, time, amount, pills, days, bedtimeOffset, share, uponWaking }
+    enum CodingKeys: String, CodingKey {
+        case id, label, time, amount, pills, days, bedtimeOffset, share, uponWaking, dose, stackId, gapJarId, gapSlotId, gapMinutes
+    }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -233,6 +411,11 @@ struct DoseSlot: Codable, Identifiable, Hashable {
         bedtimeOffset = try? c.decodeIfPresent(Int.self, forKey: .bedtimeOffset)
         share = try? c.decodeIfPresent(Double.self, forKey: .share)
         uponWaking = (try? c.decodeIfPresent(Bool.self, forKey: .uponWaking)) ?? false
+        dose = try? c.decodeIfPresent(Double.self, forKey: .dose)
+        stackId = try? c.decodeIfPresent(String.self, forKey: .stackId)
+        gapJarId = try? c.decodeIfPresent(String.self, forKey: .gapJarId)
+        gapSlotId = try? c.decodeIfPresent(String.self, forKey: .gapSlotId)
+        gapMinutes = try? c.decodeIfPresent(Int.self, forKey: .gapMinutes)
     }
 
     /// Minutes after midnight, or nil when the dose has no set time. Bedtime doses follow the bedtime setting,
@@ -245,6 +428,17 @@ struct DoseSlot: Codable, Identifiable, Hashable {
         guard parts.count == 2 else { return nil }
         return parts[0] * 60 + parts[1]
     }
+
+    /// Minutes after midnight on one dose day, where that day's bedtime can differ from the regular one.
+    func minutes(onDayStarting dayStart: Date) -> Int? {
+        guard time != nil else { return nil }
+        if !uponWaking, let off = bedtimeOffset {
+            return ((Bedtime.minutes(onDayStarting: dayStart) - off) % 1440 + 1440) % 1440
+        }
+        return minutes
+    }
+
+    var isGap: Bool { gapSlotId != nil }
 
     /// "8:00 AM", "Upon waking", or "As needed" without a time.
     var timeText: String {
@@ -283,12 +477,14 @@ struct PlannedDose: Codable, Identifiable, Hashable {
     var note: String = ""
     /// Extra reminder this many minutes ahead (0 = none).
     var headsUpMinutes: Int = 0
+    /// The dose as a strength, for substances with more than one jar.
+    var dose: Double? = nil
 
     var slotId: String { Self.slotPrefix + id }
 
     /// The planned dose as a dose time, so logging, skipping, warnings and reminders work like any other dose.
     var slot: DoseSlot {
-        DoseSlot(id: slotId, label: note.isEmpty ? "Planned" : note, time: Format.hhmm(at), amount: amount, pills: pills)
+        DoseSlot(id: slotId, label: note.isEmpty ? "Planned" : note, time: Format.hhmm(at), amount: amount, pills: pills, dose: dose)
     }
 
     static func headsUpLabel(_ m: Int) -> String {
@@ -301,7 +497,7 @@ struct PlannedDose: Codable, Identifiable, Hashable {
 }
 
 extension PlannedDose {
-    enum CodingKeys: String, CodingKey { case id, jarId, at, pills, amount, note, headsUpMinutes }
+    enum CodingKeys: String, CodingKey { case id, jarId, at, pills, amount, note, headsUpMinutes, dose }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -312,6 +508,7 @@ extension PlannedDose {
         amount = (try? c.decodeIfPresent(String.self, forKey: .amount)) ?? ""
         note = (try? c.decodeIfPresent(String.self, forKey: .note)) ?? ""
         headsUpMinutes = (try? c.decodeIfPresent(Int.self, forKey: .headsUpMinutes)) ?? 0
+        dose = try? c.decodeIfPresent(Double.self, forKey: .dose)
     }
 }
 
@@ -328,6 +525,9 @@ struct DosePlan: Codable, Identifiable, Hashable {
     var splitEqual: Bool = true
     /// The doses. Empty on a specific date means no doses that day (as needed).
     var doses: [DoseSlot] = []
+    /// The daily total as a strength (in the substance's unit), for substances with more than one jar.
+    /// When set, each dose's strength is its share of it and the jars are picked when you log.
+    var dailyDose: Double? = nil
 
     var isDate: Bool { date != nil }
 
@@ -349,6 +549,7 @@ struct DosePlan: Codable, Identifiable, Hashable {
             let share = doses[i].share ?? 1 / n
             doses[i].share = share
             doses[i].pills = (dailyPills * share * 1_000_000).rounded() / 1_000_000
+            if let total = dailyDose { doses[i].dose = (total * share * 1_000_000).rounded() / 1_000_000 }
         }
     }
 
@@ -367,11 +568,13 @@ struct DosePlan: Codable, Identifiable, Hashable {
     }
 
     /// "2 doses · 8:00 AM, 3:00 PM · 1 tablet a day", or "No doses (as needed)".
-    func summary(_ form: PillForm) -> String {
+    func summary(_ form: PillForm, unit: StrengthUnit? = nil) -> String {
         if doses.isEmpty { return "No doses, as needed" }
         let times = doses.sorted { DoseLogic.order($0.minutes ?? 0) < DoseLogic.order($1.minutes ?? 0) }.map(\.timeText).joined(separator: ", ")
         let count = doses.count == 1 ? "1 dose" : "\(doses.count) doses"
-        return "\(count) \u{00B7} \(times) \u{00B7} \(Format.pills(dailyPills, form)) a day"
+        let total: String
+        if let d = dailyDose, let unit { total = "\(Format.trimmed(d)) \(unit.label)" } else { total = Format.pills(dailyPills, form) }
+        return "\(count) \u{00B7} \(times) \u{00B7} \(total) a day"
     }
 
     /// A copy for one date, keeping the dose ids so anything already logged that day still matches.
@@ -385,7 +588,7 @@ struct DosePlan: Codable, Identifiable, Hashable {
 }
 
 extension DosePlan {
-    enum CodingKeys: String, CodingKey { case id, name, days, date, dailyPills, splitEqual, doses }
+    enum CodingKeys: String, CodingKey { case id, name, days, date, dailyPills, splitEqual, doses, dailyDose }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -397,6 +600,137 @@ extension DosePlan {
         dailyPills = (try? c.decodeIfPresent(Double.self, forKey: .dailyPills)) ?? 1
         splitEqual = (try? c.decodeIfPresent(Bool.self, forKey: .splitEqual)) ?? true
         doses = ((try? c.decodeIfPresent([Lossy<DoseSlot>].self, forKey: .doses)) ?? []).compactMap(\.value)
+        dailyDose = try? c.decodeIfPresent(Double.self, forKey: .dailyDose)
+    }
+}
+
+/// The kinds of repeating schedules: the same days each week, weeks that rotate, every few days,
+/// days on and days off, or dates picked on a calendar.
+enum RuleKind: String, Codable, CaseIterable, Identifiable {
+    case weekly, rotation, everyN, onOff, dates
+    var id: String { rawValue }
+    var name: String {
+        switch self {
+        case .weekly: return "Same Every Week"
+        case .rotation: return "Rotating Weeks"
+        case .everyN: return "Every Few Days"
+        case .onOff: return "Days On, Days Off"
+        case .dates: return "Specific Dates"
+        }
+    }
+}
+
+/// A repeating schedule. Weekly and rotating schedules use day plans (each covering some weekdays);
+/// the others repeat one day plan on the days they pick.
+struct ScheduleRule: Codable, Hashable {
+    var kind: RuleKind = .weekly
+    /// Weekly: the day plans.
+    var plans: [DosePlan] = []
+    /// Rotating weeks: each week's day plans, week 1 first.
+    var weeks: [[DosePlan]] = []
+    /// Where every-few-days, on/off and rotations count from (a dose day).
+    var start: Date = DoseLogic.doseDayStart(for: Date())
+    var everyDays: Int = 2
+    var onDays: Int = 5
+    var offDays: Int = 2
+    /// Specific dates (dose days).
+    var dates: [Date] = []
+    /// The doses on each day an every-few-days, on/off or specific-dates schedule picks.
+    var dayPlan: DosePlan = DosePlan()
+
+    init(kind: RuleKind = .weekly) { self.kind = kind }
+
+    enum CodingKeys: String, CodingKey { case kind, plans, weeks, start, everyDays, onDays, offDays, dates, dayPlan }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        kind = (try? c.decodeIfPresent(RuleKind.self, forKey: .kind)) ?? .weekly
+        plans = ((try? c.decodeIfPresent([Lossy<DosePlan>].self, forKey: .plans)) ?? []).compactMap(\.value)
+        weeks = (try? c.decodeIfPresent([[DosePlan]].self, forKey: .weeks)) ?? []
+        start = (try? c.decodeIfPresent(Date.self, forKey: .start)) ?? DoseLogic.doseDayStart(for: Date())
+        everyDays = max(1, (try? c.decodeIfPresent(Int.self, forKey: .everyDays)) ?? 2)
+        onDays = max(1, (try? c.decodeIfPresent(Int.self, forKey: .onDays)) ?? 5)
+        offDays = max(0, (try? c.decodeIfPresent(Int.self, forKey: .offDays)) ?? 2)
+        dates = (try? c.decodeIfPresent([Date].self, forKey: .dates)) ?? []
+        dayPlan = (try? c.decodeIfPresent(DosePlan.self, forKey: .dayPlan)) ?? DosePlan()
+    }
+
+    /// Days from `start` to a dose day (negative before it).
+    func daysFromStart(_ dayStart: Date) -> Int {
+        let cal = Calendar.current
+        let a = cal.startOfDay(for: DoseLogic.doseDayStart(for: start))
+        let b = cal.startOfDay(for: DoseLogic.doseDayStart(for: dayStart))
+        return cal.dateComponents([.day], from: a, to: b).day ?? 0
+    }
+
+    /// The plan on a dose day. `index` is the day's count from the start (a stack passes its own count, which
+    /// skips days it was off); without one it's the calendar days since `start`.
+    func plan(onDayStarting dayStart: Date, index: Int? = nil) -> DosePlan? {
+        let weekday = Calendar.current.component(.weekday, from: DoseLogic.doseDayStart(for: dayStart))
+        let i = index ?? daysFromStart(dayStart)
+        switch kind {
+        case .weekly:
+            return plans.first { $0.date == nil && $0.days.contains(weekday) }
+        case .rotation:
+            guard !weeks.isEmpty, i >= 0 else { return nil }
+            let week = weeks[(i / 7) % weeks.count]
+            return week.first { $0.date == nil && $0.days.contains(weekday) }
+        case .everyN:
+            guard i >= 0, i % max(1, everyDays) == 0, !dayPlan.doses.isEmpty else { return nil }
+            return dayPlan
+        case .onOff:
+            let cycle = max(1, onDays + offDays)
+            guard i >= 0, i % cycle < onDays, !dayPlan.doses.isEmpty else { return nil }
+            return dayPlan
+        case .dates:
+            guard dates.contains(where: { DoseLogic.sameDoseDay($0, dayStart) }), !dayPlan.doses.isEmpty else { return nil }
+            return dayPlan
+        }
+    }
+
+    /// Every day plan this schedule uses.
+    var allPlans: [DosePlan] {
+        switch kind {
+        case .weekly: return plans
+        case .rotation: return weeks.flatMap { $0 }
+        case .everyN, .onOff, .dates: return [dayPlan]
+        }
+    }
+
+    /// Every dose time across the schedule, each id once.
+    var allSlots: [DoseSlot] {
+        var seen = Set<String>()
+        var out: [DoseSlot] = []
+        for p in allPlans { for s in p.doses where s.time != nil && seen.insert(s.id).inserted { out.append(s) } }
+        return out
+    }
+
+    /// "Mon, Thu at 8:00 AM", "Every 3 days", "5 days on, 2 off", "4 dates", "2-week rotation".
+    var summary: String {
+        switch kind {
+        case .weekly:
+            let active = plans.filter { !$0.doses.isEmpty && !$0.days.isEmpty }
+            if active.isEmpty { return "No days yet" }
+            if active.count == 1, let p = active.first {
+                return "\(Format.days(p.days)) \u{00B7} " + p.doses.map(\.timeText).joined(separator: ", ")
+            }
+            return active.map { Format.days($0.days) }.joined(separator: "; ")
+        case .rotation:
+            return weeks.count == 1 ? "1-week rotation" : "\(weeks.count)-week rotation"
+        case .everyN:
+            return everyDays == 1 ? "Every day" : "Every \(everyDays) days"
+        case .onOff:
+            return "\(onDays) day\(onDays == 1 ? "" : "s") on, \(offDays) off"
+        case .dates:
+            return dates.count == 1 ? "1 date" : "\(dates.count) dates"
+        }
+    }
+
+    /// Weekly or rotating weeks with a new set of plans.
+    static func makeWeekly(_ plans: [DosePlan]) -> ScheduleRule {
+        var r = ScheduleRule(kind: .weekly)
+        r.plans = plans
+        return r
     }
 }
 
@@ -488,6 +822,8 @@ struct Lossy<T: Decodable>: Decodable {
     init(from decoder: Decoder) throws { value = try? T(from: decoder) }
 }
 
+/// A substance (a medication, supplement, nootropic or recreational substance) and every jar of it you have.
+/// Jars of the same substance differ only in strength and look; the schedule, notes and history are shared.
 struct Jar: Codable, Identifiable, Hashable {
     var id: String
     /// The medication or supplement, e.g. "Vitamin D3".
@@ -495,9 +831,6 @@ struct Jar: Codable, Identifiable, Hashable {
     /// What the jar's own label says, e.g. "Nature Made 2000 IU". Optional.
     var labelName: String = ""
     var kind: JarKind = .supplement
-    var form: PillForm = .capsule
-    var strength: String = ""
-    var lid: LidColor = .amber
     var schedule: [DoseSlot] = []
     var howTo: String = ""
     var food: FoodRule = .either
@@ -505,14 +838,6 @@ struct Jar: Codable, Identifiable, Hashable {
     var absorb: [String] = []
     var summary: String = ""
     var order: Int = 0
-    /// NFC tag hardware IDs (hex) paired with this jar.
-    var tagIds: [String] = []
-    /// Pills left in the jar, or nil when supply isn't tracked.
-    var pillsLeft: Double? = nil
-    /// Warn when this many days of pills are left.
-    var refillWarnDays: Int = 7
-    /// Set once the low-supply warning has been sent, cleared on refill.
-    var lowNotified: Bool = false
     /// Reminders after a dose time until the dose is logged.
     var nudge: Bool = false
     var nudgeMinutes: Int = 30
@@ -537,18 +862,32 @@ struct Jar: Codable, Identifiable, Hashable {
     var interactions: [JarInteraction] = []
     /// Weekday plans and one-day changes. Days with no plan are as needed.
     var plans: [DosePlan] = []
-    /// How the pill is drawn: tablet shape, score line and the code printed on it.
-    var pillShape: PillShape = .round
-    var scoreLine: Bool = false
-    var imprint: String = ""
+    /// The jars of this substance. Always at least one.
+    var bottles: [Bottle] = []
+    /// The jar shown in the Cabinet and anywhere one picture stands for the substance.
+    var defaultBottleId: String = ""
+    /// This substance's own jar order, or nil to follow Settings.
+    var pickOrder: PickOrder? = nil
+    /// An advanced repeating schedule (rotating weeks, every few days, days on and off, specific dates).
+    /// Nil, or a weekly rule, means the day plans in `plans`.
+    var rule: ScheduleRule? = nil
+    /// When two active stacks both set this substance's schedule, the one that wins.
+    var stackOwner: String? = nil
 
-    init(id: String, name: String) { self.id = id; self.name = name }
+    init(id: String, name: String) {
+        self.id = id
+        self.name = name
+        self.bottles = [Bottle(id: id)]
+        self.defaultBottleId = id
+    }
 
     enum CodingKeys: String, CodingKey {
-        case id, name, labelName, kind, form, strength, lid, schedule, howTo, food, avoid, absorb, summary, order, tagIds
-        case pillsLeft, refillWarnDays, lowNotified, nudge, nudgeMinutes, nudgeRepeats, checkIn, checkInMinutes
+        case id, name, labelName, kind, schedule, howTo, food, avoid, absorb, summary, order
+        case nudge, nudgeMinutes, nudgeRepeats, checkIn, checkInMinutes
         case asNeeded, minGapMinutes, maxPerDay, followUpMinutes, effect, paused, breakFrom, breakUntil, interactions
-        case plans, pillShape, scoreLine, imprint
+        case plans, bottles, defaultBottleId, pickOrder, rule, stackOwner
+        // Written before substances had several jars; read into the first jar.
+        case form, strength, lid, pillShape, scoreLine, imprint, pillsLeft, refillWarnDays, lowNotified, tagIds
     }
 
     /// Tolerant decoding so jars pasted from the web cabinet (or older files) import cleanly.
@@ -560,9 +899,6 @@ struct Jar: Codable, Identifiable, Hashable {
         let slug = Format.slug(rawId ?? "")
         id = slug.isEmpty ? Format.slug(name) : slug
         kind = (try? c.decodeIfPresent(JarKind.self, forKey: .kind)) ?? .supplement
-        form = (try? c.decodeIfPresent(PillForm.self, forKey: .form)) ?? .capsule
-        strength = (try? c.decodeIfPresent(String.self, forKey: .strength)) ?? ""
-        lid = (try? c.decodeIfPresent(LidColor.self, forKey: .lid)) ?? .amber
         schedule = ((try? c.decodeIfPresent([Lossy<DoseSlot>].self, forKey: .schedule)) ?? []).compactMap(\.value)
         howTo = (try? c.decodeIfPresent(String.self, forKey: .howTo)) ?? ""
         food = (try? c.decodeIfPresent(FoodRule.self, forKey: .food)) ?? .either
@@ -570,11 +906,7 @@ struct Jar: Codable, Identifiable, Hashable {
         absorb = (try? c.decodeIfPresent([String].self, forKey: .absorb)) ?? []
         summary = (try? c.decodeIfPresent(String.self, forKey: .summary)) ?? ""
         order = (try? c.decodeIfPresent(Int.self, forKey: .order)) ?? 0
-        tagIds = (try? c.decodeIfPresent([String].self, forKey: .tagIds)) ?? []
         labelName = ((try? c.decodeIfPresent(String.self, forKey: .labelName)) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        pillsLeft = try? c.decodeIfPresent(Double.self, forKey: .pillsLeft)
-        refillWarnDays = (try? c.decodeIfPresent(Int.self, forKey: .refillWarnDays)) ?? 7
-        lowNotified = (try? c.decodeIfPresent(Bool.self, forKey: .lowNotified)) ?? false
         nudge = (try? c.decodeIfPresent(Bool.self, forKey: .nudge)) ?? false
         nudgeMinutes = (try? c.decodeIfPresent(Int.self, forKey: .nudgeMinutes)) ?? 30
         nudgeRepeats = (try? c.decodeIfPresent(Int.self, forKey: .nudgeRepeats)) ?? 1
@@ -591,13 +923,75 @@ struct Jar: Codable, Identifiable, Hashable {
         interactions = ((try? c.decodeIfPresent([Lossy<JarInteraction>].self, forKey: .interactions)) ?? []).compactMap(\.value)
         // Jars saved before "As Needed" existed: a schedule with no set times means as needed.
         if !c.contains(.asNeeded), !schedule.isEmpty, schedule.allSatisfy({ $0.minutes == nil }) { asNeeded = true }
-        if kind == .recreational { asNeeded = true }
-        if form == .smoked && kind != .recreational { form = .other }
         plans = ((try? c.decodeIfPresent([Lossy<DosePlan>].self, forKey: .plans)) ?? []).compactMap(\.value)
-        pillShape = (try? c.decodeIfPresent(PillShape.self, forKey: .pillShape)) ?? .round
-        scoreLine = (try? c.decodeIfPresent(Bool.self, forKey: .scoreLine)) ?? false
-        imprint = (try? c.decodeIfPresent(String.self, forKey: .imprint)) ?? ""
+        pickOrder = try? c.decodeIfPresent(PickOrder.self, forKey: .pickOrder)
+        rule = try? c.decodeIfPresent(ScheduleRule.self, forKey: .rule)
+        stackOwner = try? c.decodeIfPresent(String.self, forKey: .stackOwner)
+
+        let decodedBottles = ((try? c.decodeIfPresent([Lossy<Bottle>].self, forKey: .bottles)) ?? []).compactMap(\.value)
+        if decodedBottles.isEmpty {
+            // One jar, from the fields saved before substances could have several.
+            var b = Bottle(id: id, form: (try? c.decodeIfPresent(PillForm.self, forKey: .form)) ?? .capsule)
+            b.setStrength(text: (try? c.decodeIfPresent(String.self, forKey: .strength)) ?? "")
+            b.lid = (try? c.decodeIfPresent(LidColor.self, forKey: .lid)) ?? .amber
+            b.pillShape = (try? c.decodeIfPresent(PillShape.self, forKey: .pillShape)) ?? .round
+            b.scoreLine = (try? c.decodeIfPresent(Bool.self, forKey: .scoreLine)) ?? false
+            b.imprint = (try? c.decodeIfPresent(String.self, forKey: .imprint)) ?? ""
+            b.pillsLeft = try? c.decodeIfPresent(Double.self, forKey: .pillsLeft)
+            b.refillWarnDays = (try? c.decodeIfPresent(Int.self, forKey: .refillWarnDays)) ?? 7
+            b.lowNotified = (try? c.decodeIfPresent(Bool.self, forKey: .lowNotified)) ?? false
+            b.tagIds = (try? c.decodeIfPresent([String].self, forKey: .tagIds)) ?? []
+            bottles = [b]
+        } else {
+            bottles = decodedBottles
+        }
+        let savedDefault = (try? c.decodeIfPresent(String.self, forKey: .defaultBottleId)) ?? ""
+        defaultBottleId = bottles.contains { $0.id == savedDefault } ? savedDefault : (bottles.first?.id ?? id)
+        for i in bottles.indices where bottles[i].form == .smoked && kind != .recreational { bottles[i].form = .other }
         if !c.contains(.plans) { migratePlans() }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(name, forKey: .name)
+        try c.encode(labelName, forKey: .labelName)
+        try c.encode(kind, forKey: .kind)
+        try c.encode(schedule, forKey: .schedule)
+        try c.encode(howTo, forKey: .howTo)
+        try c.encode(food, forKey: .food)
+        try c.encode(avoid, forKey: .avoid)
+        try c.encode(absorb, forKey: .absorb)
+        try c.encode(summary, forKey: .summary)
+        try c.encode(order, forKey: .order)
+        try c.encode(nudge, forKey: .nudge)
+        try c.encode(nudgeMinutes, forKey: .nudgeMinutes)
+        try c.encode(nudgeRepeats, forKey: .nudgeRepeats)
+        try c.encode(checkIn, forKey: .checkIn)
+        try c.encode(checkInMinutes, forKey: .checkInMinutes)
+        try c.encode(asNeeded, forKey: .asNeeded)
+        try c.encode(minGapMinutes, forKey: .minGapMinutes)
+        try c.encode(maxPerDay, forKey: .maxPerDay)
+        try c.encode(followUpMinutes, forKey: .followUpMinutes)
+        try c.encodeIfPresent(effect, forKey: .effect)
+        try c.encode(paused, forKey: .paused)
+        try c.encodeIfPresent(breakFrom, forKey: .breakFrom)
+        try c.encodeIfPresent(breakUntil, forKey: .breakUntil)
+        try c.encode(interactions, forKey: .interactions)
+        try c.encode(plans, forKey: .plans)
+        try c.encode(bottles, forKey: .bottles)
+        try c.encode(defaultBottleId, forKey: .defaultBottleId)
+        try c.encodeIfPresent(pickOrder, forKey: .pickOrder)
+        try c.encodeIfPresent(rule, forKey: .rule)
+        try c.encodeIfPresent(stackOwner, forKey: .stackOwner)
+        // The default jar's details under the old names, so pasted and older copies still read it.
+        let b = defaultBottle
+        try c.encode(b.form, forKey: .form)
+        try c.encode(b.strengthText, forKey: .strength)
+        try c.encode(b.lid, forKey: .lid)
+        try c.encode(b.pillShape, forKey: .pillShape)
+        try c.encode(b.scoreLine, forKey: .scoreLine)
+        try c.encode(b.imprint, forKey: .imprint)
     }
 
     /// Jars saved before day plans kept every dose time in `schedule`, each with its own days.
@@ -623,9 +1017,206 @@ struct Jar: Codable, Identifiable, Hashable {
         schedule = schedule.filter { $0.time == nil }
     }
 
-    /// The plan for the dose day starting at `dayStart`: a one-day change first, then the weekday plan.
+    // MARK: Jars
+
+    private var defaultIndex: Int? {
+        bottles.firstIndex { $0.id == defaultBottleId } ?? (bottles.isEmpty ? nil : 0)
+    }
+
+    /// The jar that stands for the substance.
+    var defaultBottle: Bottle {
+        get { defaultIndex.map { bottles[$0] } ?? Bottle(id: id) }
+        set {
+            if let i = defaultIndex { bottles[i] = newValue } else { bottles = [newValue]; defaultBottleId = newValue.id }
+        }
+    }
+
+    func bottle(_ id: String?) -> Bottle? {
+        guard let id else { return nil }
+        return bottles.first { $0.id == id }
+    }
+
+    /// The default jar's form, color and drawing details.
+    var form: PillForm {
+        get { defaultBottle.form }
+        set { defaultBottle.form = newValue }
+    }
+    var lid: LidColor {
+        get { defaultBottle.lid }
+        set { defaultBottle.lid = newValue }
+    }
+    var pillShape: PillShape {
+        get { defaultBottle.pillShape }
+        set { defaultBottle.pillShape = newValue }
+    }
+    var scoreLine: Bool {
+        get { defaultBottle.scoreLine }
+        set { defaultBottle.scoreLine = newValue }
+    }
+    var imprint: String {
+        get { defaultBottle.imprint }
+        set { defaultBottle.imprint = newValue }
+    }
+    /// "30 mg", the default jar's strength per pill.
+    var strength: String { defaultBottle.strengthText }
+    /// The unit doses are written in.
+    var unit: StrengthUnit { defaultBottle.unit }
+    /// Tags on every jar of this substance.
+    var tagIds: [String] { bottles.flatMap(\.tagIds) }
+
+    /// True when doses are set as a strength and the app picks the jars: two or more jars, all with a strength
+    /// in a unit that compares.
+    var usesStrength: Bool {
+        guard bottles.count > 1 else { return false }
+        let u = unit
+        return bottles.allSatisfy { !$0.form.isMeasured && $0.strength(in: u) != nil }
+    }
+
+    /// The strength of a dose, from its own strength or its pill count times the default jar's strength.
+    func dose(for slot: DoseSlot?) -> Double? {
+        if let d = slot?.dose, d > 0 { return d }
+        guard let s = defaultBottle.strength(in: unit) else { return nil }
+        return (slot?.pills ?? 1) * s
+    }
+
+    /// Which jars a dose comes from, and how many pills of each.
+    func parts(for slot: DoseSlot?) -> [BottlePart] {
+        if usesStrength, let d = dose(for: slot) {
+            if let picked = pick(dose: d) { return picked }
+            if let s = defaultBottle.strength(in: unit), s > 0 {
+                return [BottlePart(bottleId: defaultBottle.id, pills: d / s)]
+            }
+        }
+        return [BottlePart(bottleId: defaultBottle.id, pills: slot?.pills ?? 1)]
+    }
+
+    /// Pills of each jar for one dose amount, following the jar order, never from an empty jar, and only
+    /// mixing two jars when one jar can't make it. Nil when no combination comes out exact.
+    func pick(dose target: Double, order: PickOrder? = nil, ignoringSupply: Bool = false) -> [BottlePart]? {
+        let order = order ?? pickOrder ?? PickPrefs.order
+        let u = unit
+        let tolerance = max(0.0001, target * 0.002)
+        let usable: [(Bottle, Double)] = bottles.compactMap { b in
+            guard let s = b.strength(in: u), s > 0 else { return nil }
+            if !ignoringSupply, let left = b.pillsLeft, left <= 0 { return nil }
+            return (b, s)
+        }
+        struct Option { var parts: [BottlePart]; var pills: Double; var whole: Bool; var usesDefault: Bool }
+        func enough(_ b: Bottle, _ n: Double) -> Bool { ignoringSupply || (b.pillsLeft.map { $0 + 0.0001 >= n } ?? true) }
+        func isWhole(_ n: Double) -> Bool { abs(n - n.rounded()) < 0.0001 }
+        var options: [Option] = []
+        for (b, s) in usable {
+            let n = (target / s / b.form.step).rounded() * b.form.step
+            guard n >= b.form.step - 0.0001, abs(n * s - target) <= tolerance, enough(b, n) else { continue }
+            options.append(Option(parts: [BottlePart(bottleId: b.id, pills: n)], pills: n, whole: isWhole(n), usesDefault: b.id == defaultBottleId))
+        }
+        if options.isEmpty && usable.count > 1 {
+            for i in 0..<usable.count {
+                for j in (i + 1)..<usable.count {
+                    let (a, sa) = usable[i], (b, sb) = usable[j]
+                    var na = a.form.step
+                    while na * sa < target - tolerance && na <= 40 {
+                        let rest = target - na * sa
+                        let nb = (rest / sb / b.form.step).rounded() * b.form.step
+                        if nb >= b.form.step - 0.0001, abs(nb * sb - rest) <= tolerance, enough(a, na), enough(b, nb) {
+                            options.append(Option(parts: [BottlePart(bottleId: a.id, pills: na), BottlePart(bottleId: b.id, pills: nb)],
+                                                  pills: na + nb, whole: isWhole(na) && isWhole(nb),
+                                                  usesDefault: a.id == defaultBottleId || b.id == defaultBottleId))
+                        }
+                        na += a.form.step
+                    }
+                }
+            }
+        }
+        let sorted = options.sorted { x, y in
+            switch order {
+            case .wholeFirst:
+                if x.whole != y.whole { return x.whole }
+                if abs(x.pills - y.pills) > 0.0001 { return x.pills < y.pills }
+            case .fewestFirst:
+                if abs(x.pills - y.pills) > 0.0001 { return x.pills < y.pills }
+                if x.whole != y.whole { return x.whole }
+            }
+            return x.usesDefault && !y.usesDefault
+        }
+        return sorted.first?.parts
+    }
+
+    /// "½ × 30 mg tablet", "3 × 5 mg tablets", or "2 capsules" for a substance with one jar.
+    func partsText(_ parts: [BottlePart]) -> String {
+        if bottles.count <= 1 || !usesStrength {
+            let total = parts.reduce(0.0) { $0 + $1.pills }
+            return Format.pills(total, bottle(parts.first?.bottleId)?.form ?? form)
+        }
+        return parts.compactMap { p -> String? in
+            guard let b = bottle(p.bottleId) else { return nil }
+            let what = b.strengthText.isEmpty ? (p.pills <= 1 ? b.form.singular : b.form.plural) : "\(b.strengthText) \(p.pills <= 1 ? b.form.singular : b.form.plural)"
+            return "\(Format.count(p.pills)) \u{00D7} \(what)"
+        }.joined(separator: " + ")
+    }
+
+    /// "15 mg · ½ × 30 mg tablet", or "15 mg · 1 tablet" for one jar.
+    func amountText(for slot: DoseSlot?) -> String {
+        if usesStrength {
+            let d = dose(for: slot).map { "\(Format.trimmed($0)) \(unit.label)" } ?? ""
+            return [d, partsText(parts(for: slot))].filter { !$0.isEmpty }.joined(separator: " \u{00B7} ")
+        }
+        guard let slot else { return "" }
+        return slot.amountLine(form)
+    }
+
+    /// The strength text logged with a dose.
+    func strengthText(for slot: DoseSlot?) -> String {
+        if usesStrength { return dose(for: slot).map { "\(Format.trimmed($0)) \(unit.label)" } ?? "" }
+        let set = (slot?.amount ?? "").trimmingCharacters(in: .whitespaces)
+        return set.isEmpty ? Format.doseStrength("", basePills: 1, pills: slot?.pills ?? 1, perPill: strength) : set
+    }
+
+    /// Converts day plans between pill counts and strengths when the number of jars changes.
+    mutating func syncDoseMode() {
+        let byStrength = usesStrength
+        let s = defaultBottle.strength(in: unit)
+        func convert(_ p: inout DosePlan) {
+            if byStrength {
+                if p.dailyDose == nil, let s { p.dailyDose = p.dailyPills * s }
+                for i in p.doses.indices where p.doses[i].dose == nil {
+                    if let s { p.doses[i].dose = (p.doses[i].pills ?? 1) * s }
+                }
+            } else if p.dailyDose != nil {
+                if let s, s > 0, let d = p.dailyDose { p.dailyPills = d / s }
+                p.dailyDose = nil
+                for i in p.doses.indices {
+                    if let s, s > 0, let d = p.doses[i].dose { p.doses[i].pills = d / s }
+                    p.doses[i].dose = nil
+                }
+            }
+        }
+        for i in plans.indices { convert(&plans[i]) }
+        if var r = rule {
+            for i in r.plans.indices { convert(&r.plans[i]) }
+            for w in r.weeks.indices { for i in r.weeks[w].indices { convert(&r.weeks[w][i]) } }
+            convert(&r.dayPlan)
+            rule = r
+        }
+        for i in schedule.indices {
+            if byStrength {
+                if schedule[i].dose == nil, let s { schedule[i].dose = (schedule[i].pills ?? 1) * s }
+            } else {
+                if let s, s > 0, let d = schedule[i].dose { schedule[i].pills = d / s }
+                schedule[i].dose = nil
+            }
+        }
+    }
+
+    // MARK: Schedule
+
+    /// True when an advanced repeating schedule is in use instead of weekly day plans.
+    var usesRule: Bool { (rule?.kind ?? .weekly) != .weekly }
+
+    /// The plan for the dose day starting at `dayStart`: a one-day change first, then the regular schedule.
     func plan(onDayStarting dayStart: Date) -> DosePlan? {
         if let p = plans.first(where: { $0.date.map { DoseLogic.sameDoseDay($0, dayStart) } ?? false }) { return p }
+        if usesRule, let rule { return rule.plan(onDayStarting: dayStart) }
         let weekday = Calendar.current.component(.weekday, from: dayStart)
         return plans.first { $0.date == nil && $0.days.contains(weekday) }
     }
@@ -662,51 +1253,39 @@ struct Jar: Codable, Identifiable, Hashable {
         asNeeded ? (schedule.first(where: { $0.time == nil }) ?? schedule.first ?? DoseSlot(id: "prn", label: "As Needed")) : nil
     }
 
-    /// Average pills a day across the week's plans, nil if any count is missing.
-    var pillsPerDay: Double? {
-        guard !asNeeded, !weekdayPlans.isEmpty else { return nil }
-        var weekly = 0.0
-        for p in weekdayPlans {
-            for s in p.doses where s.time != nil {
-                guard let pills = s.pills else { return nil }
-                weekly += pills * Double(p.days.count)
+    /// The dose to log when nothing is scheduled: the as-needed dose, or a usual amount for an extra dose.
+    var usualSlot: DoseSlot? {
+        asNeededSlot ?? timedSlots.first
+    }
+
+    /// The timed doses on a dose day and whether a stack set them. A one-day change wins, then an active stack
+    /// that controls this substance, then the regular schedule.
+    func daySlots(onDayStarting dayStart: Date) -> (slots: [DoseSlot], fromStack: Bool) {
+        func sorted(_ doses: [DoseSlot]) -> [DoseSlot] {
+            doses.filter { $0.time != nil }.sorted {
+                DoseLogic.order($0.minutes(onDayStarting: dayStart) ?? 0) < DoseLogic.order($1.minutes(onDayStarting: dayStart) ?? 0)
             }
         }
-        return weekly > 0 ? weekly / 7 : nil
+        if let p = plans.first(where: { $0.date.map { DoseLogic.sameDoseDay($0, dayStart) } ?? false }) {
+            return (sorted(p.doses), false)
+        }
+        if let stackSlots = StackLogic.slots(for: self, dayStart: dayStart) {
+            return (sorted(stackSlots), true)
+        }
+        guard !asNeeded, let p = plan(onDayStarting: dayStart) else { return ([], false) }
+        return (sorted(p.doses), false)
     }
 
-    /// The timed doses on the dose day starting at `dayStart`, from that day's plan.
-    func slots(onDayStarting dayStart: Date) -> [DoseSlot] {
-        guard !asNeeded, let p = plan(onDayStarting: dayStart) else { return [] }
-        return p.doses.filter { $0.time != nil }.sorted { DoseLogic.order($0.minutes ?? 0) < DoseLogic.order($1.minutes ?? 0) }
-    }
+    /// The timed doses on the dose day starting at `dayStart`.
+    func slots(onDayStarting dayStart: Date) -> [DoseSlot] { daySlots(onDayStarting: dayStart).slots }
 
-    /// Whole days of supply left, when it can be worked out.
-    var daysLeft: Int? {
-        guard let left = pillsLeft, let perDay = pillsPerDay else { return nil }
-        return Int((left / perDay).rounded(.down))
-    }
-
-    var isLow: Bool {
-        guard let left = pillsLeft else { return false }
-        if left <= 0 { return true }
-        guard let d = daysLeft else { return false }
-        return d <= refillWarnDays
-    }
-
-    var initials: String {
-        let words = name.split(whereSeparator: { $0 == " " }).map(String.init)
-        guard let first = words.first, !first.isEmpty else { return "?" }
-        if words.count == 1 { return String(first.prefix(2)).uppercased() }
-        return (String(first.prefix(1)) + String(words[1].prefix(1))).uppercased()
-    }
-
-    /// Every dose time across all plans (each id once), in time order. As-needed jars have just their one dose.
+    /// Every dose time in the regular schedule (each id once), in time order. As-needed jars have just their one dose.
     var sortedSchedule: [DoseSlot] {
         if asNeeded { return asNeededSlot.map { [$0] } ?? [] }
         var seen = Set<String>()
         var out: [DoseSlot] = []
-        for p in plans {
+        let all = plans + (usesRule ? (rule?.allPlans ?? []) : [])
+        for p in all {
             for s in p.doses where s.time != nil && seen.insert(s.id).inserted { out.append(s) }
         }
         return out.sorted { DoseLogic.order($0.minutes ?? 0) < DoseLogic.order($1.minutes ?? 0) }
@@ -714,7 +1293,18 @@ struct Jar: Codable, Identifiable, Hashable {
 
     var timedSlots: [DoseSlot] { asNeeded ? [] : sortedSchedule }
 
+    /// A dose by id: a regular dose time, a stack dose, or the as-needed dose.
+    func findSlot(_ slotId: String) -> DoseSlot? {
+        if let s = sortedSchedule.first(where: { $0.id == slotId }) { return s }
+        let all = plans + (rule?.allPlans ?? [])
+        if let s = all.flatMap(\.doses).first(where: { $0.id == slotId }) { return s }
+        if let s = StackLogic.slot(jarId: id, slotId: slotId) { return s }
+        if let s = schedule.first(where: { $0.id == slotId }) { return s }
+        return nil
+    }
+
     var frequencyText: String {
+        if usesRule, let rule, !asNeeded { return rule.summary }
         let week = weekdayPlans.filter { !$0.doses.isEmpty }
         if asNeeded || week.isEmpty { return "As needed" }
         guard week.count == 1, let plan = week.first else { return "Varies by day" }
@@ -726,6 +1316,71 @@ struct Jar: Codable, Identifiable, Hashable {
         }
         return plan.days.count == 7 ? count : "\(count), \(Format.days(plan.days))"
     }
+
+    // MARK: Supply
+
+    /// Pills a day this jar is expected to use, from the next two weeks of doses. Nil when it can't be worked out.
+    func pillsPerDay(bottleId: String, from now: Date = Date()) -> Double? {
+        let cal = Calendar.current
+        let today = DoseLogic.doseDayStart(for: now)
+        var total = 0.0
+        for offset in 0..<14 {
+            guard let day = cal.date(byAdding: .day, value: offset, to: today), isActive(on: day) else { continue }
+            for slot in slots(onDayStarting: day) {
+                for part in parts(for: slot) where part.bottleId == bottleId { total += part.pills }
+            }
+        }
+        return total > 0 ? total / 14 : nil
+    }
+
+    /// Whole days of supply left in one jar, when it can be worked out.
+    func daysLeft(_ b: Bottle) -> Int? {
+        guard let left = b.pillsLeft, let perDay = pillsPerDay(bottleId: b.id) else { return nil }
+        return Int((left / perDay).rounded(.down))
+    }
+
+    func isLow(_ b: Bottle) -> Bool {
+        guard let left = b.pillsLeft else { return false }
+        if left <= 0 { return true }
+        guard let d = daysLeft(b) else { return false }
+        return d <= b.refillWarnDays
+    }
+
+    /// The default jar's pills left (other jars have their own).
+    var pillsLeft: Double? {
+        get { defaultBottle.pillsLeft }
+        set { defaultBottle.pillsLeft = newValue }
+    }
+    var refillWarnDays: Int {
+        get { defaultBottle.refillWarnDays }
+        set { defaultBottle.refillWarnDays = newValue }
+    }
+    var lowNotified: Bool {
+        get { defaultBottle.lowNotified }
+        set { defaultBottle.lowNotified = newValue }
+    }
+
+    /// Fewest days left across the jars that track supply.
+    var daysLeft: Int? { bottles.compactMap { daysLeft($0) }.min() }
+
+    /// True when any jar is running low.
+    var isLow: Bool { bottles.contains { isLow($0) } }
+
+    /// The jars running low.
+    var lowBottles: [Bottle] { bottles.filter { isLow($0) } }
+
+    var initials: String {
+        let words = name.split(whereSeparator: { $0 == " " }).map(String.init)
+        guard let first = words.first, !first.isEmpty else { return "?" }
+        if words.count == 1 { return String(first.prefix(2)).uppercased() }
+        return (String(first.prefix(1)) + String(words[1].prefix(1))).uppercased()
+    }
+}
+
+/// A jar that just crossed its low-supply line.
+struct LowSupply {
+    let jar: Jar
+    let bottle: Bottle
 }
 
 struct DoseEntry: Codable, Identifiable, Hashable {
@@ -744,11 +1399,15 @@ struct DoseEntry: Codable, Identifiable, Hashable {
     /// A dose deliberately not taken, with an optional reason.
     var skipped: Bool = false
     var skipReason: String = ""
+    /// Which jars the pills came from. Nil for doses logged before substances had several jars (the first jar).
+    var parts: [BottlePart]? = nil
+    /// Set when the dose was logged from a notification well after its time, at the scheduled time.
+    var loggedLate: Bool = false
 }
 
 extension DoseEntry {
     enum CodingKeys: String, CodingKey {
-        case id, jarId, jarName, kind, form, amount, pills, slotId, slotLabel, takenAt, note, checkIn, skipped, skipReason
+        case id, jarId, jarName, kind, form, amount, pills, slotId, slotLabel, takenAt, note, checkIn, skipped, skipReason, parts, loggedLate
     }
 
     /// Tolerant decoding: a damaged field never makes the whole log unreadable.
@@ -768,6 +1427,8 @@ extension DoseEntry {
         checkIn = try? c.decodeIfPresent(CheckIn.self, forKey: .checkIn)
         skipped = (try? c.decodeIfPresent(Bool.self, forKey: .skipped)) ?? false
         skipReason = (try? c.decodeIfPresent(String.self, forKey: .skipReason)) ?? ""
+        parts = try? c.decodeIfPresent([BottlePart].self, forKey: .parts)
+        loggedLate = (try? c.decodeIfPresent(Bool.self, forKey: .loggedLate)) ?? false
     }
 }
 
@@ -800,10 +1461,21 @@ struct AppSettings: Codable, Hashable {
     var usualWake: Int? = nil
     /// Discreet Mode for the Live Activity and Dynamic Island. Nil means off.
     var discreet: DiscreetSettings? = nil
+    /// How jars are picked for a dose. Nil means whole pills first.
+    var pickOrder: PickOrder? = nil
+    /// A different regular bedtime on some weekdays (weekday as text, 1 is Sunday).
+    var bedtimeByWeekday: [String: Int]? = nil
+    /// Bedtime changed for single dose days (key yyyyMMdd).
+    var bedtimeByDate: [String: Int]? = nil
+    /// The Home cards: order, size and whether they show. Nil means the default layout.
+    var home: [HomeCard]? = nil
 }
 
 extension AppSettings {
-    enum CodingKeys: String, CodingKey { case faceIDLock, reminders, backupBookmark, accent, caffeineTracker, groupReminders, bedtime, usualWake, discreet }
+    enum CodingKeys: String, CodingKey {
+        case faceIDLock, reminders, backupBookmark, accent, caffeineTracker, groupReminders, bedtime, usualWake, discreet
+        case pickOrder, bedtimeByWeekday, bedtimeByDate, home
+    }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -816,6 +1488,87 @@ extension AppSettings {
         bedtime = try? c.decodeIfPresent(Int.self, forKey: .bedtime)
         usualWake = try? c.decodeIfPresent(Int.self, forKey: .usualWake)
         discreet = try? c.decodeIfPresent(DiscreetSettings.self, forKey: .discreet)
+        pickOrder = try? c.decodeIfPresent(PickOrder.self, forKey: .pickOrder)
+        bedtimeByWeekday = try? c.decodeIfPresent([String: Int].self, forKey: .bedtimeByWeekday)
+        bedtimeByDate = try? c.decodeIfPresent([String: Int].self, forKey: .bedtimeByDate)
+        home = (try? c.decodeIfPresent([Lossy<HomeCard>].self, forKey: .home))?.compactMap(\.value)
+    }
+
+    /// Puts the settings the shared logic reads into effect.
+    func apply() {
+        Bedtime.minutes = bedtime ?? Bedtime.defaultMinutes
+        Bedtime.byWeekday = bedtimeByWeekday ?? [:]
+        Bedtime.byDate = bedtimeByDate ?? [:]
+        WakeTimes.usualMinutes = usualWake ?? WakeTimes.defaultMinutes
+        PickPrefs.order = pickOrder ?? .wholeFirst
+    }
+}
+
+/// The cards on Home.
+enum HomeCardKind: String, Codable, CaseIterable, Identifiable {
+    case upNext, today, workingNow, caffeine, stacks, runningLow, thisWeek, comingUp, recent, missed, discreet
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .upNext: return "Up Next"
+        case .today: return "Today"
+        case .workingNow: return "Working Now"
+        case .caffeine: return "Caffeine"
+        case .stacks: return "Active Stacks"
+        case .runningLow: return "Running Low"
+        case .thisWeek: return "This Week"
+        case .comingUp: return "Coming Up"
+        case .recent: return "Recent"
+        case .missed: return "Missed"
+        case .discreet: return "Discreet Mode"
+        }
+    }
+    var symbol: String {
+        switch self {
+        case .upNext: return "clock.badge.checkmark"
+        case .today: return "circle.dashed.inset.filled"
+        case .workingNow: return "waveform.path.ecg"
+        case .caffeine: return "cup.and.heat.waves.fill"
+        case .stacks: return "square.stack.3d.up.fill"
+        case .runningLow: return "shippingbox.fill"
+        case .thisWeek: return "calendar"
+        case .comingUp: return "calendar.badge.clock"
+        case .recent: return "clock.arrow.circlepath"
+        case .missed: return "exclamationmark.circle"
+        case .discreet: return "eye.slash.fill"
+        }
+    }
+    var sizes: [HomeCardSize] { self == .discreet ? [.small] : HomeCardSize.allCases }
+}
+
+enum HomeCardSize: String, Codable, CaseIterable, Identifiable {
+    case small, medium, large
+    var id: String { rawValue }
+    var name: String { rawValue.capitalized }
+}
+
+struct HomeCard: Codable, Hashable, Identifiable {
+    var kind: HomeCardKind
+    var size: HomeCardSize
+    var hidden: Bool = false
+    var id: String { kind.rawValue }
+
+    static let defaults: [HomeCard] = [
+        HomeCard(kind: .upNext, size: .medium), HomeCard(kind: .today, size: .small), HomeCard(kind: .missed, size: .small),
+        HomeCard(kind: .workingNow, size: .medium), HomeCard(kind: .stacks, size: .medium), HomeCard(kind: .comingUp, size: .medium),
+        HomeCard(kind: .runningLow, size: .small), HomeCard(kind: .thisWeek, size: .small), HomeCard(kind: .recent, size: .medium),
+        HomeCard(kind: .caffeine, size: .small), HomeCard(kind: .discreet, size: .small)
+    ]
+
+    /// A saved layout with any new cards added at the end and sizes kept to what each card allows.
+    static func normalized(_ saved: [HomeCard]?) -> [HomeCard] {
+        var out: [HomeCard] = []
+        for var c in saved ?? defaults where !out.contains(where: { $0.kind == c.kind }) {
+            if !c.kind.sizes.contains(c.size) { c.size = c.kind.sizes[0] }
+            out.append(c)
+        }
+        for d in defaults where !out.contains(where: { $0.kind == d.kind }) { out.append(d) }
+        return out
     }
 }
 
@@ -897,10 +1650,11 @@ struct StoreFile: Codable {
     var planned: [PlannedDose] = []
     /// Wake-up times seen in Apple Health, by dose day key (yyyyMMdd).
     var wakeTimes: [String: Date] = [:]
+    var stacks: [Stack] = []
 }
 
 extension StoreFile {
-    enum CodingKeys: String, CodingKey { case version, jars, entries, settings, caffeine, planned, wakeTimes }
+    enum CodingKeys: String, CodingKey { case version, jars, entries, settings, caffeine, planned, wakeTimes, stacks }
 
     /// Skips any jar, dose or caffeine entry it can't read rather than losing the whole file.
     init(from decoder: Decoder) throws {
@@ -912,33 +1666,57 @@ extension StoreFile {
         caffeine = ((try? c.decodeIfPresent([Lossy<CaffeineEntry>].self, forKey: .caffeine)) ?? []).compactMap(\.value)
         planned = ((try? c.decodeIfPresent([Lossy<PlannedDose>].self, forKey: .planned)) ?? []).compactMap(\.value)
         wakeTimes = (try? c.decodeIfPresent([String: Date].self, forKey: .wakeTimes)) ?? [:]
+        stacks = ((try? c.decodeIfPresent([Lossy<Stack>].self, forKey: .stacks)) ?? []).compactMap(\.value)
+    }
+
+    /// Puts this file's settings, wake-ups and stacks into effect for the shared logic.
+    func applyContext() {
+        settings.apply()
+        WakeTimes.byDay = wakeTimes
+        StackLogic.stacks = stacks
+        StackLogic.jars = jars
     }
 }
 
 /// Logging rules shared by the app, Siri, widgets and the Control Center button.
 extension StoreFile {
-    /// Adds a dose and counts its pills down from the jar's supply.
-    /// Returns the jar if this log just crossed its low-supply line.
+    /// The jars a logged dose took pills from.
+    static func parts(of entry: DoseEntry, jar: Jar) -> [BottlePart] {
+        if let p = entry.parts, !p.isEmpty { return p }
+        guard let pills = entry.pills else { return [] }
+        return [BottlePart(bottleId: jar.defaultBottle.id, pills: pills)]
+    }
+
+    /// Adds a dose and counts its pills down from each jar it came from.
+    /// Returns a jar that just crossed its low-supply line.
     @discardableResult
-    mutating func applyLog(_ entry: DoseEntry) -> Jar? {
+    mutating func applyLog(_ entry: DoseEntry) -> LowSupply? {
         entries.insert(entry, at: 0)
         entries.sort { $0.takenAt > $1.takenAt }
-        guard !entry.skipped, let i = jars.firstIndex(where: { $0.id == entry.jarId }), let left = jars[i].pillsLeft, let p = entry.pills else { return nil }
-        jars[i].pillsLeft = max(0, left - p)
-        if jars[i].isLow && !jars[i].lowNotified {
-            jars[i].lowNotified = true
-            return jars[i]
+        guard !entry.skipped, let i = jars.firstIndex(where: { $0.id == entry.jarId }) else { return nil }
+        var low: LowSupply?
+        for part in Self.parts(of: entry, jar: jars[i]) {
+            guard let b = jars[i].bottles.firstIndex(where: { $0.id == part.bottleId }), let left = jars[i].bottles[b].pillsLeft else { continue }
+            jars[i].bottles[b].pillsLeft = max(0, left - part.pills)
+            let bottle = jars[i].bottles[b]
+            if jars[i].isLow(bottle) && !bottle.lowNotified {
+                jars[i].bottles[b].lowNotified = true
+                low = LowSupply(jar: jars[i], bottle: jars[i].bottles[b])
+            }
         }
-        return nil
+        return low
     }
 
     /// Removes a dose and puts its pills back.
     mutating func removeLog(_ id: String) -> DoseEntry? {
         guard let idx = entries.firstIndex(where: { $0.id == id }) else { return nil }
         let entry = entries.remove(at: idx)
-        if !entry.skipped, let i = jars.firstIndex(where: { $0.id == entry.jarId }), let left = jars[i].pillsLeft, let p = entry.pills {
-            jars[i].pillsLeft = left + p
-            if !jars[i].isLow { jars[i].lowNotified = false }
+        if !entry.skipped, let i = jars.firstIndex(where: { $0.id == entry.jarId }) {
+            for part in Self.parts(of: entry, jar: jars[i]) {
+                guard let b = jars[i].bottles.firstIndex(where: { $0.id == part.bottleId }), let left = jars[i].bottles[b].pillsLeft else { continue }
+                jars[i].bottles[b].pillsLeft = left + part.pills
+                if !jars[i].isLow(jars[i].bottles[b]) { jars[i].bottles[b].lowNotified = false }
+            }
         }
         return entry
     }
@@ -954,20 +1732,30 @@ extension StoreFile {
         return best.map { ($0.0, $0.1) }
     }
 
-    /// A jar's dose time or planned dose by id.
+    /// A jar's dose time, stack dose or planned dose by id.
     func slot(jarId: String, slotId: String) -> DoseSlot? {
         if slotId.hasPrefix(PlannedDose.slotPrefix) {
             return planned.first { $0.slotId == slotId && $0.jarId == jarId }?.slot
         }
-        return jars.first { $0.id == jarId }?.sortedSchedule.first { $0.id == slotId }
+        return jars.first { $0.id == jarId }?.findSlot(slotId)
     }
 
-    func makeEntry(jar: Jar, slot: DoseSlot?, amount: String, pills: Double?, at date: Date, note: String = "", skipped: Bool = false) -> DoseEntry {
-        // No strength per dose given: work it out from strength per pill so the log still shows it.
-        let shown = amount.isEmpty && !skipped ? Format.doseStrength("", basePills: 1, pills: pills ?? 1, perPill: jar.strength) : amount
-        return DoseEntry(jarId: jar.id, jarName: jar.name, kind: jar.kind, form: jar.form, amount: shown, pills: skipped ? nil : pills,
-                  slotId: slot?.id, slotLabel: slot?.displayLabel ?? "Extra", takenAt: date, note: note,
-                  skipped: skipped, skipReason: skipped ? note : "")
+    /// A new log entry. Without `parts`, the jars come from the dose (picked by strength when the substance has
+    /// several jars).
+    func makeEntry(jar: Jar, slot: DoseSlot?, amount: String, pills: Double?, parts: [BottlePart]? = nil,
+                   at date: Date, note: String = "", skipped: Bool = false) -> DoseEntry {
+        let used: [BottlePart]? = skipped ? nil : (parts ?? (jar.bottles.count > 1 ? jar.parts(for: slot.map { s -> DoseSlot in
+            var t = s
+            if let pills { t.pills = pills }
+            return t
+        } ?? DoseSlot(pills: pills)) : nil))
+        let total = used.map { $0.reduce(0.0) { $0 + $1.pills } } ?? pills
+        // No strength per dose given: work it out so the log still shows it.
+        let shown = amount.isEmpty && !skipped ? jar.strengthText(for: slot ?? DoseSlot(pills: pills)) : amount
+        let form = jar.bottle(used?.first?.bottleId)?.form ?? jar.form
+        return DoseEntry(jarId: jar.id, jarName: jar.name, kind: jar.kind, form: form, amount: shown, pills: skipped ? nil : total,
+                         slotId: slot?.id, slotLabel: slot?.displayLabel ?? "Extra", takenAt: date, note: note,
+                         skipped: skipped, skipReason: skipped ? note : "", parts: used)
     }
 
     /// Interactions for a jar from both directions, strongest level per other jar.
@@ -990,7 +1778,7 @@ extension StoreFile {
         if let slot, slot.minutes != nil {
             let rows = DoseLogic.rows(for: jar, entries: entries, planned: planned, now: now)
             if let row = rows.first(where: { $0.slot.id == slot.id }) {
-                if case .later = row.status, let at = DoseLogic.occurrence(of: slot, dayStart: DoseLogic.doseDayStart(for: now)) {
+                if case .later = row.status, let at = row.at {
                     out.append("This dose isn't due until \(Format.time12(at)).")
                 }
                 if row.status.isHandled { out.append("This dose is already logged for today.") }

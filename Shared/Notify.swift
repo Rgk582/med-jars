@@ -8,6 +8,11 @@ enum Notify {
     static let checkInCategory = "CHECKIN"
     static let refillCategory = "REFILL"
     static let infoCategory = "INFO"
+    static let loggedLateCategory = "LOGGED_LATE"
+    static let stackResumeCategory = "STACK_RESUME"
+    static let changeToNowAction = "CHANGE_TO_NOW"
+    static let restartAction = "STACK_RESTART"
+    static let keepCountingAction = "STACK_KEEP"
     static let logAction = "LOG_DOSE"
     static let logCustomAction = "LOG_CUSTOM"
     static let skipAction = "SKIP_DOSE"
@@ -19,6 +24,7 @@ enum Notify {
     static let effectPrefix = "effect."
     static let followUpPrefix = "followup."
     static let headsUpPrefix = "headsup."
+    static let stackPrefix = "stack."
     static let maxNudges = 10
 
     /// Key for the dose day a date falls in (4 AM to 4 AM).
@@ -53,16 +59,26 @@ enum Notify {
         UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: id, content: content, trigger: trigger))
     }
 
-    static func lowSupply(_ jar: Jar) {
-        let left = Format.pills(jar.pillsLeft, jar.form).ifEmptyText("No \(jar.form.plural)")
-        let days = jar.daysLeft.map { $0 == 1 ? "about 1 day" : "about \($0) days" } ?? "not much"
-        post(id: "refill.\(jar.id)", title: "Refill \(jar.name) soon",
+    static func lowSupply(_ low: LowSupply) {
+        let jar = low.jar, b = low.bottle
+        let left = Format.pills(b.pillsLeft, b.form).ifEmptyText("No \(b.form.plural)")
+        let days = jar.daysLeft(b).map { $0 == 1 ? "about 1 day" : "about \($0) days" } ?? "not much"
+        let which = jar.bottles.count > 1 ? " (\(b.title))" : ""
+        post(id: "refill.\(jar.id).\(b.id)", title: "Refill \(jar.name)\(which) soon",
              body: "\(left) left, \(days) of doses.", category: refillCategory, userInfo: ["jarId": jar.id])
+    }
+
+    /// After a notification logged a late dose at its scheduled time: lets you change it to when you tapped.
+    static func loggedLate(_ entry: DoseEntry, now: Date) {
+        post(id: "late.\(entry.id)", title: "Logged \(entry.jarName) at \(Format.time12(entry.takenAt))",
+             body: "That was over 2 hours after the dose time, so it's logged at the dose time. Took it just now? Tap Change to Now.",
+             category: loggedLateCategory,
+             userInfo: ["entryId": entry.id, "jarId": entry.jarId, "now": String(now.timeIntervalSince1970)])
     }
 
     /// Everything that follows a logged dose: clear its reminders, refill warning, check-in,
     /// wearing-off alert and as-needed follow-up. Used by the app, Siri, widgets and Control Center.
-    static func afterLog(_ entry: DoseEntry, jar: Jar, lowSupply low: Jar?) {
+    static func afterLog(_ entry: DoseEntry, jar: Jar, lowSupply low: LowSupply?) {
         if let slot = entry.slotId {
             clear(jar: jar.id, slot: slot, day: entry.takenAt)
             if slot.hasPrefix(PlannedDose.slotPrefix) {

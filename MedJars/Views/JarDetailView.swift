@@ -4,6 +4,8 @@ import Charts
 struct JarDetailView: View {
     let jarId: String
     @Environment(AppStore.self) private var store
+    @Environment(Router.self) private var router
+    @State private var refillBottle: Bottle?
     @State private var editing: EditorTarget?
     @State private var logging: LogTarget?
     @State private var toast: DoseEntry?
@@ -61,7 +63,10 @@ struct JarDetailView: View {
         .sheet(item: $editing) { JarEditorView(target: $0) }
         .sheet(item: $checkInFor) { CheckInSheet(entryId: $0.id) }
         .sheet(isPresented: $refilling) {
-            if let jar = store.jar(jarId) { RefillSheet(jar: jar) }
+            if let jar = store.jar(jarId) { RefillSheet(jar: jar, bottle: jar.defaultBottle) }
+        }
+        .sheet(item: $refillBottle) { b in
+            if let jar = store.jar(jarId) { RefillSheet(jar: jar, bottle: b) }
         }
         .sheet(isPresented: $schedulingBreak) {
             if let jar = store.jar(jarId) { BreakSheet(jar: jar) }
@@ -72,7 +77,7 @@ struct JarDetailView: View {
         .sheet(item: $planning) { PlanDoseSheet(target: $0) }
         .sheet(item: $logging) { target in
             if let jar = store.jar(jarId) {
-                LogDoseSheet(jar: jar, slotId: target.slotId, slot: target.slot, editing: target.editing) { entry in
+                LogDoseSheet(jar: jar, slotId: target.slotId, slot: target.slot, editing: target.editing, bottleId: target.bottleId) { entry in
                     if target.editing == nil { show(entry) }
                 }
             }
@@ -117,20 +122,24 @@ struct JarDetailView: View {
             }
 
             if active {
-                if jar.asNeeded {
+                let timedRows = rows.filter { !$0.isPlanned && $0.at != nil }
+                if jar.asNeeded && timedRows.isEmpty {
                     Section("As Needed") {
                         AsNeededStatus(jar: jar, now: now)
                     }
                 } else {
-                    Section("Today") {
-                        if rows.filter({ !$0.isPlanned }).isEmpty {
-                            Text(jar.timedSlots.isEmpty
+                    Section {
+                        if timedRows.isEmpty {
+                            Text(jar.timedSlots.isEmpty && !jar.usesRule
                                  ? "No dose times yet. Tap Edit to add them."
                                  : "No doses scheduled today, so it's as needed today. Tap Log to log one.")
                                 .foregroundStyle(Palette.secondary)
                         } else {
-                            ForEach(rows.filter { !$0.isPlanned }) { row in
+                            ForEach(timedRows) { row in
                                 DoseRow(jar: jar, row: row, isNext: row.slot.id == suggestion?.slot.id)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture { tapRow(row, jar: jar) }
+                                    .accessibilityAddTraits(.isButton)
                                     .swipeActions(edge: .trailing) {
                                         if !row.status.isHandled {
                                             Button { skipping = row.slot } label: { Label("Skip", systemImage: "forward.end") }
@@ -139,7 +148,28 @@ struct JarDetailView: View {
                                     }
                             }
                         }
+                    } header: {
+                        Text("Today")
+                    } footer: {
+                        if !timedRows.isEmpty { Text("Tap a dose to log it, or to change one you already logged.") }
                     }
+                }
+            }
+
+            let inStacks = store.stacks.filter { $0.members.contains { $0.jarId == jar.id } }
+            if !inStacks.isEmpty {
+                Section {
+                    ForEach(inStacks) { s in
+                        Button { router.open(stackId: s.id) } label: {
+                            HStack {
+                                Label(s.displayName, systemImage: "square.stack.3d.up.fill").foregroundStyle(Palette.label)
+                                Spacer()
+                                Text(StackLogic.statusText(s, now: now)).font(.subheadline).foregroundStyle(Palette.secondary)
+                            }
+                        }
+                    }
+                } header: {
+                    Text("Stacks")
                 }
             }
 
@@ -218,7 +248,7 @@ struct JarDetailView: View {
                     Label { Text(jar.howTo) } icon: { Image(systemName: "text.badge.checkmark").foregroundStyle(.tint) }
                 }
                 Label { Text(jar.food.label) } icon: { Image(systemName: jar.food.symbol).foregroundStyle(.tint) }
-                if !jar.strength.isEmpty {
+                if jar.bottles.count <= 1 && !jar.strength.isEmpty {
                     Label { Text("\(jar.strength) per \(jar.form.singular)") } icon: { Image(systemName: jar.form.symbol).foregroundStyle(.tint) }
                 }
                 if let effect = jar.effect?.normalized {
@@ -226,9 +256,19 @@ struct JarDetailView: View {
                 }
             }
 
-            if jar.pillsLeft != nil {
+            if jar.bottles.count > 1 {
                 Section {
-                    SupplyRow(jar: jar)
+                    ForEach(jar.bottles) { b in
+                        BottleRow(jar: jar, bottle: b, onRefill: { refillBottle = b }, onPair: { pairTag(jar, bottle: b) })
+                    }
+                } header: {
+                    Text("Jars")
+                } footer: {
+                    Text("Each dose is taken from whichever jar makes it, following your jar order. Empty jars are skipped.")
+                }
+            } else if jar.pillsLeft != nil {
+                Section {
+                    SupplyRow(jar: jar, bottle: jar.defaultBottle)
                     Button("Refill or Recount") { refilling = true }
                 } header: {
                     Text("Supply")
@@ -328,22 +368,24 @@ struct JarDetailView: View {
                 if !recent.isEmpty { Text("Tap a dose to change how much you took or when.") }
             }
 
-            Section {
-                HStack {
-                    Label(jar.tagIds.isEmpty ? "No Tag Paired" : "Tag Paired",
-                          systemImage: jar.tagIds.isEmpty ? "wave.3.right" : "checkmark.circle.fill")
-                        .foregroundStyle(jar.tagIds.isEmpty ? Palette.secondary : Palette.taken)
-                    Spacer()
+            if jar.bottles.count <= 1 {
+                Section {
+                    HStack {
+                        Label(jar.tagIds.isEmpty ? "No Tag Paired" : "Tag Paired",
+                              systemImage: jar.tagIds.isEmpty ? "wave.3.right" : "checkmark.circle.fill")
+                            .foregroundStyle(jar.tagIds.isEmpty ? Palette.secondary : Palette.taken)
+                        Spacer()
+                    }
+                    Button(jar.tagIds.isEmpty ? "Pair Tag" : "Pair a Different Tag") { pairTag(jar, bottle: jar.defaultBottle) }
+                        .disabled(!TagScanner.isSupported)
+                    if !jar.tagIds.isEmpty {
+                        Button("Unpair Tag", role: .destructive) { confirmUnpair = true }
+                    }
+                } header: {
+                    Text("NFC Tag")
+                } footer: {
+                    Text("Hold the plus button to scan. With a dose due, the tag opens it ready to log.")
                 }
-                Button(jar.tagIds.isEmpty ? "Pair Tag" : "Pair a Different Tag") { pairTag(jar) }
-                    .disabled(!TagScanner.isSupported)
-                if !jar.tagIds.isEmpty {
-                    Button("Unpair Tag", role: .destructive) { confirmUnpair = true }
-                }
-            } header: {
-                Text("NFC Tag")
-            } footer: {
-                Text("Scan Jar on the Cabinet screen opens this page when you hold your iPhone to the paired tag.")
             }
         }
         .listStyle(.insetGrouped)
@@ -392,11 +434,21 @@ struct JarDetailView: View {
         withAnimation(.snappy) { toast = entry }
     }
 
-    private func pairTag(_ jar: Jar) {
+    /// Today's dose tapped: a taken or skipped one opens to change, one still to take opens the log sheet.
+    private func tapRow(_ row: SlotRow, jar: Jar) {
+        switch row.status {
+        case .taken(let e), .skipped(let e):
+            if store.entry(e.id) != nil { logging = LogTarget(jarId: jar.id, editing: e) }
+        default:
+            logging = LogTarget(jarId: jar.id, slotId: row.slot.id, slot: row.slot)
+        }
+    }
+
+    private func pairTag(_ jar: Jar, bottle: Bottle) {
         TagScanner.shared.scan(prompt: "Hold your iPhone near the top of \(jar.name).") { result in
             switch result {
             case .success(let tag):
-                store.pair(tagUID: tag.uid, toJar: jar.id)
+                store.pair(tagUID: tag.uid, toJar: jar.id, bottleId: bottle.id)
                 Haptics.logged()
             case .failure(let f):
                 if let m = f.message { scanAlert = ScanAlert(message: m) }
@@ -549,20 +601,22 @@ struct EffectTimelineView: View {
 
 private struct SupplyRow: View {
     let jar: Jar
+    let bottle: Bottle
     var body: some View {
+        let low = jar.isLow(bottle)
         HStack(spacing: 14) {
-            Image(systemName: jar.isLow ? "exclamationmark.triangle.fill" : "shippingbox.fill")
+            Image(systemName: low ? "exclamationmark.triangle.fill" : "shippingbox.fill")
                 .font(.title2)
-                .foregroundStyle(jar.isLow ? Palette.due : Palette.secondary)
+                .foregroundStyle(low ? Palette.due : Palette.secondary)
                 .frame(width: 32)
             VStack(alignment: .leading, spacing: 2) {
-                Text(Format.pills(jar.pillsLeft, jar.form).ifEmpty("No \(jar.form.plural)") + " left")
+                Text(Format.pills(bottle.pillsLeft, bottle.form).ifEmpty("No \(bottle.form.plural)") + " left")
                     .font(.headline)
-                if let d = jar.daysLeft {
+                if let d = jar.daysLeft(bottle) {
                     Text(d == 0 ? "Less than a day of doses" : "About \(d) day\(d == 1 ? "" : "s") of doses")
-                        .font(.subheadline).foregroundStyle(jar.isLow ? Palette.due : Palette.secondary)
+                        .font(.subheadline).foregroundStyle(low ? Palette.due : Palette.secondary)
                 } else {
-                    Text(jar.asNeeded ? "As-needed jars count down as you log" : "Set pill counts on each dose time to see days left")
+                    Text(jar.asNeeded ? "As-needed jars count down as you log" : "Days left show once doses use this jar")
                         .font(.subheadline).foregroundStyle(Palette.secondary)
                 }
             }
@@ -571,12 +625,55 @@ private struct SupplyRow: View {
     }
 }
 
+/// One jar of a substance with several: its picture, strength, supply and tag.
+private struct BottleRow: View {
+    let jar: Jar
+    let bottle: Bottle
+    let onRefill: () -> Void
+    let onPair: () -> Void
+
+    var body: some View {
+        let low = jar.isLow(bottle)
+        HStack(spacing: 12) {
+            BottleIcon(bottle: bottle, size: 44)
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Text(bottle.title).font(.headline)
+                    if bottle.id == jar.defaultBottleId {
+                        Text("Default").font(.caption2.weight(.semibold)).foregroundStyle(.tint)
+                    }
+                }
+                if let left = bottle.pillsLeft {
+                    Text("\(Format.pills(left, bottle.form).ifEmpty("None")) left" + (jar.daysLeft(bottle).map { ", about \($0) day\($0 == 1 ? "" : "s")" } ?? ""))
+                        .font(.footnote).foregroundStyle(low ? Palette.due : Palette.secondary)
+                }
+                Label(bottle.tagIds.isEmpty ? "No tag" : "Tag paired", systemImage: bottle.tagIds.isEmpty ? "wave.3.right" : "checkmark.circle.fill")
+                    .font(.caption).foregroundStyle(bottle.tagIds.isEmpty ? Palette.tertiary : Palette.taken)
+            }
+            Spacer(minLength: 6)
+            Menu {
+                if bottle.pillsLeft != nil { Button("Refill or Recount", systemImage: "shippingbox", action: onRefill) }
+                Button(bottle.tagIds.isEmpty ? "Pair Tag" : "Pair a Different Tag", systemImage: "wave.3.right", action: onPair)
+                    .disabled(!TagScanner.isSupported)
+            } label: {
+                Image(systemName: "ellipsis.circle").font(.title3)
+            }
+            .accessibilityLabel("Options for \(bottle.title)")
+        }
+        .padding(.vertical, 2)
+    }
+}
+
 struct RefillSheet: View {
     let jar: Jar
+    var bottle: Bottle? = nil
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     @State private var mode = 0
     @State private var amount = ""
+
+    private var b: Bottle { bottle ?? jar.defaultBottle }
+    private var form: PillForm { b.form }
 
     var body: some View {
         NavigationStack {
@@ -587,13 +684,13 @@ struct RefillSheet: View {
                         Text("Set Count").tag(1)
                     }
                     .pickerStyle(.segmented)
-                    TextField(mode == 0 ? "How many \(jar.form.plural) did you add?" : "How many \(jar.form.plural) are in the jar?", text: $amount)
+                    TextField(mode == 0 ? "How many \(form.plural) did you add?" : "How many \(form.plural) are in the jar?", text: $amount)
                         .keyboardType(.decimalPad)
                 } footer: {
-                    Text("Now: \(Format.pills(jar.pillsLeft, jar.form).ifEmpty("none")).")
+                    Text("Now: \(Format.pills(b.pillsLeft, form).ifEmpty("none")).")
                 }
             }
-            .navigationTitle("Refill \(jar.name)")
+            .navigationTitle(jar.bottles.count > 1 ? "Refill \(b.title)" : "Refill \(jar.name)")
             .tint(store.accentColor)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -602,7 +699,7 @@ struct RefillSheet: View {
                     Button("Save") {
                         let n = Double(amount.replacingOccurrences(of: ",", with: ".").trimmingCharacters(in: .whitespaces))
                         if let n {
-                            if mode == 0 { store.refill(jarId: jar.id, add: n) } else { store.refill(jarId: jar.id, setTo: n) }
+                            if mode == 0 { store.refill(jarId: jar.id, bottleId: b.id, add: n) } else { store.refill(jarId: jar.id, bottleId: b.id, setTo: n) }
                         }
                         Haptics.logged()
                         dismiss()
@@ -714,13 +811,22 @@ struct BreakSheet: View {
 
 private struct Header: View {
     let jar: Jar
+
+    /// "30 mg tablets", or "10 mg and 30 mg tablets" for several jars.
+    private var strengths: String {
+        if jar.bottles.count > 1 {
+            let list = jar.bottles.map(\.strengthText).filter { !$0.isEmpty }
+            return list.isEmpty ? "\(jar.bottles.count) jars" : "\(list.joined(separator: ", ")) \(jar.form.plural)"
+        }
+        return jar.strength.isEmpty ? jar.form.plural.capitalized : "\(jar.strength) \(jar.form.plural)"
+    }
+
     var body: some View {
         VStack(spacing: 10) {
             JarIcon(jar: jar, size: 76)
                 .opacity(jar.isActive() ? 1 : 0.5)
             JarNameStack(jar: jar, large: true)
-            Text([jar.kind.label, jar.strength.isEmpty ? jar.form.plural.capitalized : "\(jar.strength) \(jar.form.plural)", jar.frequencyText]
-                    .joined(separator: " \u{00B7} "))
+            Text([jar.kind.label, strengths, jar.frequencyText].joined(separator: " \u{00B7} "))
                 .font(.subheadline)
                 .foregroundStyle(Palette.secondary)
                 .multilineTextAlignment(.center)
@@ -739,14 +845,16 @@ private struct DoseRow: View {
     var body: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(row.slot.minutes == nil ? "Any Time" : row.slot.timeText)
+                Text(row.slot.minutes == nil ? "Any Time" : (row.at.map { Format.time12($0) } ?? row.slot.timeText))
                     .font(.headline).monospacedDigit()
                 Text([row.slot.label,
-                      (row.slot.share ?? 1) < 0.999 ? Format.share(row.slot.share ?? 1) : "",
-                      row.slot.amountLine(jar.form),
+                      jar.amountText(for: row.slot),
                       row.slot.bedtimeText ?? ""].filter { !$0.isEmpty }.joined(separator: " \u{00B7} "))
                     .font(.subheadline).foregroundStyle(Palette.secondary)
-                if row.slot.pills == nil {
+                if row.slot.stackId != nil {
+                    Label("From a stack", systemImage: "square.stack.3d.up.fill").font(.caption.weight(.semibold)).foregroundStyle(.tint)
+                }
+                if row.slot.pills == nil && row.slot.dose == nil && !jar.usesStrength {
                     Text("Set the pill count in Edit").font(.footnote).foregroundStyle(Palette.due)
                 }
             }
@@ -777,7 +885,7 @@ struct LogBar: View {
                 if let s = suggestion?.slot {
                     Text(s.minutes == nil ? "As Needed" : "\(s.label.ifEmpty("Dose")) \u{00B7} \(s.timeText)")
                         .font(.footnote).foregroundStyle(Palette.secondary).monospacedDigit()
-                    Text(s.amountLine(jar.form).ifEmpty("Dose")).font(.headline)
+                    Text(jar.amountText(for: s).ifEmpty("Dose")).font(.headline)
                 } else if rows.isEmpty {
                     Text("No dose times").font(.footnote).foregroundStyle(Palette.secondary)
                     Text("Log what you took").font(.headline)

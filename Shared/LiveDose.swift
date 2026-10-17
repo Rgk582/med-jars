@@ -15,6 +15,15 @@ struct ActiveDose: Codable, Hashable, Identifiable {
     var end: Date
 
     var color: Color { (LidColor(rawValue: lid) ?? .amber).color }
+
+    /// The effect timings this dose was started with.
+    var profile: EffectProfile {
+        var p = EffectProfile()
+        p.onsetMinutes = max(1, Int(onset.timeIntervalSince(start) / 60))
+        p.peakMinutes = max(2, Int(peak.timeIntervalSince(start) / 60))
+        p.durationMinutes = max(3, Int(end.timeIntervalSince(start) / 60))
+        return p
+    }
 }
 
 /// The Live Activity for every dose with an effect timeline that's still working.

@@ -31,6 +31,10 @@ private struct SettingsIcon: View {
 
 struct SettingsView: View {
     @Environment(AppStore.self) private var store
+    @Environment(Router.self) private var router
+    @State private var sleepStatus: String?
+    @State private var sleepNeedsHealthApp = false
+    @State private var checkingSleep = false
     @Environment(\.scenePhase) private var scenePhase
     @State private var notificationStatus: UNAuthorizationStatus = .notDetermined
     @State private var timeSensitive: UNNotificationSetting = .notSupported
@@ -132,19 +136,36 @@ struct SettingsView: View {
                 DatePicker(selection: bedtimeBinding, displayedComponents: .hourAndMinute) {
                     Label { Text("Bedtime") } icon: { SettingsIcon(symbol: "bed.double.fill", color: .indigo) }
                 }
+                DisclosureGroup("Different on Some Days") {
+                    ForEach([2, 3, 4, 5, 6, 7, 1], id: \.self) { weekday in
+                        WeekdayBedtimeRow(weekday: weekday)
+                    }
+                }
             } footer: {
-                Text("Doses set to a time before bed move with this. Change it and their reminders, the Schedule and the widget follow.")
+                Text("Doses set to a time before bed move with this. Set a later bedtime for some weekdays here, or change one day from the Schedule tab. After midnight counts as the night before.")
             }
 
             Section {
                 Button {
-                    Task { @MainActor in
-                        healthAsked = await WakeDetector.requestAccess()
-                    }
+                    connectSleep()
                 } label: {
-                    Label { Text("Connect Apple Health Sleep").foregroundStyle(Palette.label) } icon: { SettingsIcon(symbol: "bed.double.circle.fill", color: .teal) }
+                    Label {
+                        HStack {
+                            Text("Connect Apple Health Sleep").foregroundStyle(Palette.label)
+                            Spacer()
+                            if checkingSleep { ProgressView() }
+                        }
+                    } icon: { SettingsIcon(symbol: "bed.double.circle.fill", color: .teal) }
                 }
-                .disabled(!WakeDetector.isAvailable)
+                .disabled(!WakeDetector.isAvailable || checkingSleep)
+                if let sleepStatus {
+                    Text(sleepStatus).font(.footnote).foregroundStyle(Palette.secondary)
+                }
+                if sleepNeedsHealthApp {
+                    Button("Open the Health App") {
+                        if let url = URL(string: "x-apple-health://") { UIApplication.shared.open(url) }
+                    }
+                }
                 DatePicker(selection: wakeBinding, displayedComponents: .hourAndMinute) {
                     Label { Text("Usual Wake Time") } icon: { SettingsIcon(symbol: "sunrise.fill", color: .orange) }
                 }
@@ -158,6 +179,18 @@ struct SettingsView: View {
                 Text(healthAsked
                      ? "Med Jars reads your sleep from Apple Health. Between 5 AM and 12 PM, when the night's sleep shows up, you get the reminder for doses set to Upon Waking. Until then they sit at your usual wake time in the Schedule."
                      : "For doses set to Upon Waking. Connect Apple Health so Med Jars can see when you wake up between 5 AM and 12 PM and remind you right after. Until it sees you up, those doses sit at your usual wake time in the Schedule.")
+            }
+
+            Section {
+                Picker(selection: Binding(get: { store.pickOrder }, set: { store.setPickOrder($0) })) {
+                    ForEach(PickOrder.allCases) { Text($0.name).tag($0) }
+                } label: {
+                    Label { Text("Jar Order") } icon: { SettingsIcon(symbol: "square.stack.fill", color: .mint) }
+                }
+            } header: {
+                Text("Substances with Several Jars")
+            } footer: {
+                Text("\(store.pickOrder.detail) Empty jars are always skipped. Each substance can use its own order in Edit.")
             }
 
             Section {
@@ -240,7 +273,7 @@ struct SettingsView: View {
             } header: {
                 Text("NFC Tags")
             } footer: {
-                Text("Scan Jar inside the app works with no setup. A Shortcuts automation also opens a jar when you tap your iPhone to it without opening the app first.")
+                Text("Inside the app, hold the plus button to scan a jar, no setup needed. A Shortcuts automation also opens a jar when you tap your iPhone to it without opening the app first.")
             }
 
             Section {
@@ -280,6 +313,7 @@ struct SettingsView: View {
         }
         .navigationTitle("Settings")
         .task { await refreshNotificationStatus() }
+        .task { await checkSleepQuietly() }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { Task { await refreshNotificationStatus() } }
         }
@@ -422,6 +456,47 @@ struct SettingsView: View {
         }
     }
 
+    /// Shows whether Med Jars can see sleep data, without asking.
+    private func checkSleepQuietly() async {
+        guard WakeDetector.isAvailable else { return }
+        if await WakeDetector.needsAsking() {
+            sleepStatus = "Not connected yet."
+            return
+        }
+        await describeSleep()
+    }
+
+    /// The Health permission screen only shows the first time. After that, this checks what Med Jars can see
+    /// and points to the Health app to change access.
+    private func connectSleep() {
+        checkingSleep = true
+        Task { @MainActor in
+            if await WakeDetector.needsAsking() {
+                if let error = await WakeDetector.requestAccessError() {
+                    sleepStatus = "Couldn't connect to Apple Health: \(error)"
+                    sleepNeedsHealthApp = false
+                    checkingSleep = false
+                    return
+                }
+            }
+            await describeSleep()
+            WakeDetector.refresh()
+            healthAsked = true
+            checkingSleep = false
+        }
+    }
+
+    private func describeSleep() async {
+        if let last = await WakeDetector.lastSleepEnd() {
+            let day = Calendar.current.isDateInToday(last) ? "today" : (Calendar.current.isDateInYesterday(last) ? "yesterday" : last.formatted(.dateTime.weekday(.wide)))
+            sleepStatus = "Connected. Your last sleep in Apple Health ended \(day) at \(Format.time12(last))."
+            sleepNeedsHealthApp = false
+        } else {
+            sleepStatus = "Med Jars can't see any sleep in Apple Health from the last week. In the Health app, tap your picture, then Apps, Med Jars, and turn on Sleep. Also check that your sleep tracker is syncing sleep to Health."
+            sleepNeedsHealthApp = true
+        }
+    }
+
     private var wakeBinding: Binding<Date> {
         Binding(get: {
             let m = store.usualWakeMinutes
@@ -474,6 +549,36 @@ struct SettingsView: View {
                 reminderNote = "Notifications are off for Med Jars. Tap Turn On in iOS Settings, allow notifications, then come back."
             }
             await refreshNotificationStatus()
+        }
+    }
+}
+
+/// One weekday's bedtime: the everyday one, or its own.
+private struct WeekdayBedtimeRow: View {
+    let weekday: Int
+    @Environment(AppStore.self) private var store
+
+    private var own: Int? { store.settings.bedtimeByWeekday?[String(weekday)] }
+
+    private var time: Binding<Date> {
+        Binding(get: {
+            let m = own ?? store.bedtimeMinutes
+            return Calendar.current.date(bySettingHour: m / 60, minute: m % 60, second: 0, of: Date()) ?? Date()
+        }, set: { date in
+            let c = Calendar.current.dateComponents([.hour, .minute], from: date)
+            store.setWeekdayBedtime(weekday, minutes: (c.hour ?? 23) * 60 + (c.minute ?? 0))
+        })
+    }
+
+    var body: some View {
+        HStack {
+            Toggle(Calendar.current.weekdaySymbols[weekday - 1], isOn: Binding(get: { own != nil }, set: { on in
+                store.setWeekdayBedtime(weekday, minutes: on ? store.bedtimeMinutes : nil)
+            }))
+            if own != nil {
+                DatePicker("", selection: time, displayedComponents: .hourAndMinute)
+                    .labelsHidden()
+            }
         }
     }
 }

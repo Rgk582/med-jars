@@ -16,12 +16,12 @@ enum ExtensionLog {
            file.entries.contains(where: { $0.jarId == jar.id && $0.slotId == slot.id && DoseLogic.sameDoseDay($0.takenAt, now) }) {
             return nil
         }
-        let entry = file.makeEntry(jar: jar, slot: slot, amount: slot?.amount ?? "", pills: slot?.pills, at: now)
+        let entry = file.makeEntry(jar: jar, slot: slot, amount: jar.strengthText(for: slot), pills: slot?.pills, at: now)
         let low = file.applyLog(entry)
         guard (try? StoreIO.save(file)) != nil else { return nil }
         Notify.afterLog(entry, jar: jar, lowSupply: low)
         Notify.post(id: "logged.\(entry.id)", title: "Logged \(jar.name)",
-                    body: "\((slot?.amountLine(jar.form) ?? "").ifEmptyText("Dose")) at \(Format.time12(now)).")
+                    body: "\(jar.amountText(for: slot).ifEmptyText("Dose")) at \(Format.time12(now)).")
         WidgetCenter.shared.reloadAllTimelines()
         ControlCenter.shared.reloadAllControls()
         return entry

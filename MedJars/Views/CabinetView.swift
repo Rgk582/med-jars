@@ -1,13 +1,11 @@
 import SwiftUI
 
-/// Your jars, grouped by type: Prescriptions, Supplements, Nootropics, Recreational.
-/// Today's doses live in the Schedule tab.
+/// Your substances, grouped by type: Prescriptions, Supplements, Nootropics, Recreational. Each can have
+/// several jars. Today's doses live in the Schedule tab.
 struct CabinetView: View {
     @Environment(AppStore.self) private var store
     @Environment(Router.self) private var router
     @State private var editing: EditorTarget?
-    @State private var unknownTag: UnknownTag?
-    @State private var scanAlert: ScanAlert?
     @State private var addingCaffeine = false
 
     var body: some View {
@@ -15,11 +13,11 @@ struct CabinetView: View {
             Group {
                 if store.jars.isEmpty {
                     ContentUnavailableView {
-                        Label("No Jars Yet", systemImage: "pills")
+                        Label("No Substances Yet", systemImage: "pills")
                     } description: {
-                        Text("Add a jar to get its dose card, reminders and quick logging. Then scan its NFC tag to pair it.")
+                        Text("Add a medication, supplement or anything else you take to get its dose card, reminders and quick logging. Then pair its jar's NFC tag.")
                     } actions: {
-                        Button("Add Jar") { editing = EditorTarget(jar: nil) }
+                        Button("Add Substance") { editing = EditorTarget(jar: nil) }
                             .prominentButton()
                     }
                 } else {
@@ -38,29 +36,11 @@ struct CabinetView: View {
                 NavigationLink(value: Route.history) { Image(systemName: "list.bullet.clipboard") }
                     .accessibilityLabel("Dose Log")
                 Button { editing = EditorTarget(jar: nil) } label: { Image(systemName: "plus") }
-                    .accessibilityLabel("Add Jar")
-            }
-        }
-        .safeAreaInset(edge: .bottom) {
-            if TagScanner.isSupported {
-                Button(action: scan) {
-                    Label("Scan Jar", systemImage: "wave.3.right")
-                        .font(.headline)
-                        .padding(.horizontal, 10)
-                        .frame(minHeight: 34)
-                }
-                .prominentButton()
-                .padding(.bottom, 8)
+                    .accessibilityLabel("Add Substance")
             }
         }
         .sheet(item: $editing) { JarEditorView(target: $0) }
-        .sheet(item: $unknownTag) { UnknownTagSheet(tag: $0.tag) { editing = $0 } }
         .sheet(isPresented: $addingCaffeine) { CaffeineAddSheet() }
-        .alert("Can't Scan", isPresented: Binding(get: { scanAlert != nil }, set: { if !$0 { scanAlert = nil } })) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(scanAlert?.message ?? "")
-        }
     }
 
     private func list(now: Date) -> some View {
@@ -93,21 +73,6 @@ struct CabinetView: View {
         .listStyle(.insetGrouped)
     }
 
-    private func scan() {
-        TagScanner.shared.scan(prompt: "Hold your iPhone near the top of a jar.") { result in
-            switch result {
-            case .success(let tag):
-                if let jar = store.jar(forTag: tag) {
-                    if !jar.tagIds.contains(tag.uid) { store.pair(tagUID: tag.uid, toJar: jar.id) }
-                    router.open(jarId: jar.id)
-                } else {
-                    unknownTag = UnknownTag(tag: tag)
-                }
-            case .failure(let failure):
-                if let message = failure.message { scanAlert = ScanAlert(message: message) }
-            }
-        }
-    }
 }
 
 // MARK: - Rows
@@ -136,7 +101,8 @@ private struct JarRow: View {
                             .accessibilityLabel("Tag paired")
                     }
                 }
-                Text(jar.kind == .recreational ? usage : jar.frequencyText)
+                Text([jar.kind == .recreational ? usage : jar.frequencyText, jar.bottles.count > 1 ? "\(jar.bottles.count) jars" : ""]
+                        .filter { !$0.isEmpty }.joined(separator: " \u{00B7} "))
                     .font(.footnote).foregroundStyle(Palette.secondary)
                 if jar.paused {
                     Label("Paused", systemImage: "pause.circle.fill").font(.footnote.weight(.semibold)).foregroundStyle(Palette.secondary)
@@ -144,15 +110,17 @@ private struct JarRow: View {
                     Label("On break until \(until.formatted(.dateTime.month(.abbreviated).day()))", systemImage: "calendar.badge.minus")
                         .font(.footnote.weight(.semibold)).foregroundStyle(Palette.secondary)
                 }
-                if jar.isLow && jar.isActive(on: now) {
-                    Label(jar.daysLeft.map { "Refill soon, \($0) day\($0 == 1 ? "" : "s") left" } ?? "Refill soon",
+                if let low = jar.lowBottles.first, jar.isActive(on: now) {
+                    let which = jar.bottles.count > 1 ? "\(low.title): " : ""
+                    Label(which + (jar.daysLeft(low).map { "Refill soon, \($0) day\($0 == 1 ? "" : "s") left" } ?? "Refill soon"),
                           systemImage: "exclamationmark.triangle.fill")
                         .font(.footnote.weight(.semibold))
                         .foregroundStyle(Palette.due)
                 }
             }
             Spacer(minLength: 8)
-            let rows = DoseLogic.rows(for: jar, entries: store.entries, planned: store.planned, now: now).filter { $0.at != nil }
+            let rows = DoseLogic.rows(for: jar, entries: store.entries, planned: store.planned, now: now)
+                .filter { $0.at != nil && !jar.kind.remindOnly && $0.status != .waiting }
             if !rows.isEmpty {
                 let done = rows.filter { $0.status.isHandled }.count
                 Text("\(done)/\(rows.count)")
@@ -184,7 +152,7 @@ struct UnknownTagSheet: View {
                             .foregroundStyle(.tint)
                             .symbolRenderingMode(.hierarchical)
                         Text("New Tag").font(.title2.weight(.bold))
-                        Text("Pick the jar this tag is stuck to. Next time you scan it, that jar opens.")
+                        Text("Pick the jar this tag is stuck to. Next time you scan it, that jar opens, ready to log.")
                             .font(.subheadline).foregroundStyle(Palette.secondary).multilineTextAlignment(.center)
                     }
                     .frame(maxWidth: .infinity)
@@ -193,24 +161,45 @@ struct UnknownTagSheet: View {
                 .listRowBackground(Color.clear)
 
                 if !store.jars.isEmpty {
-                    Section("Pair With") {
+                    Section("Pair With a Jar") {
                         ForEach(store.jars) { jar in
-                            Button {
-                                store.pair(tagUID: tag.uid, toJar: jar.id)
-                                Haptics.logged()
-                                dismiss()
-                                router.open(jarId: jar.id)
-                            } label: {
-                                HStack(spacing: 12) {
-                                    JarIcon(jar: jar, size: 34)
-                                    JarNameStack(jar: jar)
-                                    Spacer()
-                                    if !jar.tagIds.isEmpty {
-                                        Text("Has a tag").font(.footnote).foregroundStyle(Palette.secondary)
+                            ForEach(jar.bottles) { b in
+                                Button {
+                                    store.pair(tagUID: tag.uid, toJar: jar.id, bottleId: b.id)
+                                    Haptics.logged()
+                                    dismiss()
+                                    router.open(jarId: jar.id)
+                                } label: {
+                                    HStack(spacing: 12) {
+                                        BottleIcon(bottle: b, size: 34)
+                                        JarNameStack(name: jar.name, label: jar.bottles.count > 1 ? b.title : jar.labelName)
+                                        Spacer()
+                                        if !b.tagIds.isEmpty {
+                                            Text("Has a tag").font(.footnote).foregroundStyle(Palette.secondary)
+                                        }
                                     }
                                 }
                             }
                         }
+                    }
+                }
+
+                if !store.stacks.isEmpty {
+                    Section {
+                        ForEach(store.stacks) { s in
+                            Button {
+                                store.pair(tagUID: tag.uid, toStack: s.id)
+                                Haptics.logged()
+                                dismiss()
+                                router.open(stackId: s.id)
+                            } label: {
+                                Label(s.displayName, systemImage: "square.stack.3d.up.fill")
+                            }
+                        }
+                    } header: {
+                        Text("Open a Stack")
+                    } footer: {
+                        Text("A stack tag opens the stack ready to log its next doses.")
                     }
                 }
 
@@ -220,7 +209,7 @@ struct UnknownTagSheet: View {
                         let target = EditorTarget(jar: nil, pairTagUID: tag.uid)
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { onAddNew(target) }
                     } label: {
-                        Label("Add a New Jar for This Tag", systemImage: "plus.circle.fill")
+                        Label("Add a New Substance for This Tag", systemImage: "plus.circle.fill")
                     }
                 }
             }

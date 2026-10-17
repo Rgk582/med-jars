@@ -7,9 +7,11 @@ struct SkipRequest: Identifiable {
     let slot: DoseSlot
 }
 
-/// One dose day at a time: every scheduled and planned dose in time order, then the jars that are as needed that day.
+/// One dose day at a time: every scheduled, stack and planned dose in time order (doses due together grouped
+/// with Log All), the day's bedtime, then the jars that are as needed that day.
 struct ScheduleView: View {
     @Environment(AppStore.self) private var store
+    @Environment(Router.self) private var router
     @State private var day = DoseLogic.doseDayStart(for: Date())
     @State private var showWeek = false
     @State private var planning: PlanTarget?
@@ -17,6 +19,7 @@ struct ScheduleView: View {
     @State private var skipping: SkipRequest?
     @State private var toast: DoseEntry?
     @State private var editingDay: DayEditTarget?
+    @State private var bedtimeDay: BedtimeTarget?
 
     var body: some View {
         TimelineView(.everyMinute) { context in
@@ -30,12 +33,9 @@ struct ScheduleView: View {
                     Button("Today") { withAnimation(.snappy) { day = DoseLogic.doseDayStart(for: Date()) } }
                 }
             }
-            ToolbarItemGroup(placement: .topBarTrailing) {
+            ToolbarItem(placement: .topBarTrailing) {
                 Button { showWeek = true } label: { Image(systemName: "calendar") }
                     .accessibilityLabel("Week at a Glance")
-                Button { planning = PlanTarget(jarId: nil, date: defaultPlanDate) } label: { Image(systemName: "plus") }
-                    .accessibilityLabel("Plan a Dose")
-                    .disabled(store.jars.isEmpty)
             }
         }
         .safeAreaInset(edge: .bottom) {
@@ -56,24 +56,28 @@ struct ScheduleView: View {
         .sheet(item: $planning) { PlanDoseSheet(target: $0) }
         .sheet(item: $logging) { target in
             if let jar = store.jar(target.jarId) {
-                LogDoseSheet(jar: jar, slotId: target.slotId, slot: target.slot) { entry in
-                    withAnimation(.snappy) { toast = entry }
+                LogDoseSheet(jar: jar, slotId: target.slotId, slot: target.slot, editing: target.editing) { entry in
+                    if target.editing == nil { withAnimation(.snappy) { toast = entry } }
                 }
             }
         }
         .sheet(item: $skipping) { SkipSheet(jar: $0.jar, slot: $0.slot) }
         .sheet(item: $editingDay) { DayPlanSheet(jarId: $0.jarId, day: $0.day) }
+        .sheet(item: $bedtimeDay) { BedtimeDaySheet(day: $0.day) }
     }
 
-    /// A new planned dose starts on the selected day, at the next whole hour when that's today.
-    private var defaultPlanDate: Date {
-        let cal = Calendar.current
-        let now = Date()
-        if DoseLogic.sameDoseDay(day, now) {
-            let next = cal.date(byAdding: .hour, value: 1, to: now) ?? now
-            return cal.date(bySetting: .minute, value: 0, of: next) ?? next
+    /// Tapping a dose: a taken or skipped one opens it to change, one still to take opens the log sheet.
+    private func tap(_ item: DayItem, isToday: Bool) {
+        switch item.row.status {
+        case .taken(let e), .skipped(let e):
+            if store.entry(e.id) != nil { logging = LogTarget(jarId: item.jar.id, editing: e) }
+        default:
+            if isToday {
+                logging = LogTarget(jarId: item.jar.id, slotId: item.row.slot.id, slot: item.row.slot)
+            } else {
+                router.schedulePath.append(.jar(item.jar.id))
+            }
         }
-        return cal.date(bySettingHour: 12, minute: 0, second: 0, of: day) ?? day
     }
 
     private func content(now: Date) -> some View {
@@ -81,59 +85,79 @@ struct ScheduleView: View {
         let schedule = DoseLogic.schedule(jars: store.jars, entries: store.entries, planned: store.planned, dayStart: day, now: now)
         let isToday = day == today
         let isPast = day < today
+        let groups = DoseLogic.groups(schedule.items)
         return List {
             Section {
                 DayHeader(day: day, isToday: isToday, isFuture: day > today, schedule: schedule)
-            }
+                    .cardRow(.first)
+                BedtimeRow(day: day)
+                    .cardRow(.last)
+                    .contentShape(Rectangle())
+                    .onTapGesture { if !isPast { bedtimeDay = BedtimeTarget(day: day) } }
 
-            Section {
+                SectionLabel("Doses")
                 if schedule.items.isEmpty {
-                    Text(store.jars.isEmpty ? "Add a jar in the Cabinet to build your schedule." : "No scheduled doses this day.")
+                    Text(store.jars.isEmpty ? "Add a substance in the Cabinet to build your schedule." : "No scheduled doses this day.")
                         .foregroundStyle(Palette.secondary)
+                        .cardRow(.single)
                 }
-                ForEach(schedule.items) { item in
-                    NavigationLink(value: Route.jar(item.jar.id)) {
+                ForEach(Array(groups.enumerated()), id: \.offset) { _, group in
+                    let open = group.filter { !$0.row.status.isHandled && $0.row.status != .waiting }
+                    if group.count > 1 {
+                        GroupHeaderRow(group: group, canLog: isToday && open.count > 1) {
+                            router.groupRequest = GroupLogTarget.from(open, title: "Log All")
+                        }
+                        .cardRow(.first)
+                    }
+                    ForEach(Array(group.enumerated()), id: \.element.id) { index, item in
                         ScheduleRow(item: item, isToday: isToday, isPast: isPast) {
                             logging = LogTarget(jarId: item.jar.id, slotId: item.row.slot.id, slot: item.row.slot)
                         }
-                    }
-                    .swipeActions(edge: .trailing) {
-                        if isToday && !item.row.status.isHandled {
-                            Button { skipping = SkipRequest(jar: item.jar, slot: item.row.slot) } label: {
-                                Label("Skip", systemImage: "forward.end")
+                        .cardRow(group.count == 1 ? .single : (index == group.count - 1 ? .last : .middle))
+                        .contentShape(Rectangle())
+                        .onTapGesture { tap(item, isToday: isToday) }
+                        .contextMenu {
+                            Button("Open \(item.jar.name)", systemImage: "pills") { router.schedulePath.append(.jar(item.jar.id)) }
+                            if isToday && !item.row.status.isHandled {
+                                Button("Skip", systemImage: "forward.end") { skipping = SkipRequest(jar: item.jar, slot: item.row.slot) }
                             }
-                            .tint(.gray)
                         }
-                    }
-                    .swipeActions(edge: .leading) {
-                        if let planned = store.plannedDose(slotId: item.row.slot.id), !item.row.status.isHandled {
-                            Button { planning = PlanTarget(jarId: planned.jarId, date: planned.at, editing: planned) } label: {
-                                Label("Edit", systemImage: "pencil")
+                        .swipeActions(edge: .trailing) {
+                            if isToday && !item.row.status.isHandled {
+                                Button { skipping = SkipRequest(jar: item.jar, slot: item.row.slot) } label: {
+                                    Label("Skip", systemImage: "forward.end")
+                                }
+                                .tint(.gray)
                             }
-                            .tint(.blue)
-                            Button(role: .destructive) { store.deletePlanned(planned.id) } label: {
-                                Label("Delete", systemImage: "trash")
+                        }
+                        .swipeActions(edge: .leading) {
+                            if let planned = store.plannedDose(slotId: item.row.slot.id), !item.row.status.isHandled {
+                                Button { planning = PlanTarget(jarId: planned.jarId, date: planned.at, editing: planned) } label: {
+                                    Label("Edit", systemImage: "pencil")
+                                }
+                                .tint(.blue)
+                                Button(role: .destructive) { store.deletePlanned(planned.id) } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            } else if !item.row.isPlanned && !isPast {
+                                Button { editingDay = DayEditTarget(jarId: item.jar.id, day: day) } label: {
+                                    Label("Edit Day", systemImage: "calendar.badge.clock")
+                                }
+                                .tint(.indigo)
                             }
-                        } else if !item.row.isPlanned && !isPast {
-                            Button { editingDay = DayEditTarget(jarId: item.jar.id, day: day) } label: {
-                                Label("Edit Day", systemImage: "calendar.badge.clock")
-                            }
-                            .tint(.indigo)
                         }
                     }
                 }
-            } header: {
-                Text("Doses")
-            }
 
-            if !schedule.asNeeded.isEmpty {
-                Section {
-                    ForEach(schedule.asNeeded) { jar in
-                        NavigationLink(value: Route.jar(jar.id)) {
-                            AsNeededDayRow(jar: jar, dayStart: day, isToday: isToday) {
-                                logging = LogTarget(jarId: jar.id, slotId: jar.asNeededSlot?.id ?? "")
-                            }
+                if !schedule.asNeeded.isEmpty {
+                    SectionLabel("As Needed")
+                    ForEach(Array(schedule.asNeeded.enumerated()), id: \.element.id) { index, jar in
+                        AsNeededDayRow(jar: jar, dayStart: day, isToday: isToday) {
+                            logging = LogTarget(jarId: jar.id, slotId: jar.asNeededSlot?.id ?? "")
                         }
+                        .cardRow(schedule.asNeeded.count == 1 ? .single : (index == 0 ? .first : (index == schedule.asNeeded.count - 1 ? .last : .middle)))
+                        .contentShape(Rectangle())
+                        .onTapGesture { router.schedulePath.append(.jar(jar.id)) }
                         .swipeActions(edge: .leading) {
                             if !jar.asNeeded && !isPast {
                                 Button { editingDay = DayEditTarget(jarId: jar.id, day: day) } label: {
@@ -143,17 +167,202 @@ struct ScheduleView: View {
                             }
                         }
                     }
-                } header: {
-                    Text("As Needed")
-                } footer: {
-                    Text("As-needed jars, and jars with no doses on this day. They never count as missed. Swipe right on a jar to change its doses for this day only.")
+                    Text("As-needed substances, and ones with no doses on this day. They never count as missed. Swipe right on one to change its doses for this day only.")
+                        .font(.footnote).foregroundStyle(Palette.secondary)
+                        .labelRow()
                 }
+                Color.clear.frame(height: 90).labelRow()
+            } header: {
+                WeekStrip(selected: $day, today: today)
+                    .listRowInsets(EdgeInsets())
             }
         }
-        .listStyle(.insetGrouped)
-        .safeAreaInset(edge: .top, spacing: 0) {
-            WeekStrip(selected: $day, today: today)
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .background(Palette.background)
+    }
+}
+
+/// A day to change bedtime on.
+struct BedtimeTarget: Identifiable {
+    let id = UUID()
+    let day: Date
+}
+
+/// The day's bedtime, and whether it was changed for this day.
+private struct BedtimeRow: View {
+    @Environment(AppStore.self) private var store
+    let day: Date
+
+    var body: some View {
+        let minutes = store.bedtime(on: day)
+        let changed = Bedtime.isChanged(onDayStarting: day)
+        HStack(spacing: 12) {
+            Image(systemName: "moon.zzz.fill")
+                .font(.title3)
+                .foregroundStyle(.indigo)
+                .frame(width: 40)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Bedtime").font(.headline)
+                Text(changed ? "Changed for this day" : "Tap to change for this day or every \(day.formatted(.dateTime.weekday(.wide)))")
+                    .font(.footnote).foregroundStyle(changed ? AnyShapeStyle(TintShapeStyle()) : AnyShapeStyle(Palette.secondary))
+            }
+            Spacer(minLength: 8)
+            Text(Format.time12(String(format: "%02d:%02d", minutes / 60, minutes % 60)))
+                .font(.subheadline.weight(.semibold)).monospacedDigit()
         }
+        .padding(.vertical, 2)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+    }
+}
+
+/// Changes bedtime for one day, or for that weekday every week.
+struct BedtimeDaySheet: View {
+    let day: Date
+    @Environment(AppStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+    @State private var time = Date()
+    @State private var everyWeek = false
+    @State private var didSetup = false
+
+    private var weekday: Int { Calendar.current.component(.weekday, from: DoseLogic.doseDayStart(for: day)) }
+    private var weekdayName: String { Calendar.current.weekdaySymbols[weekday - 1] }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    DatePicker("Bedtime", selection: $time, displayedComponents: .hourAndMinute)
+                    Picker("Change", selection: $everyWeek) {
+                        Text("Just \(day.formatted(.dateTime.month(.abbreviated).day()))").tag(false)
+                        Text("Every \(weekdayName)").tag(true)
+                    }
+                    .pickerStyle(.segmented)
+                } footer: {
+                    Text("Doses set to a time before bed move with it. A bedtime after midnight counts as the night before.")
+                }
+                if Bedtime.isChanged(onDayStarting: day) {
+                    Section {
+                        Button("Go Back to the Regular Bedtime") {
+                            store.setBedtime(on: day, minutes: nil)
+                            dismiss()
+                        }
+                    }
+                }
+                if store.settings.bedtimeByWeekday?[String(weekday)] != nil {
+                    Section {
+                        Button("Use the Everyday Bedtime on \(weekdayName)s") {
+                            store.setWeekdayBedtime(weekday, minutes: nil)
+                            dismiss()
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Bedtime")
+            .navigationBarTitleDisplayMode(.inline)
+            .tint(store.accentColor)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        let c = Calendar.current.dateComponents([.hour, .minute], from: time)
+                        let m = (c.hour ?? 23) * 60 + (c.minute ?? 0)
+                        if everyWeek { store.setWeekdayBedtime(weekday, minutes: m) } else { store.setBedtime(on: day, minutes: m) }
+                        Haptics.logged()
+                        dismiss()
+                    }
+                    .fontWeight(.semibold)
+                }
+            }
+            .onAppear {
+                guard !didSetup else { return }
+                didSetup = true
+                let m = store.bedtime(on: day)
+                time = Calendar.current.date(bySettingHour: m / 60, minute: m % 60, second: 0, of: Date()) ?? Date()
+            }
+        }
+        .presentationDetents([.medium])
+    }
+}
+
+/// The time a group of doses is due and a Log All button.
+private struct GroupHeaderRow: View {
+    @Environment(AppStore.self) private var store
+    let group: [DayItem]
+    let canLog: Bool
+    let onLogAll: () -> Void
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(group.first?.row.at.map { Format.time12($0) } ?? "").font(.subheadline.weight(.semibold)).monospacedDigit()
+                Text("\(group.count) doses due together").font(.caption).foregroundStyle(Palette.secondary)
+            }
+            Spacer()
+            if canLog {
+                Button("Log All", action: onLogAll)
+                    .font(.subheadline.weight(.semibold))
+                    .buttonStyle(.borderedProminent)
+                    .buttonBorderShape(.capsule)
+                    .tint(store.accentColor)
+            }
+        }
+    }
+}
+
+/// A small heading between groups of cards in a plain list.
+struct SectionLabel: View {
+    let title: String
+    init(_ title: String) { self.title = title }
+    var body: some View {
+        Text(title)
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(Palette.secondary)
+            .padding(.top, 14)
+            .labelRow()
+    }
+}
+
+/// Where a row sits in a card: alone, or first, in the middle or last of several.
+enum CardPosition {
+    case single, first, middle, last
+    var top: Bool { self == .single || self == .first }
+    var bottom: Bool { self == .single || self == .last }
+}
+
+/// A card-shaped row background for plain lists, so cards look like inset groups.
+struct CardBackground: View {
+    let position: CardPosition
+    var body: some View {
+        let r: CGFloat = 24
+        UnevenRoundedRectangle(topLeadingRadius: position.top ? r : 0, bottomLeadingRadius: position.bottom ? r : 0,
+                               bottomTrailingRadius: position.bottom ? r : 0, topTrailingRadius: position.top ? r : 0, style: .continuous)
+            .fill(Palette.card)
+            .padding(.horizontal, 16)
+            .overlay(alignment: .bottom) {
+                if !position.bottom {
+                    Rectangle().fill(Palette.separator).frame(height: 0.5).padding(.leading, 84).padding(.trailing, 16)
+                }
+            }
+    }
+}
+
+extension View {
+    /// A row drawn as part of a card in a plain list.
+    func cardRow(_ position: CardPosition) -> some View {
+        self
+            .listRowInsets(EdgeInsets(top: position.top ? 12 : 9, leading: 32, bottom: position.bottom ? 12 : 9, trailing: 32))
+            .listRowSeparator(.hidden)
+            .listRowBackground(CardBackground(position: position))
+    }
+
+    /// A row with no card, like a heading or a footnote.
+    func labelRow() -> some View {
+        self
+            .listRowInsets(EdgeInsets(top: 4, leading: 32, bottom: 4, trailing: 32))
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
     }
 }
 
@@ -215,7 +424,7 @@ struct WeekStrip: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(.bar)
+        .background(Palette.background)
         .gesture(
             DragGesture(minimumDistance: 24)
                 .onEnded { value in
@@ -278,12 +487,16 @@ private struct ScheduleRow: View {
         let jar = item.jar
         var parts: [String] = []
         if !slot.isPlanned && !slot.label.isEmpty { parts.append(slot.label) }
-        if !slot.isPlanned, let share = slot.share, share < 0.999 { parts.append(Format.share(share)) }
-        let pills = Format.pills(slot.pills, jar.form)
-        if !pills.isEmpty { parts.append(pills) }
-        if !slot.amount.isEmpty { parts.append(slot.amount) }
+        let amount = jar.amountText(for: slot)
+        if !amount.isEmpty { parts.append(amount) }
         if let bed = slot.bedtimeText { parts.append(bed) }
         return parts.joined(separator: " \u{00B7} ")
+    }
+
+    /// The jar this dose comes from, when the substance has several.
+    private var bottle: Bottle? {
+        guard item.jar.bottles.count > 1 else { return nil }
+        return item.jar.bottle(item.jar.parts(for: item.row.slot).first?.bottleId)
     }
 
     private var dayStart: Date { DoseLogic.doseDayStart(for: item.row.at ?? Date()) }
@@ -297,11 +510,21 @@ private struct ScheduleRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            JarIcon(jar: item.jar, size: 40)
+            JarIcon(jar: item.jar, bottle: bottle, size: 40)
             VStack(alignment: .leading, spacing: 2) {
                 JarNameStack(jar: item.jar)
                 if !detail.isEmpty {
                     Text(detail).font(.footnote).foregroundStyle(Palette.secondary)
+                }
+                if let stackId = item.row.slot.stackId, let s = store.stack(stackId) {
+                    Label(s.displayName, systemImage: "square.stack.3d.up.fill")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(s.color.color)
+                }
+                if item.row.slot.isGap, let gapJar = item.row.slot.gapJarId, let other = store.jar(gapJar) {
+                    Label("\(Format.duration(item.row.slot.gapMinutes ?? 0)) after \(other.name)", systemImage: "arrow.turn.down.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Palette.secondary)
                 }
                 if item.row.isPlanned {
                     let note = store.plannedDose(slotId: item.row.slot.id)?.note ?? ""
@@ -355,6 +578,20 @@ private struct ScheduleRow: View {
         case .later:
             Label(item.row.isPlanned ? "Planned" : "Later", systemImage: item.row.isPlanned ? "calendar.badge.clock" : "clock")
                 .font(.caption.weight(.semibold)).foregroundStyle(Palette.secondary)
+        case .waiting:
+            Label("Waiting", systemImage: "hourglass")
+                .font(.caption.weight(.semibold)).foregroundStyle(Palette.secondary)
+        case .reminder:
+            if isToday {
+                Button("Log", action: onLog)
+                    .font(.subheadline.weight(.semibold))
+                    .buttonStyle(.bordered)
+                    .buttonBorderShape(.capsule)
+                    .tint(store.accentColor)
+            } else {
+                Label("Not logged", systemImage: "bell")
+                    .font(.caption.weight(.semibold)).foregroundStyle(Palette.secondary)
+            }
         case .asNeeded:
             EmptyView()
         }
@@ -498,6 +735,8 @@ private struct WeekItemRow: View {
         case .due: return ("clock.fill", Palette.due)
         case .later: return (item.row.isPlanned ? "calendar.badge.clock" : "circle", Palette.tertiary)
         case .asNeeded: return ("circle.dashed", Palette.tertiary)
+        case .waiting: return ("hourglass", Palette.tertiary)
+        case .reminder: return ("bell", Palette.tertiary)
         }
     }
 
@@ -509,6 +748,8 @@ private struct WeekItemRow: View {
         case .due: return "Due"
         case .later: return item.row.isPlanned ? "Planned" : "Later"
         case .asNeeded: return "As needed"
+        case .waiting: return "Waiting"
+        case .reminder: return "Reminder"
         }
     }
 
@@ -520,7 +761,7 @@ private struct WeekItemRow: View {
                 .frame(width: 74, alignment: .leading)
             VStack(alignment: .leading, spacing: 1) {
                 Text(item.jar.name).font(.subheadline.weight(.semibold)).foregroundStyle(Palette.label)
-                let amount = [Format.pills(item.row.slot.pills, item.jar.form), item.row.slot.amount].filter { !$0.isEmpty }.joined(separator: " \u{00B7} ")
+                let amount = item.jar.amountText(for: item.row.slot)
                 if !amount.isEmpty {
                     Text(amount).font(.caption).foregroundStyle(Palette.secondary)
                 }
@@ -588,7 +829,7 @@ struct DayPlanSheet: View {
                     }
 
                     if !plan.doses.isEmpty {
-                        PlanFields(plan: $plan, form: jar.form, perPill: jar.strength)
+                        PlanFields(plan: $plan, mode: DoseMode.of(jar))
                     }
 
                     if hasChange {
@@ -622,7 +863,23 @@ struct DayPlanSheet: View {
         guard !didSetup, let jar else { return }
         didSetup = true
         let dayStart = DoseLogic.doseDayStart(for: day)
-        if let existing = jar.plan(onDayStarting: dayStart) {
+        let (slots, fromStack) = jar.daySlots(onDayStarting: dayStart)
+        if fromStack {
+            // Start from the stack's doses for the day.
+            var p = DosePlan(date: dayStart, dailyPills: slots.reduce(0.0) { $0 + ($1.pills ?? 1) }, splitEqual: false, doses: slots)
+            if jar.usesStrength { p.dailyDose = slots.reduce(0.0) { $0 + (jar.dose(for: $1) ?? 0) } }
+            for i in p.doses.indices {
+                p.doses[i].stackId = nil
+                p.doses[i].gapSlotId = nil
+                p.doses[i].gapJarId = nil
+                if let total = p.dailyDose, total > 0 {
+                    p.doses[i].share = (jar.dose(for: p.doses[i]) ?? 0) / total
+                } else if p.dailyPills > 0 {
+                    p.doses[i].share = (p.doses[i].pills ?? 1) / p.dailyPills
+                }
+            }
+            plan = p
+        } else if let existing = jar.plan(onDayStarting: dayStart) {
             plan = existing.isDate ? existing : existing.copy(for: dayStart)
         } else {
             plan = DosePlan(date: dayStart, dailyPills: 1, doses: [])
@@ -631,7 +888,12 @@ struct DayPlanSheet: View {
 
     private func save() {
         guard let jar else { return }
-        if let bad = plan.doses.firstIndex(where: { !jar.form.fits($0.pills ?? 1) }) {
+        if jar.usesStrength {
+            if let bad = plan.doses.firstIndex(where: { d in jar.dose(for: d).map { jar.pick(dose: $0, ignoringSupply: true) == nil } ?? true }) {
+                problem = "Dose \(bad + 1) can't be made exactly from your jars. Change the total or the split."
+                return
+            }
+        } else if let bad = plan.doses.firstIndex(where: { !jar.form.fits($0.pills ?? 1) }) {
             let pills = plan.doses[bad].pills ?? 1
             let near = jar.form.nearest(pills).map { Format.pills($0, jar.form) }.joined(separator: " or ")
             problem = "Dose \(bad + 1) comes to \(Format.pills(pills, jar.form)), which \(jar.form.plural) can't do. The nearest that works is \(near)."

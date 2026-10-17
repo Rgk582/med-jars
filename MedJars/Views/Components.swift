@@ -31,7 +31,9 @@ struct UndoToast: View {
         }
         .padding(.leading, 16).padding(.trailing, 8).padding(.vertical, 8)
         .glassPanel(cornerRadius: 24)
-        .padding(.horizontal, 16)
+        .padding(.leading, 16)
+        // Leaves room for the plus button.
+        .padding(.trailing, 88)
     }
 }
 

@@ -16,6 +16,7 @@ final class AppStore {
     private(set) var planned: [PlannedDose] = []
     /// Wake-up times seen in Apple Health, by dose day key.
     private(set) var wakeTimes: [String: Date] = [:]
+    private(set) var stacks: [Stack] = []
     var isLocked: Bool = false
     var saveError: String?
 
@@ -27,7 +28,9 @@ final class AppStore {
         caffeine = file.caffeine.sorted { $0.at > $1.at }
         planned = file.planned.sorted { $0.at < $1.at }
         wakeTimes = file.wakeTimes
+        stacks = file.stacks.sorted { $0.order < $1.order }
         isLocked = file.settings.faceIDLock
+        syncContext()
         if let copy = StoreIO.unreadableCopy {
             saveError = "Your saved data couldn't be read, so a copy was kept as \(copy.lastPathComponent). Restore from a backup in Settings."
         }
@@ -35,6 +38,14 @@ final class AppStore {
 
     private static func jarOrder(_ a: Jar, _ b: Jar) -> Bool {
         a.order != b.order ? a.order < b.order : a.name.localizedCaseInsensitiveCompare(b.name) == .orderedAscending
+    }
+
+    /// Hands the current stacks, jars and settings to the shared schedule logic.
+    private func syncContext() {
+        StackLogic.stacks = stacks
+        StackLogic.jars = jars
+        settings.apply()
+        WakeTimes.byDay = wakeTimes
     }
 
     func setFaceIDLock(_ on: Bool) {
@@ -72,9 +83,11 @@ final class AppStore {
         persist()
     }
 
-    /// True when any active jar has a dose taken upon waking.
+    /// True when any active jar or stack has a dose taken upon waking.
     var hasWakingDoses: Bool {
-        jars.contains { jar in !jar.asNeeded && jar.plans.contains { $0.doses.contains { $0.uponWaking } } }
+        jars.contains { jar in
+            !jar.asNeeded && (jar.plans + (jar.rule?.allPlans ?? [])).contains { $0.doses.contains { $0.uponWaking } }
+        } || stacks.contains { s in s.isOn && s.members.contains { $0.rule.allSlots.contains { $0.uponWaking } } }
     }
 
     func wakeTime(on day: Date) -> Date? { wakeTimes[WakeTimes.key(day)] }
@@ -104,14 +117,14 @@ final class AppStore {
         guard !due.isEmpty else { return }
         if due.count == 1, let first = due.first {
             let (jar, slot) = first
-            let amount = slot.amountLine(jar.form)
+            let amount = jar.amountText(for: slot)
             Notify.post(id: Notify.doseId(jar: jar.id, slot: slot.id, day: woke), title: "Good morning. Time for \(jar.name)",
                         body: amount.isEmpty ? "Your dose to take upon waking." : "\(amount), upon waking.",
                         category: Notify.doseCategory, userInfo: ["jarId": jar.id, "slotId": slot.id], timeSensitive: true)
         } else {
             let list = due.map { pair -> String in
                 let (jar, slot) = pair
-                let amount = slot.amountLine(jar.form)
+                let amount = jar.amountText(for: slot)
                 return amount.isEmpty ? jar.name : "\(jar.name) \(amount)"
             }.joined(separator: ", ")
             Notify.post(id: "\(Notify.groupPrefix)waking.\(WakeTimes.key(woke))", title: "Good morning. \(due.count) doses upon waking",
@@ -149,6 +162,45 @@ final class AppStore {
     func setBedtime(_ minutes: Int) {
         settings.bedtime = minutes
         Bedtime.minutes = minutes
+        persist()
+    }
+
+    /// Bedtime on one dose day.
+    func bedtime(on day: Date) -> Int { Bedtime.minutes(onDayStarting: DoseLogic.doseDayStart(for: day)) }
+
+    /// Changes bedtime for one dose day only. Nil goes back to the regular bedtime.
+    func setBedtime(on day: Date, minutes: Int?) {
+        var map = settings.bedtimeByDate ?? [:]
+        let key = WakeTimes.key(day)
+        map[key] = minutes
+        // Old one-day changes aren't needed.
+        let cutoff = WakeTimes.key(Date().addingTimeInterval(-14 * 86400))
+        map = map.filter { $0.key >= cutoff }
+        settings.bedtimeByDate = map.isEmpty ? nil : map
+        persist()
+    }
+
+    /// A regular bedtime for one weekday (1 is Sunday). Nil uses the everyday bedtime.
+    func setWeekdayBedtime(_ weekday: Int, minutes: Int?) {
+        var map = settings.bedtimeByWeekday ?? [:]
+        map[String(weekday)] = minutes
+        settings.bedtimeByWeekday = map.isEmpty ? nil : map
+        persist()
+    }
+
+    var pickOrder: PickOrder { settings.pickOrder ?? .wholeFirst }
+
+    func setPickOrder(_ order: PickOrder) {
+        settings.pickOrder = order
+        persist()
+    }
+
+    // MARK: Home
+
+    var homeCards: [HomeCard] { HomeCard.normalized(settings.home) }
+
+    func setHomeCards(_ cards: [HomeCard]) {
+        settings.home = cards
         persist()
     }
 
@@ -190,11 +242,20 @@ final class AppStore {
 
     func upsert(_ jar: Jar) {
         var j = jar
+        if j.bottles.isEmpty { j.bottles = [Bottle(id: j.id)]; j.defaultBottleId = j.id }
         if let i = jars.firstIndex(where: { $0.id == j.id }) {
             jars[i] = j
         } else {
             j.order = (jars.map(\.order).max() ?? 0) + 1
             jars.append(j)
+        }
+        // A tag belongs to one jar: take this substance's tags off anything else.
+        let tags = Set(j.tagIds)
+        if !tags.isEmpty {
+            for i in jars.indices where jars[i].id != j.id {
+                for b in jars[i].bottles.indices { jars[i].bottles[b].tagIds.removeAll { tags.contains($0) } }
+            }
+            for i in stacks.indices { stacks[i].tagIds.removeAll { tags.contains($0) } }
         }
         jars.sort(by: Self.jarOrder)
         persist()
@@ -225,7 +286,36 @@ final class AppStore {
         jars.removeAll { $0.id == id }
         planned.removeAll { $0.jarId == id }
         for i in jars.indices { jars[i].interactions.removeAll { $0.jarId == id } }
+        for i in stacks.indices { stacks[i].members.removeAll { $0.jarId == id } }
         persist()
+    }
+
+    /// Moves a substance's jars, log and planned doses into another substance (for jars set up separately before
+    /// a substance could have several), then removes it.
+    func merge(_ sourceId: String, into targetId: String) {
+        guard sourceId != targetId, let s = jars.firstIndex(where: { $0.id == sourceId }),
+              let t = jars.firstIndex(where: { $0.id == targetId }) else { return }
+        let source = jars[s]
+        var target = jars[t]
+        for var b in source.bottles {
+            if target.bottles.contains(where: { $0.id == b.id }) { b.id = UUID().uuidString }
+            target.bottles.append(b)
+        }
+        target.syncDoseMode()
+        jars[t] = target
+        let name = target.name
+        for i in entries.indices where entries[i].jarId == sourceId {
+            entries[i].jarId = targetId
+            entries[i].jarName = name
+            if entries[i].parts == nil, let p = entries[i].pills, let b = source.bottles.first {
+                entries[i].parts = [BottlePart(bottleId: b.id, pills: p)]
+            }
+        }
+        for i in planned.indices where planned[i].jarId == sourceId { planned[i].jarId = targetId }
+        for i in stacks.indices {
+            for m in stacks[i].members.indices where stacks[i].members[m].jarId == sourceId { stacks[i].members[m].jarId = targetId }
+        }
+        deleteJar(sourceId)
     }
 
     /// Sets how a jar interacts with others, on both jars so the warning shows from either side.
@@ -258,14 +348,19 @@ final class AppStore {
         persist()
     }
 
-    func isIdTaken(_ id: String) -> Bool { jars.contains { $0.id == id } }
+    func isIdTaken(_ id: String) -> Bool { jars.contains { $0.id == id || $0.bottles.contains { $0.id == id } } }
 
     // MARK: NFC tags
 
     /// Finds the jar for a scanned tag: a paired tag ID first, then a link written on the tag
     /// (medjars://jar/<id>, or any link ending in #<id> or /<id>, like the web cabinet's).
-    func jar(forTag tag: ScannedTag) -> Jar? {
-        if let j = jars.first(where: { $0.tagIds.contains(tag.uid) }) { return j }
+    func jar(forTag tag: ScannedTag) -> Jar? { find(tag: tag)?.0 }
+
+    /// The substance and the exact jar a tag belongs to.
+    func find(tag: ScannedTag) -> (Jar, Bottle)? {
+        for j in jars {
+            if let b = j.bottles.first(where: { $0.tagIds.contains(tag.uid) }) { return (j, b) }
+        }
         guard let url = tag.url else { return nil }
         var candidates: [String] = []
         if url.scheme?.lowercased() == "medjars", let id = url.pathComponents.dropFirst().first { candidates.append(id) }
@@ -273,20 +368,45 @@ final class AppStore {
         candidates.append(url.lastPathComponent)
         for c in candidates {
             let id = Format.slug(c)
-            if let j = jars.first(where: { $0.id == id }) { return j }
+            if let j = jars.first(where: { $0.id == id }) { return (j, j.defaultBottle) }
+            for j in jars { if let b = j.bottles.first(where: { $0.id == id }) { return (j, b) } }
         }
         return nil
     }
 
-    func pair(tagUID uid: String, toJar jarId: String) {
+    /// The stack a tag opens.
+    func stack(forTag tag: ScannedTag) -> Stack? { stacks.first { $0.tagIds.contains(tag.uid) } }
+
+    /// Pairs a tag with one jar (the default jar when none is given), moving it off anything else.
+    func pair(tagUID uid: String, toJar jarId: String, bottleId: String? = nil) {
         guard !uid.isEmpty else { return }
-        for i in jars.indices { jars[i].tagIds.removeAll { $0 == uid } }
-        if let i = jars.firstIndex(where: { $0.id == jarId }) { jars[i].tagIds.append(uid) }
+        for i in jars.indices { for b in jars[i].bottles.indices { jars[i].bottles[b].tagIds.removeAll { $0 == uid } } }
+        for i in stacks.indices { stacks[i].tagIds.removeAll { $0 == uid } }
+        if let i = jars.firstIndex(where: { $0.id == jarId }) {
+            let target = bottleId ?? jars[i].defaultBottleId
+            if let b = jars[i].bottles.firstIndex(where: { $0.id == target }) { jars[i].bottles[b].tagIds.append(uid) }
+            else if !jars[i].bottles.isEmpty { jars[i].bottles[0].tagIds.append(uid) }
+        }
         persist()
     }
 
-    func unpairTags(jarId: String) {
-        if let i = jars.firstIndex(where: { $0.id == jarId }) { jars[i].tagIds = [] }
+    func unpairTags(jarId: String, bottleId: String? = nil) {
+        if let i = jars.firstIndex(where: { $0.id == jarId }) {
+            for b in jars[i].bottles.indices where bottleId == nil || jars[i].bottles[b].id == bottleId { jars[i].bottles[b].tagIds = [] }
+        }
+        persist()
+    }
+
+    func pair(tagUID uid: String, toStack stackId: String) {
+        guard !uid.isEmpty else { return }
+        for i in jars.indices { for b in jars[i].bottles.indices { jars[i].bottles[b].tagIds.removeAll { $0 == uid } } }
+        for i in stacks.indices { stacks[i].tagIds.removeAll { $0 == uid } }
+        if let i = stacks.firstIndex(where: { $0.id == stackId }) { stacks[i].tagIds.append(uid) }
+        persist()
+    }
+
+    func unpairTags(stackId: String) {
+        if let i = stacks.firstIndex(where: { $0.id == stackId }) { stacks[i].tagIds = [] }
         persist()
     }
 
@@ -307,7 +427,7 @@ final class AppStore {
                 if !j.labelName.isEmpty { existing.labelName = j.labelName }
                 existing.kind = j.kind
                 existing.form = j.form
-                if !j.strength.isEmpty { existing.strength = j.strength }
+                if !j.strength.isEmpty { existing.defaultBottle.setStrength(text: j.strength) }
                 if !j.schedule.isEmpty || !j.plans.isEmpty {
                     existing.schedule = j.schedule
                     existing.plans = j.plans
@@ -333,7 +453,7 @@ final class AppStore {
     // MARK: Logging
 
     private var file: StoreFile {
-        StoreFile(jars: jars, entries: entries, settings: settings, caffeine: caffeine, planned: planned, wakeTimes: wakeTimes)
+        StoreFile(jars: jars, entries: entries, settings: settings, caffeine: caffeine, planned: planned, wakeTimes: wakeTimes, stacks: stacks)
     }
 
     private func adopt(_ f: StoreFile) {
@@ -342,6 +462,8 @@ final class AppStore {
         caffeine = f.caffeine.sorted { $0.at > $1.at }
         planned = f.planned.sorted { $0.at < $1.at }
         wakeTimes = f.wakeTimes
+        stacks = f.stacks.sorted { $0.order < $1.order }
+        syncContext()
     }
 
     /// A jar's dose time or planned dose by id.
@@ -380,15 +502,50 @@ final class AppStore {
     var recentLog: DoseEntry?
 
     @discardableResult
-    func log(jarId: String, slot: DoseSlot?, amount: String, pills: Double?, at date: Date, note: String = "") -> DoseEntry? {
+    func log(jarId: String, slot: DoseSlot?, amount: String, pills: Double?, parts: [BottlePart]? = nil, at date: Date,
+             note: String = "", loggedLate: Bool = false) -> DoseEntry? {
         guard let jar = self.jar(jarId) else { return nil }
         var f = file
-        let entry = f.makeEntry(jar: jar, slot: slot, amount: amount, pills: pills, at: date, note: note)
+        var entry = f.makeEntry(jar: jar, slot: slot, amount: amount, pills: pills, parts: parts, at: date, note: note)
+        entry.loggedLate = loggedLate
         let low = f.applyLog(entry)
         adopt(f)
         persist()
         Notify.afterLog(entry, jar: jar, lowSupply: low)
         return entry
+    }
+
+    /// Several doses logged together (Log All). Each keeps its own amount, jars and time.
+    @discardableResult
+    func logGroup(_ items: [GroupLogItem]) -> [DoseEntry] {
+        var f = file
+        var out: [(DoseEntry, Jar, LowSupply?)] = []
+        for item in items {
+            guard let jar = jars.first(where: { $0.id == item.jarId }) else { continue }
+            let entry = f.makeEntry(jar: jar, slot: item.slot, amount: item.amount, pills: item.pills, parts: item.parts, at: item.at, note: item.note)
+            let low = f.applyLog(entry)
+            out.append((entry, jar, low))
+        }
+        adopt(f)
+        persist()
+        for (entry, jar, low) in out { Notify.afterLog(entry, jar: jar, lowSupply: low) }
+        return out.map { $0.0 }
+    }
+
+    /// Moves a logged dose to another time.
+    func changeTime(entryId: String, to date: Date) {
+        guard var e = entry(entryId) else { return }
+        e.takenAt = date
+        e.loggedLate = false
+        updateEntry(e)
+    }
+
+    /// When a dose was meant to happen today.
+    func scheduledTime(jarId: String, slotId: String, on day: Date = Date()) -> Date? {
+        guard let jar = jar(jarId) else { return nil }
+        if slotId.hasPrefix(PlannedDose.slotPrefix) { return planned.first { $0.slotId == slotId }?.at }
+        return DoseLogic.rows(for: jar, entries: entries, planned: planned, dayStart: DoseLogic.doseDayStart(for: day), now: day)
+            .first { $0.slot.id == slotId }?.at
     }
 
     /// Records a dose as skipped, with an optional reason. Clears its reminders; doesn't touch supply.
@@ -406,16 +563,29 @@ final class AppStore {
 
     /// Logs a scheduled or planned dose right now. Returns nil if it was already handled.
     @discardableResult
-    func logSlot(jarId: String, slotId: String, at date: Date = Date()) -> DoseEntry? {
-        guard self.jar(jarId) != nil, let slot = self.slot(jarId: jarId, slotId: slotId) else { return nil }
+    func logSlot(jarId: String, slotId: String, at date: Date = Date(), loggedLate: Bool = false) -> DoseEntry? {
+        guard let jar = self.jar(jarId), let slot = self.slot(jarId: jarId, slotId: slotId) else { return nil }
         if slot.isPlanned, entries.contains(where: { $0.slotId == slotId }) { return nil }
         if alreadyLogged(jarId: jarId, slotId: slotId, on: date) != nil { return nil }
-        return log(jarId: jarId, slot: slot, amount: slot.amount, pills: slot.pills, at: date)
+        return log(jarId: jarId, slot: slot, amount: jar.strengthText(for: slot), pills: slot.pills, at: date, loggedLate: loggedLate)
+    }
+
+    /// Log Dose on a notification. More than 2 hours after the dose time, it's logged at the dose time and a
+    /// follow-up notification offers to change it to now.
+    @discardableResult
+    func logFromNotification(jarId: String, slotId: String) -> DoseEntry? {
+        let now = Date()
+        if let at = scheduledTime(jarId: jarId, slotId: slotId, on: now), now.timeIntervalSince(at) > 2 * 3600,
+           let entry = logSlot(jarId: jarId, slotId: slotId, at: at, loggedLate: true) {
+            Notify.loggedLate(entry, now: now)
+            return entry
+        }
+        return logSlot(jarId: jarId, slotId: slotId, at: now)
     }
 
     /// Logs every listed dose that isn't handled yet (the Log All button on a grouped reminder).
     func logAll(_ items: [(jarId: String, slotId: String)]) {
-        for item in items { logSlot(jarId: item.jarId, slotId: item.slotId) }
+        for item in items { logFromNotification(jarId: item.jarId, slotId: item.slotId) }
     }
 
     /// The scheduled dose that's due now (or missed in the last 3 hours) across all jars.
@@ -435,9 +605,13 @@ final class AppStore {
 
     /// A timed dose already taken or skipped in the same dose day. As-needed doses never count as duplicates.
     func alreadyLogged(jarId: String, slotId: String?, on day: Date) -> DoseEntry? {
-        guard let slotId, let jar = jar(jarId), !jar.asNeeded,
-              let slot = jar.timedSlots.first(where: { $0.id == slotId }), slot.minutes != nil else { return nil }
-        return entries.first { $0.jarId == jarId && $0.slotId == slotId && DoseLogic.sameDoseDay($0.takenAt, day) }
+        guard let slotId, let jar = jar(jarId), let slot = jar.findSlot(slotId), slot.minutes != nil else { return nil }
+        let row = DoseLogic.rows(for: jar, entries: entries, planned: planned, dayStart: DoseLogic.doseDayStart(for: day), now: Date())
+            .first { $0.slot.id == slotId }
+        switch row?.status {
+        case .taken(let e), .skipped(let e): return e.skipReason == "The dose it follows wasn't taken" ? nil : e
+        default: return nil
+        }
     }
 
     func deleteEntry(_ id: String) {
@@ -495,12 +669,101 @@ final class AppStore {
 
     // MARK: Supply
 
-    /// Adds pills to a jar (a refill) or sets the count outright.
-    func refill(jarId: String, add: Double? = nil, setTo: Double? = nil) {
+    /// Adds pills to a jar (a refill) or sets the count outright. Without a jar id, the default jar.
+    func refill(jarId: String, bottleId: String? = nil, add: Double? = nil, setTo: Double? = nil) {
         guard let i = jars.firstIndex(where: { $0.id == jarId }) else { return }
-        if let setTo { jars[i].pillsLeft = max(0, setTo) }
-        else if let add { jars[i].pillsLeft = max(0, (jars[i].pillsLeft ?? 0) + add) }
-        if !jars[i].isLow { jars[i].lowNotified = false }
+        let target = bottleId ?? jars[i].defaultBottleId
+        guard let b = jars[i].bottles.firstIndex(where: { $0.id == target }) else { return }
+        if let setTo { jars[i].bottles[b].pillsLeft = max(0, setTo) }
+        else if let add { jars[i].bottles[b].pillsLeft = max(0, (jars[i].bottles[b].pillsLeft ?? 0) + add) }
+        if !jars[i].isLow(jars[i].bottles[b]) { jars[i].bottles[b].lowNotified = false }
+        persist()
+    }
+
+    // MARK: Stacks
+
+    func stack(_ id: String) -> Stack? { stacks.first { $0.id == id } }
+
+    func upsertStack(_ stack: Stack) {
+        var s = stack
+        if let i = stacks.firstIndex(where: { $0.id == s.id }) {
+            stacks[i] = s
+        } else {
+            s.order = (stacks.map(\.order).max() ?? 0) + 1
+            stacks.append(s)
+        }
+        persist()
+    }
+
+    func deleteStack(_ id: String) {
+        stacks.removeAll { $0.id == id }
+        for i in jars.indices where jars[i].stackOwner == id { jars[i].stackOwner = nil }
+        persist()
+    }
+
+    /// Turns a stack on from a dose day. The first time sets its start. After being off, it picks up where it left
+    /// off: the days it was off don't count, and its end moves back by them. `owners` picks which stack controls a
+    /// substance two stacks share.
+    func turnOn(stackId: String, from day: Date, owners: [String: String] = [:]) {
+        guard let i = stacks.firstIndex(where: { $0.id == stackId }) else { return }
+        let d = DoseLogic.doseDayStart(for: day)
+        var s = stacks[i]
+        if s.start == nil {
+            s.start = d
+            s.offSpans = []
+            if let end = s.end, end < d { s.end = nil }
+        } else if case .ended = StackLogic.day(s, d), let oldStart = s.start {
+            // Run it again from the start, for the same length.
+            if let end = s.end {
+                let length = StackLogic.days(from: oldStart, to: end) - StackLogic.offDays(s, before: end)
+                s.end = Calendar.current.date(byAdding: .day, value: max(0, length), to: d)
+            }
+            s.start = d
+            s.offSpans = []
+            s.restartAfterBreak = [:]
+        } else if let last = s.offSpans.last, last.until == nil {
+            let from = DoseLogic.doseDayStart(for: last.from)
+            if d <= from {
+                s.offSpans.removeLast()
+            } else {
+                s.offSpans[s.offSpans.count - 1].until = d
+                if let end = s.end, d > from {
+                    s.end = Calendar.current.date(byAdding: .day, value: StackLogic.days(from: from, to: d), to: end)
+                }
+            }
+        }
+        s.turnedOnAt = Date()
+        stacks[i] = s
+        for (jarId, owner) in owners {
+            if let j = jars.firstIndex(where: { $0.id == jarId }) { jars[j].stackOwner = owner }
+        }
+        persist()
+    }
+
+    /// Turns a stack off from today. Its substances go back to their normal schedules.
+    func turnOff(stackId: String) {
+        guard let i = stacks.firstIndex(where: { $0.id == stackId }), stacks[i].isOn else { return }
+        let today = DoseLogic.doseDayStart(for: Date())
+        if let start = stacks[i].start, today < DoseLogic.doseDayStart(for: start), stacks[i].offSpans.isEmpty {
+            // It hadn't started yet: back to never started.
+            stacks[i].start = nil
+        } else {
+            stacks[i].offSpans.append(OffSpan(from: today, until: nil))
+        }
+        persist()
+    }
+
+    /// Restart rotations at week 1 after a break (true), or keep counting (false).
+    func setRestart(stackId: String, cycle: Int, restart: Bool) {
+        guard let i = stacks.firstIndex(where: { $0.id == stackId }) else { return }
+        stacks[i].restartAfterBreak[String(cycle)] = restart
+        persist()
+    }
+
+    /// Moves a stack's end date (extend or shorten).
+    func setEnd(stackId: String, end: Date?) {
+        guard let i = stacks.firstIndex(where: { $0.id == stackId }) else { return }
+        stacks[i].end = end.map { DoseLogic.doseDayStart(for: $0) }
         persist()
     }
 
@@ -534,9 +797,7 @@ final class AppStore {
         adopt(f)
         entries.sort { $0.takenAt > $1.takenAt }
         settings = f.settings
-        Bedtime.minutes = f.settings.bedtime ?? Bedtime.defaultMinutes
-        WakeTimes.usualMinutes = f.settings.usualWake ?? WakeTimes.defaultMinutes
-        WakeTimes.byDay = f.wakeTimes
+        syncContext()
         saveError = nil
         persist()
         return "Restored \(jars.count) jar\(jars.count == 1 ? "" : "s") and \(entries.count) dose\(entries.count == 1 ? "" : "s")."
@@ -601,11 +862,16 @@ final class AppStore {
         caffeine = f.caffeine.sorted { $0.at > $1.at }
         planned = f.planned.sorted { $0.at < $1.at }
         wakeTimes = f.wakeTimes
+        stacks = f.stacks.sorted { $0.order < $1.order }
         settings.bedtime = f.settings.bedtime ?? settings.bedtime
         settings.usualWake = f.settings.usualWake ?? settings.usualWake
+        settings.bedtimeByDate = f.settings.bedtimeByDate ?? settings.bedtimeByDate
+        settings.bedtimeByWeekday = f.settings.bedtimeByWeekday ?? settings.bedtimeByWeekday
+        syncContext()
     }
 
     private func persist() {
+        syncContext()
         do {
             try StoreIO.save(file)
             saveError = nil

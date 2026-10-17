@@ -64,9 +64,7 @@ struct NextDoseWidgetView: View {
         return (isTomorrow ? "Tomorrow, " : "") + (waiting ? "Upon waking" : Format.time12(n.time))
     }
 
-    private func amountLine(_ n: NextDose) -> String {
-        [n.slot.amount, Format.pills(n.slot.pills, n.jar.form)].filter { !$0.isEmpty }.joined(separator: " \u{00B7} ")
-    }
+    private func amountLine(_ n: NextDose) -> String { n.jar.amountText(for: n.slot) }
 
     var body: some View {
         Group {
@@ -228,15 +226,6 @@ struct OpenAndLogControl: ControlWidget {
 
 // MARK: - Live Activity
 
-private extension ActiveDose {
-    var profile: EffectProfile {
-        var p = EffectProfile()
-        p.onsetMinutes = max(1, Int(onset.timeIntervalSince(start) / 60))
-        p.peakMinutes = max(2, Int(peak.timeIntervalSince(start) / 60))
-        p.durationMinutes = max(3, Int(end.timeIntervalSince(start) / 60))
-        return p
-    }
-}
 
 /// One dose: stopwatch since the dose, the curve with a live progress bar, countdowns to the peak and to the end.
 struct LiveDoseRow: View {

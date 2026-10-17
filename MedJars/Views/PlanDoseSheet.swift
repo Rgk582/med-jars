@@ -26,10 +26,15 @@ struct PlanDoseSheet: View {
     @State private var headsUp = 0
     @State private var didSetup = false
     @State private var confirmDelete = false
+    @State private var dose: Double?
 
     private var jar: Jar? { store.jar(jarId) }
     private var isEdit: Bool { target.editing != nil }
-    private var choosable: [Jar] { store.jars.filter { !$0.paused } }
+    /// As-needed substances first, since those are the ones usually planned ahead.
+    private var choosable: [Jar] {
+        let active = store.jars.filter { !$0.paused }
+        return active.filter(\.asNeeded) + active.filter { !$0.asNeeded }
+    }
 
     private var amountBinding: Binding<String> {
         Binding(get: { amount }, set: { new in
@@ -71,10 +76,18 @@ struct PlanDoseSheet: View {
                     }
 
                     Section {
-                        AmountInput(amount: $pills, form: jar.form)
-                        LabeledContent("Strength per Dose") {
-                            TextField("e.g. 10 mg", text: amountBinding)
-                                .multilineTextAlignment(.trailing)
+                        if jar.usesStrength {
+                            NumberField(title: "Dose", value: $dose, suffix: jar.unit.label)
+                            if let d = dose {
+                                Text(jar.pick(dose: d, ignoringSupply: true).map { "From your jars: \(jar.partsText($0))" } ?? "Your jars can't make this exactly. You can change it when you log.")
+                                    .font(.footnote).foregroundStyle(Palette.secondary)
+                            }
+                        } else {
+                            AmountInput(amount: $pills, form: jar.form)
+                            LabeledContent("Strength per Dose") {
+                                TextField("e.g. 10 mg", text: amountBinding)
+                                    .multilineTextAlignment(.trailing)
+                            }
                         }
                     } header: {
                         Text("How Much")
@@ -144,6 +157,7 @@ struct PlanDoseSheet: View {
             note = p.note
             headsUp = p.headsUpMinutes
             autoAmount = p.amount.isEmpty
+            dose = p.dose ?? store.jar(p.jarId)?.dose(for: p.slot)
         } else {
             jarId = target.jarId ?? choosable.first?.id ?? ""
             at = max(target.date, Date().addingTimeInterval(60))
@@ -155,20 +169,24 @@ struct PlanDoseSheet: View {
     /// The jar's usual dose: its as-needed amount, or its first dose time.
     private func loadDefaults() {
         guard let jar else { return }
-        let d = LogDoseSheet.defaults(jar: jar, slot: jar.asNeededSlot ?? jar.timedSlots.first)
+        let slot = jar.asNeededSlot ?? jar.timedSlots.first
+        let d = LogDoseSheet.defaults(jar: jar, slot: slot)
         basePills = jar.form.fits(d.0) ? d.0 : jar.form.step
         baseAmount = d.1
         pills = basePills
         amount = d.1
         autoAmount = true
+        dose = jar.dose(for: slot)
     }
 
     private func save() {
         guard let jar else { return }
-        let dose = PlannedDose(id: target.editing?.id ?? UUID().uuidString, jarId: jar.id, at: at, pills: pills,
-                               amount: amount.trimmingCharacters(in: .whitespaces),
-                               note: note.trimmingCharacters(in: .whitespacesAndNewlines), headsUpMinutes: headsUp)
-        store.savePlanned(dose)
+        let strength = jar.usesStrength ? dose : nil
+        let text = strength.map { "\(Format.trimmed($0)) \(jar.unit.label)" } ?? amount.trimmingCharacters(in: .whitespaces)
+        let planned = PlannedDose(id: target.editing?.id ?? UUID().uuidString, jarId: jar.id, at: at, pills: pills,
+                                  amount: text,
+                                  note: note.trimmingCharacters(in: .whitespacesAndNewlines), headsUpMinutes: headsUp, dose: strength)
+        store.savePlanned(planned)
         if store.settings.reminders { Task { _ = await Reminders.requestPermission() } }
         Haptics.logged()
         dismiss()

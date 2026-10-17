@@ -41,7 +41,7 @@ targets:
           UIApplicationSupportsMultipleScenes: false
         NSFaceIDUsageDescription: Med Jars uses Face ID to keep your medications and dose log private.
         NFCReaderUsageDescription: Med Jars reads the NFC tag on a jar to open that jar.
-        NSHealthShareUsageDescription: Med Jars reads your medication list from the Health app so it can set up jars for you.
+        NSHealthShareUsageDescription: Med Jars reads your sleep to remind you about doses taken upon waking, and your medication list so it can set up jars for you.
         NSHealthUpdateUsageDescription: Med Jars does not write to the Health app.
         NSSupportsLiveActivities: true
         UIBackgroundModes: [fetch]
