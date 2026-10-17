@@ -110,6 +110,8 @@ struct Bottle: Codable, Identifiable, Hashable {
     var pillShape: PillShape = .round
     var scoreLine: Bool = false
     var imprint: String = ""
+    /// On a scored tablet or a capsule: the imprint split across both halves, or on one side.
+    var imprintPlacement: ImprintPlacement = .left
     /// Pills left in the jar, or nil when supply isn't tracked.
     var pillsLeft: Double? = nil
     /// Warn when this many days of pills are left.
@@ -127,7 +129,7 @@ struct Bottle: Codable, Identifiable, Hashable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case id, form, strength, unit, lid, pillShape, scoreLine, imprint, pillsLeft, refillWarnDays, lowNotified, tagIds, nickname
+        case id, form, strength, unit, lid, pillShape, scoreLine, imprint, imprintPlacement, pillsLeft, refillWarnDays, lowNotified, tagIds, nickname
     }
 
     init(from decoder: Decoder) throws {
@@ -140,6 +142,7 @@ struct Bottle: Codable, Identifiable, Hashable {
         pillShape = (try? c.decodeIfPresent(PillShape.self, forKey: .pillShape)) ?? .round
         scoreLine = (try? c.decodeIfPresent(Bool.self, forKey: .scoreLine)) ?? false
         imprint = (try? c.decodeIfPresent(String.self, forKey: .imprint)) ?? ""
+        imprintPlacement = (try? c.decodeIfPresent(ImprintPlacement.self, forKey: .imprintPlacement)) ?? .left
         pillsLeft = try? c.decodeIfPresent(Double.self, forKey: .pillsLeft)
         refillWarnDays = (try? c.decodeIfPresent(Int.self, forKey: .refillWarnDays)) ?? 7
         lowNotified = (try? c.decodeIfPresent(Bool.self, forKey: .lowNotified)) ?? false
@@ -274,6 +277,19 @@ enum PillForm: String, Codable, CaseIterable, Identifiable {
     /// Smoked is only offered for recreational substances.
     static func options(for kind: JarKind) -> [PillForm] {
         kind == .recreational ? allCases : allCases.filter { $0 != .smoked }
+    }
+}
+
+/// Where an imprint sits on a scored tablet or a capsule: split across both halves, or on one side.
+enum ImprintPlacement: String, Codable, CaseIterable, Identifiable {
+    case split, left, right
+    var id: String { rawValue }
+    var name: String {
+        switch self {
+        case .split: return "Split"
+        case .left: return "Left Side"
+        case .right: return "Right Side"
+        }
     }
 }
 
@@ -1056,6 +1072,10 @@ struct Jar: Codable, Identifiable, Hashable {
     var imprint: String {
         get { defaultBottle.imprint }
         set { defaultBottle.imprint = newValue }
+    }
+    var imprintPlacement: ImprintPlacement {
+        get { defaultBottle.imprintPlacement }
+        set { defaultBottle.imprintPlacement = newValue }
     }
     /// "30 mg", the default jar's strength per pill.
     var strength: String { defaultBottle.strengthText }

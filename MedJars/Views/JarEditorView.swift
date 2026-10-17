@@ -624,6 +624,12 @@ struct JarEditorView: View {
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                 }
+                if !draft.imprint.trimmingCharacters(in: .whitespaces).isEmpty && (draft.form == .capsule || (draft.form == .tablet && draft.scoreLine)) {
+                    Picker("Imprint Side", selection: $draft.imprintPlacement) {
+                        ForEach(ImprintPlacement.allCases) { Text($0.name).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                }
             }
         } header: {
             Text("Look")

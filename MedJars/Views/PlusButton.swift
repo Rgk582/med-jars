@@ -66,8 +66,15 @@ struct PlusLayer: View {
             .shadow(color: .black.opacity(0.4), radius: 10, y: 4)
             .contentShape(Circle())
             .onTapGesture {
-                if open { close() } else { logMenu = false; open = true }
                 UISelectionFeedbackGenerator().selectionChanged()
+                if open { close(); return }
+                // On a substance's page, the plus logs that substance.
+                if let jar = pageJar {
+                    logJar(jar)
+                    return
+                }
+                logMenu = false
+                open = true
             }
             .onLongPressGesture(minimumDuration: 0.45) {
                 close()
@@ -75,10 +82,12 @@ struct PlusLayer: View {
                 scan()
             }
             .accessibilityElement()
-            .accessibilityLabel(open ? "Close" : "Log or Schedule")
+            .accessibilityLabel(open ? "Close" : (pageJar.map { "Log \($0.name)" } ?? "Log or Schedule"))
             .accessibilityHint("Hold to scan a jar.")
             .accessibilityAddTraits(.isButton)
-            .accessibilityAction { if open { close() } else { open = true } }
+            .accessibilityAction {
+                if open { close() } else if let jar = pageJar { logJar(jar) } else { open = true }
+            }
             .accessibilityAction(named: "Scan Jar") { scan() }
     }
 
@@ -98,6 +107,22 @@ struct PlusLayer: View {
     private func close() {
         open = false
         logMenu = false
+    }
+
+    /// The substance whose page is showing.
+    private var pageJar: Jar? {
+        guard case .jar(let id) = router.currentPath.last else { return nil }
+        return store.jar(id)
+    }
+
+    /// Logs a substance: its next dose, or an as-needed or extra dose.
+    private func logJar(_ jar: Jar) {
+        let rows = DoseLogic.rows(for: jar, entries: store.entries, planned: store.planned)
+        if jar.isActive(on: DoseLogic.doseDayStart(for: Date())), let s = DoseLogic.suggestion(rows)?.slot {
+            router.logRequest = LogTarget(jarId: jar.id, slotId: s.id, slot: s)
+        } else {
+            router.logRequest = LogTarget(jarId: jar.id, slotId: jar.asNeededSlot?.id ?? "")
+        }
     }
 
     static var nextHour: Date {

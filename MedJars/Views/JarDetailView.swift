@@ -141,7 +141,10 @@ struct JarDetailView: View {
                                     .onTapGesture { tapRow(row, jar: jar) }
                                     .accessibilityAddTraits(.isButton)
                                     .swipeActions(edge: .trailing) {
-                                        if !row.status.isHandled {
+                                        switch row.status {
+                                        case .taken(let e), .skipped(let e):
+                                            Button(role: .destructive) { store.deleteEntry(e.id) } label: { Label("Delete", systemImage: "trash") }
+                                        default:
                                             Button { skipping = row.slot } label: { Label("Skip", systemImage: "forward.end") }
                                                 .tint(.gray)
                                         }
@@ -350,9 +353,16 @@ struct JarDetailView: View {
                             }
                         }
                         .contentShape(Rectangle())
-                        .onTapGesture { if !e.skipped { logging = LogTarget(jarId: jar.id, editing: e) } }
-                        .accessibilityAddTraits(e.skipped ? [] : .isButton)
-                        .accessibilityHint(Text(e.skipped ? "" : "Change the amount or time"))
+                        .onTapGesture { logging = LogTarget(jarId: jar.id, editing: e) }
+                        .accessibilityAddTraits(.isButton)
+                        .accessibilityHint(Text("Change or delete this dose"))
+                        .contextMenu {
+                            Button("Edit Dose", systemImage: "pencil") { logging = LogTarget(jarId: jar.id, editing: e) }
+                            Button("Delete Dose", systemImage: "trash", role: .destructive) { store.deleteEntry(e.id) }
+                        }
+                        .swipeActions(edge: .trailing) {
+                            Button(role: .destructive) { store.deleteEntry(e.id) } label: { Label("Delete", systemImage: "trash") }
+                        }
                         .swipeActions(edge: .leading) {
                             if !e.skipped {
                                 Button { checkInFor = CheckInTarget(id: e.id) } label: { Label("Check In", systemImage: "face.smiling") }
@@ -365,7 +375,7 @@ struct JarDetailView: View {
             } header: {
                 Text("Recent Doses")
             } footer: {
-                if !recent.isEmpty { Text("Tap a dose to change how much you took or when.") }
+                if !recent.isEmpty { Text("Tap a dose to change or delete it, or swipe left to delete.") }
             }
 
             if jar.bottles.count <= 1 {
@@ -397,7 +407,7 @@ struct JarDetailView: View {
             VStack(spacing: 10) {
                 if let toast {
                     UndoToast(text: "Logged \(toast.amountLine) at \(Format.time12(toast.takenAt))") {
-                        store.deleteEntry(toast.id)
+                        store.undoLog(toast.id)
                         withAnimation { self.toast = nil }
                     }
                     .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -823,7 +833,7 @@ private struct Header: View {
 
     var body: some View {
         VStack(spacing: 10) {
-            JarIcon(jar: jar, size: 76)
+            JarIcon(jar: jar, size: 120)
                 .opacity(jar.isActive() ? 1 : 0.5)
             JarNameStack(jar: jar, large: true)
             Text([jar.kind.label, strengths, jar.frequencyText].joined(separator: " \u{00B7} "))

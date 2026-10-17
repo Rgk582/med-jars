@@ -234,6 +234,12 @@ struct BottleEditorView: View {
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
                     }
+                    if !b.imprint.trimmingCharacters(in: .whitespaces).isEmpty && (b.form == .capsule || (b.form == .tablet && b.scoreLine)) {
+                        Picker("Imprint Side", selection: bottle.imprintPlacement) {
+                            ForEach(ImprintPlacement.allCases) { Text($0.name).tag($0) }
+                        }
+                        .pickerStyle(.segmented)
+                    }
                 }
             } header: {
                 Text("Look")

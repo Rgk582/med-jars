@@ -41,7 +41,7 @@ struct ScheduleView: View {
         .safeAreaInset(edge: .bottom) {
             if let toast {
                 UndoToast(text: "Logged \(toast.jarName) at \(Format.time12(toast.takenAt))") {
-                    store.deleteEntry(toast.id)
+                    store.undoLog(toast.id)
                     withAnimation { self.toast = nil }
                 }
                 .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -53,6 +53,8 @@ struct ScheduleView: View {
             }
         }
         .sheet(isPresented: $showWeek) { WeekOverviewSheet(selected: $day) }
+        .onAppear(perform: takeWeekRequest)
+        .onChange(of: router.showWeekOverview) { _, _ in takeWeekRequest() }
         .sheet(item: $planning) { PlanDoseSheet(target: $0) }
         .sheet(item: $logging) { target in
             if let jar = store.jar(target.jarId) {
@@ -64,6 +66,14 @@ struct ScheduleView: View {
         .sheet(item: $skipping) { SkipSheet(jar: $0.jar, slot: $0.slot) }
         .sheet(item: $editingDay) { DayPlanSheet(jarId: $0.jarId, day: $0.day) }
         .sheet(item: $bedtimeDay) { BedtimeDaySheet(day: $0.day) }
+    }
+
+    /// Home's This Week card asks for the week overview.
+    private func takeWeekRequest() {
+        guard router.showWeekOverview else { return }
+        router.showWeekOverview = false
+        day = DoseLogic.doseDayStart(for: Date())
+        showWeek = true
     }
 
     /// Tapping a dose: a taken or skipped one opens it to change, one still to take opens the log sheet.
@@ -121,9 +131,17 @@ struct ScheduleView: View {
                             if isToday && !item.row.status.isHandled {
                                 Button("Skip", systemImage: "forward.end") { skipping = SkipRequest(jar: item.jar, slot: item.row.slot) }
                             }
+                            if let e = loggedEntry(item) {
+                                Button("Edit Dose", systemImage: "pencil") { logging = LogTarget(jarId: item.jar.id, editing: e) }
+                                Button("Delete Dose", systemImage: "trash", role: .destructive) { store.deleteEntry(e.id) }
+                            }
                         }
                         .swipeActions(edge: .trailing) {
-                            if isToday && !item.row.status.isHandled {
+                            if let e = loggedEntry(item) {
+                                Button(role: .destructive) { store.deleteEntry(e.id) } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            } else if isToday && !item.row.status.isHandled {
                                 Button { skipping = SkipRequest(jar: item.jar, slot: item.row.slot) } label: {
                                     Label("Skip", systemImage: "forward.end")
                                 }
@@ -172,14 +190,32 @@ struct ScheduleView: View {
                         .labelRow()
                 }
                 Color.clear.frame(height: 90).labelRow()
-            } header: {
-                WeekStrip(selected: $day, today: today)
-                    .listRowInsets(EdgeInsets())
             }
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .background(Palette.background)
+        .frostedTopBar { WeekStrip(selected: $day, today: today) }
+    }
+
+    /// The dose a taken or skipped row was logged as.
+    private func loggedEntry(_ item: DayItem) -> DoseEntry? {
+        switch item.row.status {
+        case .taken(let e), .skipped(let e): return store.entry(e.id)
+        default: return nil
+        }
+    }
+}
+
+extension View {
+    /// Pins a bar under the navigation bar that frosts what scrolls under it, the same as the navigation bar.
+    @ViewBuilder
+    func frostedTopBar<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        if #available(iOS 26.0, *) {
+            self.safeAreaBar(edge: .top, spacing: 0) { content() }
+        } else {
+            self.safeAreaInset(edge: .top, spacing: 0) { content().background(.bar) }
+        }
     }
 }
 
@@ -424,7 +460,7 @@ struct WeekStrip: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(Palette.background)
+        .contentShape(Rectangle())
         .gesture(
             DragGesture(minimumDistance: 24)
                 .onEnded { value in

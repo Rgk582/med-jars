@@ -60,11 +60,11 @@ struct BottleIcon: View {
 
     var body: some View {
         PillArt(form: bottle.form, shape: bottle.pillShape, color: bottle.lid.color, scoreLine: bottle.scoreLine,
-                imprint: bottle.imprint, size: size)
+                imprint: bottle.imprint, placement: bottle.imprintPlacement, size: size)
     }
 }
 
-/// A drawing of one dose on a black tile: the form's shape (tablet, capsule, softgel, gummy, scoop,
+/// A drawing of one dose with no background: the form's shape (tablet, capsule, softgel, gummy, scoop,
 /// powder, drop, smoked, other) in the chosen color, with a tablet's shape, score line and imprint.
 struct PillArt: View {
     let form: PillForm
@@ -72,6 +72,7 @@ struct PillArt: View {
     let color: Color
     var scoreLine = false
     var imprint = ""
+    var placement: ImprintPlacement = .left
     let size: CGFloat
 
     private var line: CGFloat { max(0.6, size * 0.014) }
@@ -84,14 +85,35 @@ struct PillArt: View {
     private var showImprint: Bool { size >= 44 && form.hasImprint && !imprint.trimmingCharacters(in: .whitespaces).isEmpty }
 
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: size * 0.26, style: .continuous)
-                .fill(Color.black)
-                .overlay(RoundedRectangle(cornerRadius: size * 0.26, style: .continuous).strokeBorder(Color.white.opacity(0.1), lineWidth: 0.5))
-            art
+        // With no tile behind it, the pill fills most of its space.
+        art
+            .scaleEffect(1.38)
+            .frame(width: size, height: size)
+            .accessibilityHidden(true)
+    }
+
+    /// The imprint cut in two, at a space when there is one: "DP 30" becomes "DP" and "30".
+    private var halves: (String, String) {
+        let t = imprint.trimmingCharacters(in: .whitespaces)
+        if let space = t.firstIndex(of: " ") {
+            return (String(t[..<space]).trimmingCharacters(in: .whitespaces), String(t[space...]).trimmingCharacters(in: .whitespaces))
         }
-        .frame(width: size, height: size)
-        .accessibilityHidden(true)
+        let mid = t.index(t.startIndex, offsetBy: t.count / 2)
+        return (String(t[..<mid]), String(t[mid...]))
+    }
+
+    /// The imprint on a pill split into two halves `offset` apart, or on one half.
+    @ViewBuilder private func sidedImprint(width: CGFloat, offset: CGFloat) -> some View {
+        switch placement {
+        case .split:
+            let (a, b) = halves
+            imprintText(a, width).offset(x: -offset)
+            imprintText(b, width).offset(x: offset)
+        case .left:
+            imprintText(imprint, width).offset(x: -offset)
+        case .right:
+            imprintText(imprint, width).offset(x: offset)
+        }
     }
 
     @ViewBuilder private var art: some View {
@@ -109,7 +131,11 @@ struct PillArt: View {
     }
 
     private func imprintText(_ maxWidth: CGFloat) -> some View {
-        Text(imprint.trimmingCharacters(in: .whitespaces))
+        imprintText(imprint, maxWidth)
+    }
+
+    private func imprintText(_ text: String, _ maxWidth: CGFloat) -> some View {
+        Text(text.trimmingCharacters(in: .whitespaces))
             .font(.system(size: size * 0.1, weight: .heavy, design: .rounded))
             .foregroundStyle(ink)
             .lineLimit(1)
@@ -135,8 +161,11 @@ struct PillArt: View {
                 Capsule().fill(ink.opacity(0.75)).frame(width: max(1, size * 0.022), height: h * 0.86)
             }
             if showImprint {
-                imprintText(scoreLine ? w * 0.36 : w * 0.7)
-                    .offset(x: scoreLine ? -w * 0.22 : 0)
+                if scoreLine {
+                    sidedImprint(width: w * 0.36, offset: w * 0.22)
+                } else {
+                    imprintText(w * 0.7)
+                }
             }
         }
         .frame(width: w, height: h)
@@ -155,7 +184,7 @@ struct PillArt: View {
                                           startPoint: .top, endPoint: .bottom))
             Rectangle().fill(Color.black.opacity(0.22)).frame(width: max(1, size * 0.016), height: h)
             Capsule().stroke(edge, lineWidth: line)
-            if showImprint { imprintText(w * 0.34).offset(x: -w * 0.22) }
+            if showImprint { sidedImprint(width: w * 0.34, offset: w * 0.22) }
         }
         .frame(width: w, height: h)
         .rotationEffect(.degrees(-35))

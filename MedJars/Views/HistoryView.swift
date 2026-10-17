@@ -16,7 +16,6 @@ struct DoseLogCSV: Transferable {
 struct HistoryView: View {
     @Environment(AppStore.self) private var store
     @Environment(Router.self) private var router
-    @State private var lastRemoved: DoseEntry?
     @State private var editing: LogTarget?
 
     private struct DayGroup: Identifiable {
@@ -47,13 +46,16 @@ struct HistoryView: View {
                                 row(e)
                                     .contentShape(Rectangle())
                                     .onTapGesture {
-                                        if !e.skipped, store.jar(e.jarId) != nil { editing = LogTarget(jarId: e.jarId, editing: e) }
+                                        if store.jar(e.jarId) != nil { editing = LogTarget(jarId: e.jarId, editing: e) }
+                                    }
+                                    .contextMenu {
+                                        if store.jar(e.jarId) != nil {
+                                            Button("Edit Dose", systemImage: "pencil") { editing = LogTarget(jarId: e.jarId, editing: e) }
+                                        }
+                                        Button("Delete Dose", systemImage: "trash", role: .destructive) { store.deleteEntry(e.id) }
                                     }
                                     .swipeActions {
-                                        Button(role: .destructive) {
-                                            withAnimation { lastRemoved = e }
-                                            store.deleteEntry(e.id)
-                                        } label: { Label("Delete", systemImage: "trash") }
+                                        Button(role: .destructive) { store.deleteEntry(e.id) } label: { Label("Delete", systemImage: "trash") }
                                     }
                                     .swipeActions(edge: .leading) {
                                         Button { router.checkInEntryId = e.id } label: { Label("Check In", systemImage: "face.smiling") }
@@ -86,20 +88,6 @@ struct HistoryView: View {
                 }
                 .disabled(store.entries.isEmpty)
                 .accessibilityLabel("Export as CSV")
-            }
-        }
-        .safeAreaInset(edge: .bottom) {
-            if let removed = lastRemoved {
-                UndoToast(text: "Deleted \(removed.jarName) at \(Format.time12(removed.takenAt))") {
-                    store.restore(removed)
-                    withAnimation { lastRemoved = nil }
-                }
-                .transition(.move(edge: .bottom).combined(with: .opacity))
-                .task(id: removed.id) {
-                    try? await Task.sleep(nanoseconds: 6_000_000_000)
-                    withAnimation { if lastRemoved?.id == removed.id { lastRemoved = nil } }
-                }
-                .padding(.bottom, 8)
             }
         }
     }
