@@ -462,7 +462,7 @@ private struct TodayCard: View {
     /// The big taken/total, about 70% of the card's height.
     private func number(_ p: Progress) -> some View {
         (Text("\(p.taken)").foregroundStyle(Palette.label) + Text("/\(p.total)").foregroundStyle(Palette.secondary))
-            .font(.system(size: size == .large ? 130 : 108, weight: .bold, design: .rounded))
+            .font(.system(size: size == .large ? 150 : 128, weight: .bold, design: .rounded))
             .monospacedDigit()
             .lineLimit(1)
             .minimumScaleFactor(0.25)
