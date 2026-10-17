@@ -41,6 +41,8 @@ final class Router {
     var groupRequest: GroupLogTarget?
     /// Restart rotations or keep counting, for a stack back from a break.
     var stackPrompt: StackResumePrompt?
+    /// Opens Schedule's week overview (Home's This Week card).
+    var showWeekOverview = false
     /// The open tab's navigation.
     var currentPath: [Route] {
         switch tab {
@@ -238,6 +240,22 @@ struct RootView: View {
             }
         }
         .tint(store.accentColor)
+        .overlay(alignment: .bottom) {
+            if let removed = store.lastDeleted {
+                UndoToast(text: removed.skipped ? "Removed the skip for \(removed.jarName)" : "Deleted \(removed.jarName) at \(Format.time12(removed.takenAt))",
+                          deleted: true) {
+                    store.restore(removed)
+                    withAnimation { store.lastDeleted = nil }
+                }
+                .padding(.bottom, router.plusHidden ? 64 : 70 + router.plusLift + 6)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .task(id: removed.id) {
+                    try? await Task.sleep(nanoseconds: 6_000_000_000)
+                    withAnimation { if store.lastDeleted?.id == removed.id { store.lastDeleted = nil } }
+                }
+            }
+        }
+        .animation(.snappy, value: store.lastDeleted?.id)
         .overlay {
             if !router.plusHidden { PlusLayer() }
         }

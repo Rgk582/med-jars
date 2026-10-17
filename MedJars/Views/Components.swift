@@ -18,11 +18,13 @@ struct UnknownTag: Identifiable {
 /// A floating "Logged … Undo" confirmation on Liquid Glass.
 struct UndoToast: View {
     let text: String
+    var deleted = false
     let onUndo: () -> Void
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: "checkmark.circle.fill").foregroundStyle(Palette.taken)
+            Image(systemName: deleted ? "trash.circle.fill" : "checkmark.circle.fill")
+                .foregroundStyle(deleted ? Palette.missed : Palette.taken)
             Text(text).font(.subheadline.weight(.semibold)).lineLimit(2)
             Spacer(minLength: 8)
             Button("Undo", action: onUndo)
@@ -65,16 +67,18 @@ extension DoseEntry {
 struct PillCounter: View {
     @Binding var count: Double
     let form: PillForm
+    /// Editing a logged dose: 0 deletes it.
+    var allowZero = false
 
-    static func step(_ n: Double, up: Bool, form: PillForm) -> Double {
+    static func step(_ n: Double, up: Bool, form: PillForm, allowZero: Bool = false) -> Double {
         let unit = form.step
         let units = n / unit
         let next = up ? (units + 0.0001).rounded(.down) + 1 : (units - 0.0001).rounded(.up) - 1
-        return min(50, max(unit, next * unit))
+        return min(50, max(allowZero ? 0 : unit, next * unit))
     }
 
     private func change(up: Bool) {
-        withAnimation(.snappy) { count = Self.step(count, up: up, form: form) }
+        withAnimation(.snappy) { count = Self.step(count, up: up, form: form, allowZero: allowZero) }
         UISelectionFeedbackGenerator().selectionChanged()
     }
 
@@ -85,14 +89,14 @@ struct PillCounter: View {
             }
             .buttonStyle(.bordered)
             .buttonBorderShape(.circle)
-            .disabled(count <= form.step)
+            .disabled(count <= (allowZero ? 0 : form.step))
             Spacer()
             VStack(spacing: 0) {
                 Text(Format.count(count))
                     .font(.system(size: 46, weight: .bold, design: .rounded))
                     .monospacedDigit()
                     .contentTransition(.numericText(value: count))
-                Text(count <= 1 ? form.singular : form.plural)
+                Text(count > 0 && count <= 1 ? form.singular : form.plural)
                     .font(.subheadline).foregroundStyle(Palette.secondary)
             }
             Spacer()
@@ -121,6 +125,7 @@ struct PillCounter: View {
 struct AmountInput: View {
     @Binding var amount: Double
     let form: PillForm
+    var allowZero = false
     @State private var text = ""
 
     var body: some View {
@@ -136,13 +141,13 @@ struct AmountInput: View {
             .padding(.vertical, 4)
             .onAppear { text = Format.trimmed(amount) }
             .onChange(of: text) { _, new in
-                if let v = Double(new.replacingOccurrences(of: ",", with: ".")), v > 0 { amount = v }
+                if let v = Double(new.replacingOccurrences(of: ",", with: ".")), v > 0 || (allowZero && v == 0) { amount = v }
             }
             .onChange(of: amount) { _, new in
                 if Double(text.replacingOccurrences(of: ",", with: ".")) != new { text = Format.trimmed(new) }
             }
         } else {
-            PillCounter(count: $amount, form: form)
+            PillCounter(count: $amount, form: form, allowZero: allowZero)
         }
     }
 }

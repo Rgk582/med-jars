@@ -30,28 +30,64 @@ enum LiveDoses {
         return dates.min()
     }
 
+    // MARK: Dismissed doses
+
+    /// Doses whose Live Activity is showing, so a missing activity later means it was swiped away.
+    private static let shownKey = "liveActivityShownDoses"
+    /// Doses swiped away from the Lock Screen, with when their effect ends. They stay off until then.
+    private static let dismissedKey = "liveActivityDismissedDoses"
+
+    private static var shown: [String] {
+        get { UserDefaults.standard.stringArray(forKey: shownKey) ?? [] }
+        set { UserDefaults.standard.set(newValue, forKey: shownKey) }
+    }
+
+    private static var dismissed: [String: Double] {
+        get { (UserDefaults.standard.dictionary(forKey: dismissedKey) as? [String: Double]) ?? [:] }
+        set { UserDefaults.standard.set(newValue, forKey: dismissedKey) }
+    }
+
     @discardableResult
     static func sync(jars: [Jar], entries: [DoseEntry], discreet: DiscreetSettings?) -> Task<Void, Never>? {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return nil }
         let now = Date()
-        let doses = activeDoses(jars: jars, entries: entries, now: now)
-        let current = Activity<DoseActivityAttributes>.activities
+        let running = activeDoses(jars: jars, entries: entries, now: now)
+        let all = Activity<DoseActivityAttributes>.activities
+        let current = all.filter { $0.activityState == .active || $0.activityState == .stale }
+
+        // Swiped away: keep those doses off the Lock Screen for the rest of their effect.
+        var gone = dismissed.filter { $0.value > now.timeIntervalSince1970 }
+        for a in all where a.activityState == .dismissed {
+            for d in a.content.state.doses where d.end > now { gone[d.id] = d.end.timeIntervalSince1970 }
+        }
+        let wasShowing = shown
+        if current.isEmpty && !wasShowing.isEmpty {
+            for d in running where wasShowing.contains(d.id) { gone[d.id] = d.end.timeIntervalSince1970 }
+        }
+        dismissed = gone
+
+        let doses = running.filter { gone[$0.id] == nil }
         let state = DoseActivityAttributes.ContentState(doses: doses, discreet: discreet, updated: now)
         let next = nextChange(doses: doses, discreet: discreet, after: now)
         let stale = next ?? doses.map(\.end).max()
         scheduleRefresh(at: next)
-        let task = Task {
+        let ids = doses.map(\.id)
+        let task = Task { @MainActor in
             if doses.isEmpty {
                 for activity in current { await activity.end(nil, dismissalPolicy: .immediate) }
+                shown = []
                 return
             }
             if let activity = current.first {
                 await activity.update(ActivityContent(state: state, staleDate: stale))
                 for extra in current.dropFirst() { await extra.end(nil, dismissalPolicy: .immediate) }
+                shown = ids
+            } else if (try? Activity.request(attributes: DoseActivityAttributes(),
+                                             content: ActivityContent(state: state, staleDate: stale),
+                                             pushType: nil)) != nil {
+                shown = ids
             } else {
-                _ = try? Activity.request(attributes: DoseActivityAttributes(),
-                                          content: ActivityContent(state: state, staleDate: stale),
-                                          pushType: nil)
+                shown = []
             }
         }
         lastSync = task

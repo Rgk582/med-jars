@@ -182,7 +182,7 @@ struct LogDoseSheet: View {
                             .frame(maxWidth: .infinity, minHeight: 36)
                     }
                     .prominentButton()
-                    .tint(hasMajor ? .red : store.accentColor)
+                    .tint(hasMajor || isZero ? .red : store.accentColor)
                     .padding(.horizontal, 20)
                     .padding(.bottom, 8)
                 }
@@ -263,7 +263,7 @@ struct LogDoseSheet: View {
                     Button("Back to \(jar.partsText(baseParts))") { withAnimation(.snappy) { parts = baseParts } }
                 }
             } else {
-                AmountInput(amount: $pills, form: jar.form)
+                AmountInput(amount: $pills, form: jar.form, allowZero: isEdit)
                 if pills != basePills {
                     Button("Back to \(Format.pills(basePills, jar.form))") {
                         withAnimation(.snappy) { pills = basePills }
@@ -278,7 +278,7 @@ struct LogDoseSheet: View {
             Text("How Much")
         } footer: {
             if isEdit {
-                Text("Changing the amount also updates the pills left in the jar.")
+                Text("Changing the amount also updates the pills left in the jar. Set it to 0 to delete the dose.")
             } else if multi {
                 Text("Picked from your jars for \(baseAmount.ifEmpty("this dose")). Change how many from each jar if you took something else.")
             } else {
@@ -314,9 +314,29 @@ struct LogDoseSheet: View {
         if let problem {
             Section { Label(problem, systemImage: "exclamationmark.circle.fill").foregroundStyle(Palette.missed) }
         }
+
+        if let e = editing {
+            Section {
+                Button(role: .destructive) { delete(e) } label: {
+                    Label("Delete Dose", systemImage: "trash").frame(maxWidth: .infinity)
+                }
+            }
+        }
+    }
+
+    /// Nothing taken: saving deletes the dose.
+    private var isZero: Bool {
+        isEdit && (multi ? !parts.contains { $0.pills > 0 } : pills <= 0)
+    }
+
+    private func delete(_ e: DoseEntry) {
+        store.deleteEntry(e.id)
+        Haptics.warning()
+        dismiss()
     }
 
     private var buttonTitle: String {
+        if isZero { return "Delete Dose" }
         if isEdit { return "Save Changes" }
         if !warnings.isEmpty { return "Log Anyway" }
         if multi { return "Log \(amount.ifEmpty(jar.partsText(parts)))" }
@@ -355,6 +375,7 @@ struct LogDoseSheet: View {
     private func save() {
         if takenAt > Date().addingTimeInterval(300) { problem = "That time hasn't happened yet. Log a dose after you take it."; return }
         let usedParts = parts.filter { $0.pills > 0 }
+        if let e = editing, isZero { delete(e); return }
         if multi && usedParts.isEmpty { problem = "Add at least one pill from a jar."; return }
         let total = multi ? usedParts.reduce(0.0) { $0 + $1.pills } : pills
         let a = amount.trimmingCharacters(in: .whitespaces)
@@ -417,7 +438,7 @@ struct JarPartsEditor: View {
         ForEach(jar.bottles) { b in
             let n = count(b)
             HStack(spacing: 12) {
-                PillArt(form: b.form, shape: b.pillShape, color: b.lid.color, scoreLine: b.scoreLine, imprint: b.imprint, size: 34)
+                BottleIcon(bottle: b, size: 34)
                     .opacity(b.pillsLeft.map { $0 <= 0 } ?? false ? 0.4 : 1)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(b.title).font(.subheadline.weight(.semibold))

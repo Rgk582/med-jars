@@ -614,7 +614,21 @@ final class AppStore {
         }
     }
 
+    /// The dose deleted last, for the Undo toast.
+    var lastDeleted: DoseEntry?
+
+    /// Deletes a dose and offers to undo it.
     func deleteEntry(_ id: String) {
+        var f = file
+        let old = f.removeLog(id)
+        adopt(f)
+        Notify.cancel(entryId: id)
+        persist()
+        lastDeleted = old
+    }
+
+    /// Takes back a dose just logged (the Undo on "Logged …"), without a second undo toast.
+    func undoLog(_ id: String) {
         var f = file
         _ = f.removeLog(id)
         adopt(f)
