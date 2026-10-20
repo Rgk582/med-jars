@@ -1,6 +1,7 @@
 #if DEBUG
 import Foundation
 import UIKit
+import SwiftUI
 
 /// Test-only helpers for the full simulator test run. Never part of a release build.
 /// - `-seedFullTest`: replaces the saved data with the seed file before anything loads.
