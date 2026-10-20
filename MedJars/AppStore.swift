@@ -891,8 +891,30 @@ final class AppStore {
         syncContext()
     }
 
+    #if DEBUG
+    @ObservationIgnored private var sideEffectTask: Task<Void, Never>?
+    #endif
+
     private func persist() {
         #if DEBUG
+        if DebugHarness.flag("asyncPersist") {
+            let s0 = CFAbsoluteTimeGetCurrent()
+            syncContext()
+            let snapshot = file
+            DispatchQueue.global(qos: .utility).async { try? StoreIO.save(snapshot) }
+            sideEffectTask?.cancel()
+            sideEffectTask = Task { @MainActor [weak self] in
+                try? await Task.sleep(nanoseconds: 800_000_000)
+                guard let self, !Task.isCancelled else { return }
+                WidgetCenter.shared.reloadAllTimelines()
+                ControlCenter.shared.reloadAllControls()
+                Reminders.reschedule(jars: self.jars, entries: self.entries, planned: self.planned, enabled: self.settings.reminders, grouped: self.groupRemindersOn)
+                LiveDoses.sync(jars: self.jars, entries: self.entries, discreet: self.settings.discreet)
+                self.backupNow()
+            }
+            DebugHarness.log(String(format: "PERSIST total %.1fms (async)", (CFAbsoluteTimeGetCurrent() - s0) * 1000))
+            return
+        }
         let persistStart = CFAbsoluteTimeGetCurrent()
         defer { DebugHarness.log(String(format: "PERSIST total %.1fms", (CFAbsoluteTimeGetCurrent() - persistStart) * 1000)) }
         #endif

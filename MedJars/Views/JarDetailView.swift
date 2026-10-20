@@ -528,6 +528,14 @@ private struct AsNeededStatus: View {
 }
 
 /// The effect curve for a jar: live for a dose that's still working, or the shape of a typical dose.
+enum DebugFlags {
+    #if DEBUG
+    static let noEffectChart = DebugHarness.flag("noEffectChart")
+    #else
+    static let noEffectChart = false
+    #endif
+}
+
 struct EffectTimelineView: View {
     let jar: Jar
     let dose: DoseEntry?
@@ -563,6 +571,19 @@ struct EffectTimelineView: View {
                             Text(start, style: .timer).font(.title3.weight(.semibold)).monospacedDigit()
                         }
                     }
+                    if DebugFlags.noEffectChart {
+                        GeometryReader { geo in
+                            let span = end.timeIntervalSince(start) * 1.12
+                            let x = geo.size.width * CGFloat(min(1, max(0, now.timeIntervalSince(start) / max(span, 1))))
+                            ZStack(alignment: .leading) {
+                                EffectCurveShape(profile: p)
+                                    .fill(LinearGradient(colors: [jar.lid.color.opacity(0.45), jar.lid.color.opacity(0.05)], startPoint: .top, endPoint: .bottom))
+                                EffectCurveShape(profile: p, filled: false).stroke(jar.lid.color, lineWidth: 2)
+                                Rectangle().fill(Palette.label.opacity(0.6)).frame(width: 1.5).offset(x: x)
+                            }
+                        }
+                        .frame(height: 140)
+                    } else {
                     Chart {
                         ForEach(points) { pt in
                             AreaMark(x: .value("Time", pt.date), y: .value("Effect", pt.level))
@@ -585,6 +606,7 @@ struct EffectTimelineView: View {
                         }
                     }
                     .frame(height: 140)
+                    }
                     HStack {
                         milestone("Kicks in", onset, done: now >= onset)
                         Spacer()

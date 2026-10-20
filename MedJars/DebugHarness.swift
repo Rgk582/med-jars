@@ -16,6 +16,9 @@ enum DebugHarness {
 
     static var enabled: Bool { ProcessInfo.processInfo.arguments.contains("-perfHarness") }
 
+    /// A test-only switch passed as a launch argument, like -noEffectChart.
+    static func flag(_ name: String) -> Bool { ProcessInfo.processInfo.arguments.contains("-" + name) }
+
     /// Counts a view body evaluation. Use as `let _ = DebugHarness.body("Name")`.
     @discardableResult
     static func body(_ name: String) -> Int {
@@ -329,6 +332,18 @@ enum Autopilot {
             router.logRequest = nil
         case "idle":
             await pause(15)
+        case "still":
+            await pause(12)
+        case "control-list", "control-cards":
+            let root: AnyView = kind == "control-list" ? AnyView(ControlList()) : AnyView(ControlCards())
+            let vc = UIHostingController(rootView: root)
+            vc.modalPresentationStyle = .fullScreen
+            var top = keyWindow()?.rootViewController
+            while let p = top?.presentedViewController { top = p }
+            top?.present(vc, animated: false)
+            await pause(2)
+            await scroll(seconds: 12)
+            vc.dismiss(animated: false)
         default:
             await pause(5)
         }
@@ -338,6 +353,46 @@ enum Autopilot {
         await pause(1)
         await presentCheck(name)
         DebugHarness.log("AUTOPILOT END \(name)")
+    }
+}
+
+/// Plain SwiftUI screens with none of the app's logic, to tell the app's own cost from the simulator's.
+struct ControlList: View {
+    var body: some View {
+        NavigationStack {
+            List(0..<80, id: \.self) { i in
+                HStack(spacing: 12) {
+                    Image(systemName: "pills.fill").font(.title2).foregroundStyle(.orange).frame(width: 40)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Control row \(i)").font(.headline)
+                        Text("Detail text for row \(i)").font(.footnote).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Text("8:00 AM").font(.subheadline).monospacedDigit()
+                }
+            }
+            .navigationTitle("Control")
+        }
+    }
+}
+
+struct ControlCards: View {
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 12) {
+                    ForEach(0..<12, id: \.self) { i in
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            .fill(Color(uiColor: .secondarySystemGroupedBackground))
+                            .frame(height: 168)
+                            .overlay(Text("Card \(i)").font(.title2.weight(.semibold)))
+                    }
+                }
+                .padding(.horizontal, 16)
+            }
+            .background(Color(uiColor: .systemGroupedBackground))
+            .navigationTitle("Control")
+        }
     }
 }
 #endif
