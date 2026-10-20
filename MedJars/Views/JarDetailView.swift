@@ -18,6 +18,10 @@ struct JarDetailView: View {
     @State private var planning: PlanTarget?
 
     var body: some View {
+        #if DEBUG
+        let _ = DebugHarness.body("JarDetailView")
+        let _ = Self._printChanges()
+        #endif
         TimelineView(.everyMinute) { context in
             if let jar = store.jar(jarId) {
                 content(jar: jar, now: context.date)
@@ -890,6 +894,10 @@ struct LogBar: View {
     var onSkip: (DoseSlot) -> Void = { _ in }
 
     var body: some View {
+        #if DEBUG
+        let _ = DebugHarness.body("LogBar")
+        let _ = Self._printChanges()
+        #endif
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 if let s = suggestion?.slot {

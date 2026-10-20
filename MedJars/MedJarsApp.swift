@@ -216,6 +216,10 @@ struct RootView: View {
     @AppStorage("askedForNotifications") private var askedForNotifications = false
 
     var body: some View {
+        #if DEBUG
+        let _ = DebugHarness.body("RootView")
+        let _ = Self._printChanges()
+        #endif
         @Bindable var router = router
         TabView(selection: $router.tab) {
             Tab("Home", systemImage: "house.fill", value: AppTab.home) {

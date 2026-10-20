@@ -12,6 +12,10 @@ struct StacksView: View {
     @State private var editing: StackEditTarget?
 
     var body: some View {
+        #if DEBUG
+        let _ = DebugHarness.body("StacksView")
+        let _ = Self._printChanges()
+        #endif
         TimelineView(.everyMinute) { context in
             let now = context.date
             Group {
@@ -147,6 +151,10 @@ struct StackDetailView: View {
     @State private var didScroll = false
 
     var body: some View {
+        #if DEBUG
+        let _ = DebugHarness.body("StackDetailView")
+        let _ = Self._printChanges()
+        #endif
         TimelineView(.everyMinute) { context in
             if let stack = store.stack(stackId) {
                 content(stack, now: context.date)

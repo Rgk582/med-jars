@@ -21,6 +21,9 @@ final class AppStore {
     var saveError: String?
 
     private init() {
+        #if DEBUG
+        DebugHarness.prepare()
+        #endif
         let file = StoreIO.load()
         jars = file.jars.sorted(by: Self.jarOrder)
         entries = file.entries.sorted { $0.takenAt > $1.takenAt }
@@ -870,7 +873,11 @@ final class AppStore {
     // MARK: Saving
 
     func reload() {
+        #if DEBUG
+        let f = DebugHarness.measure("reload.load") { StoreIO.load() }
+        #else
         let f = StoreIO.load()
+        #endif
         jars = f.jars.sorted(by: Self.jarOrder)
         entries = f.entries.sorted { $0.takenAt > $1.takenAt }
         caffeine = f.caffeine.sorted { $0.at > $1.at }
@@ -885,18 +892,39 @@ final class AppStore {
     }
 
     private func persist() {
+        #if DEBUG
+        let persistStart = CFAbsoluteTimeGetCurrent()
+        defer { DebugHarness.log(String(format: "PERSIST total %.1fms", (CFAbsoluteTimeGetCurrent() - persistStart) * 1000)) }
+        #endif
         syncContext()
         do {
+            #if DEBUG
+            try DebugHarness.measure("persist.save") { try StoreIO.save(file) }
+            #else
             try StoreIO.save(file)
+            #endif
             saveError = nil
         } catch {
             saveError = "Couldn't save: \(error.localizedDescription)"
         }
+        #if DEBUG
+        DebugHarness.measure("persist.widgets") {
+            WidgetCenter.shared.reloadAllTimelines()
+            ControlCenter.shared.reloadAllControls()
+        }
+        DebugHarness.measure("persist.reminders.dispatch") {
+            Reminders.reschedule(jars: jars, entries: entries, planned: planned, enabled: settings.reminders, grouped: groupRemindersOn)
+        }
+        DebugHarness.measure("persist.shortcuts") { MedJarsShortcuts.updateAppShortcutParameters() }
+        DebugHarness.measure("persist.liveActivity") { LiveDoses.sync(jars: jars, entries: entries, discreet: settings.discreet) }
+        DebugHarness.measure("persist.backup") { backupNow() }
+        #else
         WidgetCenter.shared.reloadAllTimelines()
         ControlCenter.shared.reloadAllControls()
         Reminders.reschedule(jars: jars, entries: entries, planned: planned, enabled: settings.reminders, grouped: groupRemindersOn)
         MedJarsShortcuts.updateAppShortcutParameters()
         LiveDoses.sync(jars: jars, entries: entries, discreet: settings.discreet)
         backupNow()
+        #endif
     }
 }

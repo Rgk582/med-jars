@@ -22,6 +22,10 @@ struct ScheduleView: View {
     @State private var bedtimeDay: BedtimeTarget?
 
     var body: some View {
+        #if DEBUG
+        let _ = DebugHarness.body("ScheduleView")
+        let _ = Self._printChanges()
+        #endif
         TimelineView(.everyMinute) { context in
             content(now: context.date)
         }
@@ -428,6 +432,10 @@ struct WeekStrip: View {
     }
 
     var body: some View {
+        #if DEBUG
+        let _ = DebugHarness.body("WeekStrip")
+        let _ = Self._printChanges()
+        #endif
         HStack(spacing: 4) {
             ForEach(Self.week(of: selected), id: \.self) { d in
                 let isSelected = Calendar.current.isDate(d, inSameDayAs: selected)
@@ -489,6 +497,10 @@ private struct DayHeader: View {
     }
 
     var body: some View {
+        #if DEBUG
+        let _ = DebugHarness.body("DayHeader")
+        let _ = Self._printChanges()
+        #endif
         HStack(spacing: 16) {
             Gauge(value: Double(isFuture ? 0 : schedule.taken), in: 0...Double(max(schedule.total, 1))) {
                 EmptyView()
@@ -545,6 +557,10 @@ private struct ScheduleRow: View {
     }
 
     var body: some View {
+        #if DEBUG
+        let _ = DebugHarness.body("ScheduleRow")
+        let _ = Self._printChanges()
+        #endif
         HStack(spacing: 12) {
             JarIcon(jar: item.jar, bottle: bottle, size: 40)
             VStack(alignment: .leading, spacing: 2) {

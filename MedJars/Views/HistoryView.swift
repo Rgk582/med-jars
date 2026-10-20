@@ -31,6 +31,10 @@ struct HistoryView: View {
     }
 
     var body: some View {
+        #if DEBUG
+        let _ = DebugHarness.body("HistoryView")
+        let _ = Self._printChanges()
+        #endif
         Group {
             if store.entries.isEmpty {
                 ContentUnavailableView {

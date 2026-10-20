@@ -53,6 +53,10 @@ enum Reminders {
         let stacks = StackLogic.stacks
         let center = UNUserNotificationCenter.current()
         center.getPendingNotificationRequests { pending in
+            #if DEBUG
+            let computeStart = CFAbsoluteTimeGetCurrent()
+            defer { DebugHarness.log(String(format: "TIME reminders.compute(background) %.1fms main=%@", (CFAbsoluteTimeGetCurrent() - computeStart) * 1000, Thread.isMainThread ? "yes" : "no")) }
+            #endif
             let mine: (String) -> Bool = {
                 $0.hasPrefix(Notify.dosePrefix) || $0.hasPrefix(Notify.nudgePrefix) || $0.hasPrefix(Notify.groupPrefix)
                     || $0.hasPrefix(Notify.headsUpPrefix) || $0.hasPrefix(Notify.stackPrefix)

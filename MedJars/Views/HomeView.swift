@@ -16,6 +16,10 @@ struct HomeView: View {
     @State private var sheet: HomeSheet?
 
     var body: some View {
+        #if DEBUG
+        let _ = DebugHarness.body("HomeView")
+        let _ = Self._printChanges()
+        #endif
         TimelineView(.everyMinute) { context in
             let now = context.date
             ScrollView {
@@ -186,6 +190,10 @@ struct HomeCardView: View {
     private var discreetOn: Bool { card.kind == .discreet && store.discreet.isOn(at: Date()) }
 
     var body: some View {
+        #if DEBUG
+        let _ = DebugHarness.body("HomeCardView")
+        let _ = Self._printChanges()
+        #endif
         VStack(alignment: .leading, spacing: 8) {
             if showsHeader {
                 Label(card.kind.title, systemImage: card.kind.symbol)
@@ -345,6 +353,10 @@ private struct UpNextCard: View {
     private var rowCount: Int { size == .large ? 7 : 3 }
 
     var body: some View {
+        #if DEBUG
+        let _ = DebugHarness.body("UpNextCard")
+        let _ = Self._printChanges()
+        #endif
         let group = DoseLogic.nextGroup(jars: store.jars, entries: store.entries, planned: store.planned, at: now)
         if let first = group.first {
             let due = first.time <= now.addingTimeInterval(45 * 60)
@@ -439,6 +451,10 @@ private struct TodayCard: View {
     }
 
     var body: some View {
+        #if DEBUG
+        let _ = DebugHarness.body("TodayCard")
+        let _ = Self._printChanges()
+        #endif
         let p = Self.progress(store: store, now: now)
         switch size {
         case .small:
@@ -495,6 +511,10 @@ private struct WorkingNowCard: View {
     }
 
     var body: some View {
+        #if DEBUG
+        let _ = DebugHarness.body("WorkingNowCard")
+        let _ = Self._printChanges()
+        #endif
         // The real time, not the minute the card last drew, so a dose logged a moment ago shows right away.
         let now = Date()
         let doses = Array(LiveDoses.activeDoses(jars: store.jars, entries: store.entries, now: now).prefix(capacity))
@@ -573,6 +593,10 @@ private struct CaffeineCard: View {
     }
 
     var body: some View {
+        #if DEBUG
+        let _ = DebugHarness.body("CaffeineCard")
+        let _ = Self._printChanges()
+        #endif
         let inSystem = store.caffeineInSystem(at: now)
         let today = store.caffeineToday(at: now)
         Menu {
@@ -680,6 +704,10 @@ private struct StacksCard: View {
     }
 
     var body: some View {
+        #if DEBUG
+        let _ = DebugHarness.body("StacksCard")
+        let _ = Self._printChanges()
+        #endif
         let on = store.stacks.filter { StackLogic.isLive($0, now: now) }
         if on.isEmpty {
             CardEmpty(text: store.stacks.isEmpty ? "No stacks yet." : "No stacks on.")
@@ -759,6 +787,10 @@ private struct RunningLowCard: View {
     private var rowCount: Int { size == .large ? 2 : 1 }
 
     var body: some View {
+        #if DEBUG
+        let _ = DebugHarness.body("RunningLowCard")
+        let _ = Self._printChanges()
+        #endif
         let low = LowJar.all(store, now: now)
         let tracking = store.jars.contains { $0.bottles.contains { $0.pillsLeft != nil } }
         if low.isEmpty {
@@ -897,6 +929,10 @@ private struct ThisWeekCard: View {
     }
 
     var body: some View {
+        #if DEBUG
+        let _ = DebugHarness.body("ThisWeekCard")
+        let _ = Self._printChanges()
+        #endif
         let today = DoseLogic.doseDayStart(for: now)
         let days = WeekStrip.week(of: today)
         let states = days.map { state($0, today: today) }
@@ -1052,6 +1088,10 @@ private struct ComingUpCard: View {
     }
 
     var body: some View {
+        #if DEBUG
+        let _ = DebugHarness.body("ComingUpCard")
+        let _ = Self._printChanges()
+        #endif
         let list = Array(ComingUpItem.all(store, now: now).prefix(capacity))
         if list.isEmpty {
             CardEmpty(text: "Nothing planned this week.")
@@ -1084,6 +1124,10 @@ private struct RecentCard: View {
     @Environment(Router.self) private var router
 
     var body: some View {
+        #if DEBUG
+        let _ = DebugHarness.body("RecentCard")
+        let _ = Self._printChanges()
+        #endif
         let recent = Array(store.entries.filter { $0.takenAt <= Date() }.prefix(size == .large ? 8 : 3))
         if recent.isEmpty {
             CardEmpty(text: "No doses logged yet.")
@@ -1147,6 +1191,10 @@ private struct MissedCard: View {
     private var rowCount: Int { size == .large ? 7 : 3 }
 
     var body: some View {
+        #if DEBUG
+        let _ = DebugHarness.body("MissedCard")
+        let _ = Self._printChanges()
+        #endif
         let list = missedDoses(store, now: now)
         if list.isEmpty {
             VStack(spacing: 6) {

@@ -15,6 +15,10 @@ struct PlusLayer: View {
     @State private var message: ScanAlert?
 
     var body: some View {
+        #if DEBUG
+        let _ = DebugHarness.body("PlusLayer")
+        let _ = Self._printChanges()
+        #endif
         ZStack(alignment: .bottomTrailing) {
             if open {
                 Color.black.opacity(0.4)

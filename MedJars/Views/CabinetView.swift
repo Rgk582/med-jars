@@ -9,6 +9,10 @@ struct CabinetView: View {
     @State private var addingCaffeine = false
 
     var body: some View {
+        #if DEBUG
+        let _ = DebugHarness.body("CabinetView")
+        let _ = Self._printChanges()
+        #endif
         TimelineView(.everyMinute) { context in
             Group {
                 if store.jars.isEmpty {
@@ -90,6 +94,10 @@ private struct JarRow: View {
     }
 
     var body: some View {
+        #if DEBUG
+        let _ = DebugHarness.body("JarRow")
+        let _ = Self._printChanges()
+        #endif
         HStack(spacing: 12) {
             JarIcon(jar: jar, size: 40)
                 .opacity(jar.isActive(on: now) ? 1 : 0.45)

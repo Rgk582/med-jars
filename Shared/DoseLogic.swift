@@ -67,6 +67,13 @@ struct DaySchedule {
     var total: Int { counted.count }
 }
 
+#if DEBUG
+/// Test-only counters read by the perf harness.
+enum DebugCounters {
+    nonisolated(unsafe) static var rows = 0
+}
+#endif
+
 enum DoseLogic {
     /// A "dose day" runs from 4 AM to 4 AM, so a 12:30 AM bedtime dose belongs to the evening before.
     static let dayStartHour = 4
@@ -139,6 +146,9 @@ enum DoseLogic {
     /// Doses logged earlier in the day under a schedule that has since changed (a stack turned on or off) count
     /// toward today's doses, so nothing gets doubled.
     static func rows(for jar: Jar, entries: [DoseEntry], planned: [PlannedDose], dayStart: Date, now: Date) -> [SlotRow] {
+        #if DEBUG
+        DebugCounters.rows += 1
+        #endif
         guard jar.isActive(on: dayStart) else { return [] }
         let todays = Self.entries(for: jar.id, entries: entries, dayStart: dayStart)
         let today = doseDayStart(for: now)
