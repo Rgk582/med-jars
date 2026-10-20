@@ -113,6 +113,10 @@ struct GroupLogSheet: View {
             }
         }
         .presentationDetents([.large])
+        #if DEBUG
+        .onAppear { DebugHarness.log("APPEAR GroupLogSheet") }
+        .onDisappear { DebugHarness.log("DISAPPEAR GroupLogSheet") }
+        #endif
     }
 
     @ViewBuilder

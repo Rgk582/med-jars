@@ -36,7 +36,7 @@ class MedJarsUITestCase: XCTestCase {
 
     func dismissSystemAlerts() {
         let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
-        for label in ["Allow", "Allow While Using App", "OK"] {
+        for label in ["Allow", "Allow While Using App", "OK", "Don’t Allow"] {
             let b = springboard.buttons[label]
             if b.exists { b.tap() }
         }
@@ -54,6 +54,7 @@ class MedJarsUITestCase: XCTestCase {
         Self.stepNumber += 1
         let n = String(format: "%03d", Self.stepNumber)
         mark("STEP BEGIN \(n) \(title)")
+        dismissSystemAlerts()
         let before = failures
         let start = Date()
         XCTContext.runActivity(named: "\(n) \(title)") { _ in body() }
@@ -118,6 +119,29 @@ class MedJarsUITestCase: XCTestCase {
             if up { app.swipeUp(velocity: .slow) } else { app.swipeDown(velocity: .slow) }
             n += 1
         }
+        n = 0
+        while (!e.exists || !e.isHittable) && n < max {
+            if up { app.swipeDown(velocity: .slow) } else { app.swipeUp(velocity: .slow) }
+            n += 1
+        }
+    }
+
+    /// Answers the early or late question if the log sheet asks it.
+    func confirmIfAsked() {
+        for t in ["Yes, Log It Now", "Log Anyway"] {
+            let b = app.buttons[t].firstMatch
+            if b.waitForExistence(timeout: 1.5) && b.isHittable { b.tap(); return }
+        }
+        let late = app.buttons.matching(labelBegins("At ")).firstMatch
+        if late.exists && late.isHittable { late.tap() }
+    }
+
+    /// The big button at the bottom of the log sheet.
+    func tapLogSheetButton() {
+        let b = app.buttons.matching(NSPredicate(format: "(label BEGINSWITH 'Log ' AND NOT (label BEGINSWITH 'Log or')) OR label == 'Log Anyway' OR label == 'Save Changes' OR label == 'Delete Dose'"))
+            .allElementsBoundByIndex.filter { $0.exists && $0.isHittable }.max { $0.frame.maxY < $1.frame.maxY }
+        b?.tap()
+        confirmIfAsked()
     }
 
     func scrollToTop() {
@@ -229,7 +253,8 @@ final class A_HomeTests: MedJarsUITestCase {
             let coffee = button("Coffee, 95 mg")
             if waitFor(coffee, 4, "Coffee preset in caffeine menu") { coffee.tap() }
             sleep(1)
-            check(cup.label != before, "caffeine label changed after adding coffee")
+            let after = app.buttons.matching(labelContains("milligrams of caffeine")).firstMatch.label
+            check(after != before, "caffeine label changed after adding coffee (\(before) -> \(after))")
         }
         step("Active Stacks tile opens Stacks tab") {
             let t = text("Active Stacks")
@@ -245,7 +270,8 @@ final class A_HomeTests: MedJarsUITestCase {
             waitFor(navBar("Supply"), 5, "Supply sheet")
             let refill = button("Refill")
             if tapIf(refill) {
-                check(app.navigationBars.matching(labelBegins("Refill")).count > 0, "Refill sheet from Supply")
+                check(app.navigationBars.matching(NSPredicate(format: "identifier BEGINSWITH 'Refill'")).firstMatch.waitForExistence(timeout: 3), "Refill sheet from Supply")
+                snap("refill from supply")
                 closeSheet()
             }
         }
@@ -255,7 +281,7 @@ final class A_HomeTests: MedJarsUITestCase {
             scrollTo(t)
             if waitFor(t, 5, "This Week tile") { t.tap() }
             sleep(2)
-            check(app.navigationBars.matching(labelContains(" to ")).count > 0, "week overview sheet after This Week tap")
+            check(app.navigationBars.matching(NSPredicate(format: "identifier CONTAINS ' to '")).firstMatch.waitForExistence(timeout: 3), "week overview sheet after This Week tap")
         }
         closeSheet()
         goHome()
@@ -349,6 +375,84 @@ final class A_HomeTests: MedJarsUITestCase {
     }
 }
 
+final class B2_ReproTests: MedJarsUITestCase {
+    private func openAll(_ label: String) -> Bool {
+        tapPlus()
+        _ = plusMenuLog()
+        let all = button("All")
+        guard all.waitForExistence(timeout: 3) else { check(false, "All button (\(label))"); return false }
+        all.tap()
+        let ok = navBar("Log a Substance").waitForExistence(timeout: 4)
+        snap("all sheet \(label) shown=\(ok)")
+        mark("REPRO all-sheet \(label) shown=\(ok)")
+        check(ok, "All sheet opens (\(label))")
+        if ok { closeSheet() }
+        return ok
+    }
+
+    func test01_AllSheetRepeated() {
+        launch()
+        for i in 1...4 { step("All sheet attempt \(i)") { _ = openAll("fresh \(i)") } }
+        step("Log Next then All") {
+            tapPlus()
+            _ = plusMenuLog()
+            if tapIf(button("Log Next")) { sleep(1); closeSheet() }
+            _ = openAll("after Log Next")
+        }
+        step("Plan sheet then All") {
+            tapPlus()
+            if tapIf(button("Schedule")) { sleep(1); closeSheet() }
+            _ = openAll("after Plan")
+        }
+    }
+
+    func test02_ThisWeekFreshLaunch() {
+        launch()
+        step("This Week before Schedule was ever opened") {
+            let t = text("This Week")
+            scrollTo(t)
+            if waitFor(t, 5, "This Week tile") { t.tap() }
+            let ok = app.navigationBars.matching(NSPredicate(format: "identifier CONTAINS ' to '")).firstMatch.waitForExistence(timeout: 4)
+            mark("REPRO thisweek-fresh shown=\(ok)")
+            check(ok, "week overview from This Week on a fresh launch")
+            closeSheet()
+        }
+        step("Week at a Glance button afterwards") {
+            let b = button("Week at a Glance")
+            if waitFor(b, 4, "calendar button") { b.tap() }
+            let ok = app.navigationBars.matching(NSPredicate(format: "identifier CONTAINS ' to '")).firstMatch.waitForExistence(timeout: 4)
+            mark("REPRO weekglance-after shown=\(ok)")
+            check(ok, "Week at a Glance still opens")
+            closeSheet()
+        }
+        step("This Week again after visiting Schedule") {
+            tab("Home")
+            let t = text("This Week")
+            scrollTo(t)
+            if t.exists { t.tap() }
+            let ok = app.navigationBars.matching(NSPredicate(format: "identifier CONTAINS ' to '")).firstMatch.waitForExistence(timeout: 4)
+            mark("REPRO thisweek-second shown=\(ok)")
+            check(ok, "week overview from This Week a second time")
+            closeSheet()
+        }
+    }
+
+    func test03_PlusSuggestionWithMissedDose() {
+        launch()
+        tab("Cabinet")
+        step("Plus on a page with a missed dose earlier today") {
+            let t = app.cells.staticTexts["Magnesium Glycinate"].firstMatch
+            scrollTo(t)
+            t.tap()
+            _ = button("Edit").waitForExistence(timeout: 4)
+            snap("magnesium page")
+            button("Log Magnesium Glycinate").tap()
+            sleep(1)
+            snap("plus suggestion sheet")
+        }
+    }
+}
+
 final class B_PlusTests: MedJarsUITestCase {
     func test01_PlusMenus() {
         launch()
@@ -414,8 +518,8 @@ final class B_PlusTests: MedJarsUITestCase {
             let plus = button("Log Magnesium Glycinate")
             if waitFor(plus, 4, "plus labeled Log Magnesium Glycinate") { plus.tap() }
             waitFor(navBar("Log Dose"), 4, "log sheet for Magnesium")
-            let go = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Log ' AND label != 'Log Dose'")).allElementsBoundByIndex.last
-            go?.tap()
+            snap("plus on page log sheet")
+            tapLogSheetButton()
             waitFor(button("Undo"), 5, "undo toast on substance page")
         }
     }
@@ -425,67 +529,73 @@ final class C_LoggingTests: MedJarsUITestCase {
     func test01_LogEditDeleteUndoSkip() {
         launch()
         tab("Schedule")
+        let listLog = app.collectionViews.buttons.matching(label("Log"))
         step("Log a dose from Schedule") {
-            let log = app.buttons.matching(label("Log")).firstMatch
-            if waitFor(log, 5, "a Log button in Schedule") { log.tap() }
+            let log = listLog.firstMatch
+            scrollTo(log)
+            if waitFor(log, 5, "a Log button in the Schedule list") { log.tap() }
             waitFor(navBar("Log Dose"), 4, "log sheet")
             let amount = app.descendants(matching: .any)["Amount"].firstMatch
-            if amount.exists { amount.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap() }
+            if amount.exists { amount.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap() }
             snap("log sheet bumped")
-            let go = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Log ' OR label == 'Log Anyway'")).allElementsBoundByIndex.last
-            go?.tap()
-            if app.sheets.firstMatch.waitForExistence(timeout: 2) { app.sheets.buttons.firstMatch.tap() }
+            tapLogSheetButton()
             let undo = button("Undo")
-            if waitFor(undo, 5, "Logged toast") { undo.tap() }
+            if waitFor(undo, 5, "Logged toast") { snap("logged toast"); undo.tap() }
         }
         step("Log then edit to 0 deletes") {
-            let log = app.buttons.matching(label("Log")).firstMatch
+            let log = listLog.firstMatch
+            scrollTo(log)
             if waitFor(log, 5, "Log button again") { log.tap() }
-            let go = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Log ' OR label == 'Log Anyway'")).allElementsBoundByIndex.last
-            go?.tap()
-            if app.sheets.firstMatch.waitForExistence(timeout: 2) { app.sheets.buttons.firstMatch.tap() }
+            _ = navBar("Log Dose").waitForExistence(timeout: 4)
+            tapLogSheetButton()
             sleep(1)
-            let taken = app.staticTexts.matching(labelBegins("Taken")).firstMatch
+            let taken = app.collectionViews.staticTexts.matching(labelBegins("Taken")).firstMatch
+            scrollTo(taken)
             if waitFor(taken, 5, "a Taken row") { taken.tap() }
             if waitFor(navBar("Edit Dose"), 4, "Edit Dose sheet") {
                 let amount = app.descendants(matching: .any)["Amount"].firstMatch
-                for _ in 0..<6 where amount.exists { amount.coordinate(withNormalizedOffset: CGVector(dx: 0.05, dy: 0.5)).tap() }
-                let del = app.buttons.matching(label("Delete Dose")).allElementsBoundByIndex.last
-                check(del != nil, "Delete Dose button when amount is 0")
+                for _ in 0..<6 where amount.exists { amount.coordinate(withNormalizedOffset: CGVector(dx: 0.08, dy: 0.5)).tap() }
                 snap("edit at zero")
+                let del = app.buttons.matching(label("Delete Dose")).allElementsBoundByIndex.filter { $0.isHittable }.max { $0.frame.maxY < $1.frame.maxY }
+                check(del != nil, "Delete Dose button when amount is 0")
                 del?.tap()
                 let undo = button("Undo")
-                if waitFor(undo, 5, "Deleted toast after 0") { undo.tap() }
+                if waitFor(undo, 5, "Deleted toast after 0") { snap("deleted toast"); undo.tap() }
             }
         }
         step("Delete Dose button at the bottom of edit") {
-            let taken = app.staticTexts.matching(labelBegins("Taken")).firstMatch
+            let taken = app.collectionViews.staticTexts.matching(labelBegins("Taken")).firstMatch
+            scrollTo(taken)
             if waitFor(taken, 5, "a Taken row for delete") { taken.tap() }
-            let del = button("Delete Dose")
-            scrollTo(del)
-            if waitFor(del, 4, "Delete Dose row") { del.tap() }
-            let undo = button("Undo")
-            if waitFor(undo, 5, "Deleted toast") { undo.tap() }
+            if navBar("Edit Dose").waitForExistence(timeout: 4) {
+                for _ in 0..<3 { app.swipeUp(velocity: .slow) }
+                let del = app.collectionViews.buttons["Delete Dose"].firstMatch
+                if waitFor(del, 4, "Delete Dose row") { del.tap() }
+                let undo = button("Undo")
+                if waitFor(undo, 5, "Deleted toast") { undo.tap() }
+            }
         }
         step("Skip a dose and undo the skip") {
-            let open = app.buttons.matching(label("Log")).firstMatch
+            let open = listLog.firstMatch
+            scrollTo(open)
             if waitFor(open, 4, "an open dose") {
-                let row = open
-                row.swipeLeft()
+                open.swipeLeft()
                 if tapIf(button("Skip")) {
                     let skip = button("Skip Dose")
                     if waitFor(skip, 4, "Skip sheet") { skip.tap() }
-                    let skipped = app.staticTexts.matching(labelBegins("Skipped")).firstMatch
+                    let skipped = app.collectionViews.staticTexts.matching(labelBegins("Skipped")).firstMatch
+                    scrollTo(skipped)
                     if waitFor(skipped, 4, "Skipped row") {
                         skipped.tap()
                         let undo = button("Undo Skip")
                         if waitFor(undo, 4, "Undo Skip") { undo.tap() }
                     }
-                }
+                } else { check(false, "Skip swipe action") }
             }
         }
         step("Log All on a group") {
-            let all = app.buttons.matching(label("Log All")).firstMatch
+            let all = app.collectionViews.buttons.matching(label("Log All")).firstMatch
+            scrollTo(all)
             if all.waitForExistence(timeout: 3) {
                 all.tap()
                 waitFor(app.buttons.matching(labelBegins("Log ")).matching(labelContains("Doses")).firstMatch, 4, "group sheet")
@@ -585,7 +695,7 @@ final class D_ScheduleTests: MedJarsUITestCase {
         step("Week at a Glance") {
             button("Week at a Glance").tap()
             sleep(1)
-            check(app.navigationBars.matching(labelContains(" to ")).count > 0, "week overview")
+            check(app.navigationBars.matching(NSPredicate(format: "identifier CONTAINS ' to '")).firstMatch.waitForExistence(timeout: 3), "week overview")
             _ = tapIf(button("Next Week"))
             snap("next week overview")
             _ = tapIf(button("Previous Week"))
@@ -792,7 +902,10 @@ final class F_EditorTests: MedJarsUITestCase {
             prn.switches.firstMatch.exists ? prn.switches.firstMatch.tap() : prn.tap()
             let gap = app.buttons.matching(labelBegins("Minimum Gap")).firstMatch
             scrollTo(gap)
-            if tapIf(gap) { _ = tapIf(button("4 hr")) || tapIf(button("4 hours")) || tapIf(app.buttons.matching(labelBegins("4")).firstMatch) }
+            if tapIf(gap) {
+                snap("gap picker")
+                _ = tapIf(button("4 hr")) || tapIf(button("4 hours")) || tapIf(app.buttons.matching(labelBegins("4 hr")).firstMatch)
+            }
             snap("as-needed editor")
             save()
         }
@@ -803,12 +916,12 @@ final class F_EditorTests: MedJarsUITestCase {
             let plus = button("Log Test Aspirin")
             if waitFor(plus, 4, "plus on Test Aspirin") {
                 plus.tap()
-                let go = app.buttons.matching(labelBegins("Log ")).allElementsBoundByIndex.last
-                go?.tap()
-                sleep(1)
+                _ = navBar("Log Dose").waitForExistence(timeout: 4)
+                tapLogSheetButton()
+                sleep(2)
                 plus.tap()
-                sleep(1)
-                check(app.buttons["Log Anyway"].exists, "Log Anyway after minimum gap")
+                _ = navBar("Log Dose").waitForExistence(timeout: 4)
+                check(app.buttons["Log Anyway"].waitForExistence(timeout: 3), "Log Anyway after minimum gap")
                 snap("gap warning")
                 closeSheet()
             }
@@ -872,8 +985,10 @@ final class F_EditorTests: MedJarsUITestCase {
             let plus = button("Log Test Effect")
             if waitFor(plus, 4, "plus on Test Effect") {
                 plus.tap()
-                let go = app.buttons.matching(labelBegins("Log ")).allElementsBoundByIndex.last
-                go?.tap()
+                _ = navBar("Log Dose").waitForExistence(timeout: 4)
+                snap("test effect log sheet")
+                tapLogSheetButton()
+                sleep(1)
             }
             goHome()
             let t = text("Working Now")
@@ -1098,9 +1213,7 @@ final class X_StressTests: MedJarsUITestCase {
             for _ in 0..<8 {
                 let plus = button("Log Fish Oil")
                 if plus.waitForExistence(timeout: 3) { plus.tap() }
-                let go = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Log ' OR label == 'Log Anyway'")).allElementsBoundByIndex.last
-                if navBar("Log Dose").waitForExistence(timeout: 3) { go?.tap() }
-                if app.sheets.firstMatch.waitForExistence(timeout: 1) { app.sheets.buttons.firstMatch.tap() }
+                if navBar("Log Dose").waitForExistence(timeout: 3) { tapLogSheetButton() }
                 let undo = button("Undo")
                 if undo.waitForExistence(timeout: 3) { undo.tap() }
             }

@@ -43,6 +43,12 @@ enum DebugHarness {
         log("LAUNCH args=\(args.dropFirst().joined(separator: " "))")
         if args.contains("-seedFullTest") { seed() }
         if args.contains("-perfHarness") { startWatchdog() }
+        if let i = args.firstIndex(of: "-autopilot"), i + 1 < args.count {
+            let name = args[i + 1]
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                Task { @MainActor in await Autopilot.run(name) }
+            }
+        }
     }
 
     private static func outputDir() -> URL {
@@ -151,6 +157,187 @@ enum DebugHarness {
         thread.name = "perf-watchdog"
         thread.qualityOfService = .userInteractive
         thread.start()
+    }
+}
+
+// MARK: - Autopilot (in-app scenarios with no test tool attached)
+
+/// Measures frame pacing with a display link: frames, hitches (a frame 1.5x late or worse), hitch time and the worst frame.
+@MainActor
+final class FrameMonitor: NSObject {
+    static let shared = FrameMonitor()
+    private var link: CADisplayLink?
+    private var last: CFTimeInterval = 0
+    private var frames = 0, hitches = 0
+    private var worst: Double = 0, hitchTime: Double = 0, total: Double = 0
+    var onFrame: ((CFTimeInterval) -> Void)?
+
+    func start() {
+        frames = 0; hitches = 0; worst = 0; hitchTime = 0; total = 0; last = 0
+        let l = CADisplayLink(target: self, selector: #selector(tick(_:)))
+        l.add(to: .main, forMode: .common)
+        link = l
+    }
+
+    @objc private func tick(_ l: CADisplayLink) {
+        let now = l.timestamp
+        if last > 0 {
+            let dt = now - last
+            let expected = l.duration > 0 ? l.duration : 1.0 / 60
+            frames += 1
+            total += dt
+            if dt > expected * 1.5 { hitches += 1; hitchTime += dt - expected }
+            worst = max(worst, dt)
+        }
+        last = now
+        onFrame?(now)
+    }
+
+    func stop() -> String {
+        link?.invalidate(); link = nil; onFrame = nil
+        return String(format: "frames=%d hitches=%d hitchRatio=%.1fms/s worst=%.0fms", frames, hitches,
+                      total > 0 ? hitchTime * 1000 / total : 0, worst * 1000)
+    }
+}
+
+@MainActor
+enum Autopilot {
+    static var store: AppStore { AppStore.shared }
+    static var router: Router { Router.shared }
+
+    static func pause(_ s: Double) async { try? await Task.sleep(nanoseconds: UInt64(s * 1_000_000_000)) }
+
+    static func keyWindow() -> UIWindow? {
+        UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.flatMap(\.windows).first { $0.isKeyWindow }
+    }
+
+    /// The biggest scrollable view on screen.
+    static func visibleScrollView() -> UIScrollView? {
+        guard let window = keyWindow() else { return nil }
+        var best: UIScrollView?
+        var bestArea: CGFloat = 0
+        func walk(_ v: UIView) {
+            if v.isHidden || v.alpha < 0.01 { return }
+            if let s = v as? UIScrollView, s.contentSize.height > s.bounds.height + 40 {
+                let f = s.convert(s.bounds, to: window).intersection(window.bounds)
+                let area = f.isNull ? 0 : f.width * f.height
+                if area > bestArea { best = s; bestArea = area }
+            }
+            for sub in v.subviews { walk(sub) }
+        }
+        walk(window)
+        return best
+    }
+
+    static func go(_ screen: String) async {
+        router.homePath = []; router.path = []; router.schedulePath = []; router.stacksPath = []
+        switch screen {
+        case "home": router.tab = .home
+        case "schedule": router.tab = .schedule
+        case "cabinet": router.tab = .cabinet
+        case "stacks": router.tab = .stacks
+        case "history": router.tab = .cabinet; await pause(0.5); router.path = [.history]
+        case "page": router.tab = .cabinet; await pause(0.5); router.path = [.jar("adderall")]
+        case "settings": router.tab = .home; await pause(0.5); router.homePath = [.settings]
+        default: router.tab = .home
+        }
+        await pause(2)
+    }
+
+    /// Scrolls the screen top to bottom and back once a second, every frame, like a fast finger.
+    static func scroll(seconds: Double, period: Double = 1.0) async {
+        guard let s = visibleScrollView() else { DebugHarness.log("AUTOPILOT no scroll view"); await pause(seconds); return }
+        DebugHarness.log(String(format: "AUTOPILOT scrolling %@ content=%.0f", String(describing: type(of: s)), s.contentSize.height))
+        let top = -s.adjustedContentInset.top
+        let bottom = max(top, s.contentSize.height - s.bounds.height + s.adjustedContentInset.bottom)
+        var t0: CFTimeInterval = 0
+        FrameMonitor.shared.onFrame = { [weak s] now in
+            guard let s else { return }
+            if t0 == 0 { t0 = now }
+            let phase = (now - t0) / period
+            let y = top + (1 - cos(2 * .pi * phase)) / 2 * (bottom - top)
+            s.setContentOffset(CGPoint(x: s.contentOffset.x, y: y), animated: false)
+        }
+        await pause(seconds)
+        FrameMonitor.shared.onFrame = nil
+        s.setContentOffset(CGPoint(x: 0, y: top), animated: false)
+    }
+
+    static func presentCheck(_ label: String) async {
+        DebugHarness.log("AUTOPILOT present-check \(label) begin")
+        router.logRequest = LogTarget(jarId: "fish-oil")
+        await pause(2)
+        DebugHarness.log("AUTOPILOT present-check \(label) logRequest=\(router.logRequest == nil ? "nil" : "set")")
+        router.logRequest = nil
+        await pause(1.5)
+    }
+
+    static func logUndo(_ n: Int, gap: Double) async {
+        for _ in 0..<n {
+            if let e = store.log(jarId: "fish-oil", slot: nil, amount: "", pills: 1, at: Date()) {
+                await pause(gap)
+                store.undoLog(e.id)
+            }
+            await pause(gap)
+        }
+    }
+
+    static func run(_ name: String) async {
+        DebugHarness.log("AUTOPILOT BEGIN \(name)")
+        let parts = name.split(separator: ":").map(String.init)
+        let kind = parts[0]
+        let target = parts.count > 1 ? parts[1] : "home"
+        if kind != "idle" { await go(target) }
+        FrameMonitor.shared.start()
+        let start = CFAbsoluteTimeGetCurrent()
+        switch kind {
+        case "scroll":
+            await scroll(seconds: 12)
+        case "tabs":
+            let tabs: [AppTab] = [.home, .cabinet, .schedule, .stacks]
+            for i in 0..<48 { router.tab = tabs[i % 4]; await pause(0.25) }
+        case "logundo":
+            await logUndo(15, gap: 0.35)
+        case "reload":
+            for _ in 0..<15 {
+                store.reload()
+                Reminders.reschedule(jars: store.jars, entries: store.entries, planned: store.planned, enabled: true, grouped: true)
+                LiveDoses.sync(jars: store.jars, entries: store.entries, discreet: store.settings.discreet)
+                await pause(0.4)
+            }
+        case "sheets":
+            for _ in 0..<12 {
+                router.logRequest = LogTarget(jarId: "fish-oil")
+                await pause(0.6)
+                router.logRequest = nil
+                await pause(0.6)
+            }
+        case "chaos":
+            let scrollTask = Task { @MainActor in await scroll(seconds: 20, period: 0.8) }
+            let tabs: [AppTab] = [.home, .schedule, .cabinet, .home]
+            for i in 0..<20 {
+                if let e = store.log(jarId: "fish-oil", slot: nil, amount: "", pills: 1, at: Date()) {
+                    await pause(0.25)
+                    store.undoLog(e.id)
+                }
+                if i % 3 == 0 { router.tab = tabs[(i / 3) % 4] }
+                if i % 4 == 1 { router.logRequest = LogTarget(jarId: "vitamin-d3") }
+                if i % 4 == 2 { router.logRequest = nil }
+                await pause(0.75)
+            }
+            await scrollTask.value
+            router.logRequest = nil
+        case "idle":
+            await pause(15)
+        default:
+            await pause(5)
+        }
+        let ms = (CFAbsoluteTimeGetCurrent() - start) * 1000
+        let stats = FrameMonitor.shared.stop()
+        DebugHarness.log(String(format: "AUTOPILOT RESULT %@ %@ elapsed=%.0fms", name, stats, ms))
+        await pause(1)
+        await presentCheck(name)
+        DebugHarness.log("AUTOPILOT END \(name)")
     }
 }
 #endif

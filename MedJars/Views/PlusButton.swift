@@ -238,6 +238,10 @@ struct AllSubstancesSheet: View {
             }
         }
         .presentationDetents([.large])
+        #if DEBUG
+        .onAppear { DebugHarness.log("APPEAR AllSubstancesSheet") }
+        .onDisappear { DebugHarness.log("DISAPPEAR AllSubstancesSheet") }
+        #endif
     }
 
     private func row(_ jar: Jar) -> some View {

@@ -714,6 +714,9 @@ struct WeekOverviewSheet: View {
             }
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
+            #if DEBUG
+            .onAppear { DebugHarness.log("APPEAR WeekOverviewSheet") }
+            #endif
             .tint(store.accentColor)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {

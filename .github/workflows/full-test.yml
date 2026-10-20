@@ -34,8 +34,10 @@ jobs:
           UDID=$(xcrun simctl list devices available -j | python3 -c "
           import json,sys
           d=json.load(sys.stdin)['devices']
-          c=[x for k,v in d.items() if 'iOS' in k for x in v if x['name'].startswith('iPhone') and 'Pro Max' not in x['name'] and 'Plus' not in x['name'] and 'Air' not in x['name'] and ' e' not in x['name']]
-          print(sorted(c,key=lambda x:x['name'])[-1]['udid'])")
+          c=[x for k,v in d.items() if 'iOS' in k for x in v if x['name'].startswith('iPhone')]
+          pref=['iPhone 17 Pro','iPhone 16 Pro','iPhone 17','iPhone 16','iPhone 15 Pro','iPhone 15']
+          pick=next((x for p in pref for x in c if x['name']==p), c[-1])
+          print(pick['udid'])")
           echo "UDID=$UDID" >> $GITHUB_ENV
           xcrun simctl list devices | grep "$UDID"
 
@@ -154,3 +156,81 @@ jobs:
           git add -A
           git -c user.name="github-actions" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -qm "Full test ${{ github.run_number }} $(git -C .. rev-parse --short HEAD)"
           git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" ci-fulltest
+
+  perf:
+    runs-on: macos-15
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Time zone and Xcode
+        run: |
+          sudo systemsetup -settimezone America/Chicago || true
+          XCODE=$(ls -d /Applications/Xcode_*.app | grep -v beta | sort -V | tail -1)
+          sudo xcode-select -s "$XCODE"
+
+      - name: Pick a simulator
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c "
+          import json,sys
+          d=json.load(sys.stdin)['devices']
+          c=[x for k,v in d.items() if 'iOS' in k for x in v if x['name'].startswith('iPhone')]
+          pref=['iPhone 17 Pro','iPhone 16 Pro','iPhone 17','iPhone 16','iPhone 15 Pro','iPhone 15']
+          pick=next((x for p in pref for x in c if x['name']==p), c[-1])
+          print(pick['udid'])")
+          echo "UDID=$UDID" >> $GITHUB_ENV
+          xcrun simctl list devices | grep "$UDID"
+
+      - name: Build optimized like a release
+        run: |
+          mkdir -p out/perf out/samples out/shots
+          brew install xcodegen
+          xcodegen generate
+          set +e
+          xcodebuild build -project MedJars.xcodeproj -scheme MedJars -configuration Debug -sdk iphonesimulator \
+            -destination "platform=iOS Simulator,id=$UDID" -derivedDataPath build CODE_SIGNING_ALLOWED=NO \
+            SWIFT_OPTIMIZATION_LEVEL=-O SWIFT_COMPILATION_MODE=wholemodule > out/build.log 2>&1
+          STATUS=$?
+          grep -E "error:" out/build.log | sort -u | head -100 > out/build-errors.txt
+          echo "build status $STATUS" | tee out/build-status.txt
+          exit $STATUS
+
+      - name: Run in-app scenarios with no test tool attached
+        run: |
+          OUT="$PWD/out"
+          xcrun simctl boot "$UDID"; xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl ui "$UDID" appearance dark
+          TZ=America/Chicago python3 ci/seed_full.py /tmp/medjars-seed.json
+          xcrun simctl install "$UDID" build/Build/Products/Debug-iphonesimulator/MedJars.app
+          for sc in idle scroll:home scroll:schedule scroll:cabinet scroll:history scroll:page scroll:settings scroll:stacks tabs logundo reload sheets chaos; do
+            f=${sc//:/-}
+            xcrun simctl terminate "$UDID" com.medjars.app 2>/dev/null || true
+            sleep 1
+            SIMCTL_CHILD_PERF_DIR="$OUT/perf" SIMCTL_CHILD_SEED_PATH=/tmp/medjars-seed.json \
+              xcrun simctl launch "$UDID" com.medjars.app -seedFullTest -perfHarness -askedForNotifications YES -autopilot "$sc" > /tmp/launch.txt
+            PID=$(sed -E 's/.*: *([0-9]+).*/\1/' /tmp/launch.txt | tail -1)
+            echo "== $sc pid $PID"
+            sleep 7.5
+            sample "$PID" 13 -mayDie -file "$OUT/samples/$f.txt" > /dev/null 2>&1 &
+            for i in $(seq 1 45); do
+              echo "$(date +%s) $sc $(ps -o %cpu=,rss= -p $PID)" >> "$OUT/cpu.txt"
+              grep -q "AUTOPILOT END $sc" "$OUT/perf/perf.log" 2>/dev/null && break
+              sleep 2
+            done
+            xcrun simctl io "$UDID" screenshot "$OUT/shots/$f.png" > /dev/null 2>&1 || true
+            wait
+          done
+          grep -E "AUTOPILOT|HANG|PERSIST|APPEAR|DISAPPEAR" "$OUT/perf/perf.log" | tail -400
+          find ~/Library/Logs/DiagnosticReports -iname "*MedJars*" -mmin -100 -exec cp {} out/ \; 2>/dev/null || true
+
+      - name: Save results to the ci-perf branch
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd out || exit 0
+          for f in shots/*.png; do [ -f "$f" ] && sips -s format jpeg -s formatOptions 60 -Z 900 "$f" --out "${f%.png}.jpg" >/dev/null 2>&1 && rm "$f"; done
+          git init -q -b ci-perf
+          git add -A
+          git -c user.name="github-actions" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -qm "Perf ${{ github.run_number }}"
+          git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" ci-perf

@@ -229,6 +229,10 @@ struct LogDoseSheet: View {
             }
         }
         .presentationDetents([.large])
+        #if DEBUG
+        .onAppear { DebugHarness.log("APPEAR LogDoseSheet") }
+        .onDisappear { DebugHarness.log("DISAPPEAR LogDoseSheet") }
+        #endif
     }
 
     private var timingTitle: String {
