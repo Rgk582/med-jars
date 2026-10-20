@@ -1,0 +1,698 @@
+1792537604.563035 +-0.000 LAUNCH args=-seedFullTest -perfHarness -askedForNotifications YES -autopilot idle
+1792537604.791647 +0.229 SEED OK from /tmp/medjars-seed.json: 16 jars, 1257 entries, 2 stacks
+1792537605.978458 +1.416 TIME reload.load 71.0ms
+1792537606.084916 +1.523 TIME reminders.compute(background) 97.7ms main=no
+1792537607.512397 +2.950 HANG 2720ms
+1792537608.105546 +3.543 HANG 541ms
+1792537608.352694 +3.790 TIME reload.load 17.2ms
+1792537608.552528 +3.990 TIME reminders.compute(background) 188.2ms main=no
+1792537608.800282 +4.238 HANG 642ms
+1792537609.798596 +5.236 STATS mem=49.4MB rows/5s=1208 bodies/5s=119 top=HomeCardView=55,RootView=5,CaffeineCard=5,ThisWeekCard=5,MissedCard=5,UpNextCard=5,PlusLayer=5,TodayCard=5
+1792537610.046592 +5.484 AUTOPILOT BEGIN idle
+1792537614.843163 +10.281 STATS mem=49.3MB rows/5s=0 bodies/5s=0 top=
+1792537619.8496199 +15.287 STATS mem=49.2MB rows/5s=0 bodies/5s=0 top=
+1792537624.856409 +20.294 STATS mem=49.2MB rows/5s=196 bodies/5s=21 top=HomeCardView=11,TodayCard=1,MissedCard=1,ThisWeekCard=1,UpNextCard=1,StacksCard=1,CaffeineCard=1,WorkingNowCard=1
+1792537625.9022598 +21.340 AUTOPILOT RESULT idle frames=877 hitches=7 hitchRatio=76.2ms/s worst=579ms elapsed=15855ms
+1792537626.9314399 +22.369 AUTOPILOT present-check idle begin
+1792537627.326657 +22.764 APPEAR LogDoseSheet
+1792537628.577815 +24.016 HANG 1633ms
+1792537628.951158 +24.389 AUTOPILOT present-check idle logRequest=set
+1792537629.993427 +25.431 DISAPPEAR LogDoseSheet
+1792537630.055081 +25.493 STATS mem=57.4MB rows/5s=0 bodies/5s=6 top=RootView=3,PlusLayer=3
+1792537630.546495 +25.984 AUTOPILOT END idle
+1792537635.06094 +30.499 STATS mem=56.4MB rows/5s=0 bodies/5s=0 top=
+1792537640.0854921 +35.523 STATS mem=56.4MB rows/5s=0 bodies/5s=0 top=
+1792537645.135494 +40.573 STATS mem=56.4MB rows/5s=0 bodies/5s=0 top=
+1792537650.1787128 +45.616 STATS mem=56.4MB rows/5s=0 bodies/5s=0 top=
+1792537655.207824 +50.646 STATS mem=56.4MB rows/5s=0 bodies/5s=0 top=
+1792537660.2451038 +55.683 STATS mem=56.4MB rows/5s=0 bodies/5s=0 top=
+1792537665.256326 +60.694 STATS mem=56.4MB rows/5s=0 bodies/5s=0 top=
+1792537670.2590199 +65.697 STATS mem=56.4MB rows/5s=0 bodies/5s=0 top=
+1792537675.267695 +70.705 STATS mem=56.4MB rows/5s=0 bodies/5s=0 top=
+1792537680.4431748 +75.881 HANG 401ms
+1792537680.444357 +75.882 STATS mem=56.5MB rows/5s=196 bodies/5s=20 top=HomeCardView=11,CaffeineCard=1,ComingUpCard=1,StacksCard=1,RunningLowCard=1,RecentCard=1,MissedCard=1,TodayCard=1
+1792537685.478592 +80.916 STATS mem=56.5MB rows/5s=0 bodies/5s=0 top=
+1792537690.484095 +85.922 STATS mem=56.5MB rows/5s=0 bodies/5s=0 top=
+1792537695.5060968 +90.944 STATS mem=56.5MB rows/5s=0 bodies/5s=0 top=
+1792537700.519706 +95.957 STATS mem=56.5MB rows/5s=0 bodies/5s=0 top=
+1792537705.541193 +100.979 STATS mem=56.5MB rows/5s=0 bodies/5s=0 top=
+1792537710.562731 +106.001 STATS mem=56.4MB rows/5s=0 bodies/5s=0 top=
+1792537715.604972 +111.043 STATS mem=56.4MB rows/5s=0 bodies/5s=0 top=
+1792537720.6114821 +116.049 STATS mem=56.4MB rows/5s=0 bodies/5s=0 top=
+1792537725.655345 +121.093 STATS mem=56.4MB rows/5s=0 bodies/5s=0 top=
+1792537730.700132 +126.138 STATS mem=56.4MB rows/5s=0 bodies/5s=0 top=
+1792537735.713039 +131.151 STATS mem=56.4MB rows/5s=0 bodies/5s=0 top=
+1792537740.3571858 +135.795 HANG 320ms
+1792537740.722975 +136.161 STATS mem=56.5MB rows/5s=196 bodies/5s=20 top=HomeCardView=11,ComingUpCard=1,CaffeineCard=1,TodayCard=1,StacksCard=1,MissedCard=1,RunningLowCard=1,UpNextCard=1
+1792537746.6358151 +0.000 LAUNCH args=-seedFullTest -perfHarness -askedForNotifications YES -autopilot scroll:home
+1792537746.9348621 +0.299 SEED OK from /tmp/medjars-seed.json: 16 jars, 1257 entries, 2 stacks
+1792537748.2981238 +1.662 TIME reload.load 75.1ms
+1792537748.424893 +1.789 TIME reminders.compute(background) 118.1ms main=no
+1792537749.728695 +3.093 HANG 2793ms
+1792537749.855794 +3.220 TIME reload.load 25.2ms
+1792537750.038825 +3.403 TIME reminders.compute(background) 177.9ms main=no
+1792537751.9767442 +5.341 STATS mem=48.8MB rows/5s=452 bodies/5s=35 top=HomeCardView=14,RootView=5,PlusLayer=3,UpNextCard=2,HomeView=2,CaffeineCard=1,ThisWeekCard=1,MissedCard=1
+1792537752.148083 +5.512 AUTOPILOT BEGIN scroll:home
+1792537754.283402 +7.648 AUTOPILOT scrolling HostingScrollView content=1532
+1792537756.99725 +10.362 STATS mem=49.0MB rows/5s=0 bodies/5s=0 top=
+1792537762.044711 +15.409 STATS mem=49.0MB rows/5s=0 bodies/5s=0 top=
+1792537766.299628 +19.664 AUTOPILOT RESULT scroll:home frames=466 hitches=138 hitchRatio=345.4ms/s worst=294ms elapsed=12022ms
+1792537767.082261 +20.447 STATS mem=49.0MB rows/5s=0 bodies/5s=0 top=
+1792537767.348915 +20.713 AUTOPILOT present-check scroll:home begin
+1792537767.742732 +21.107 APPEAR LogDoseSheet
+1792537768.930902 +22.295 HANG 1530ms
+1792537769.4244962 +22.789 AUTOPILOT present-check scroll:home logRequest=set
+1792537769.7969909 +23.161 HANG 307ms
+1792537770.3643332 +23.729 DISAPPEAR LogDoseSheet
+1792537771.0059152 +24.370 AUTOPILOT END scroll:home
+1792537772.088036 +25.452 STATS mem=55.9MB rows/5s=0 bodies/5s=3 top=RootView=3
+1792537778.30507 +0.000 LAUNCH args=-seedFullTest -perfHarness -askedForNotifications YES -autopilot scroll:schedule
+1792537778.523998 +0.219 SEED OK from /tmp/medjars-seed.json: 16 jars, 1257 entries, 2 stacks
+1792537779.0666342 +0.762 TIME reload.load 63.7ms
+1792537779.155192 +0.850 TIME reminders.compute(background) 85.0ms main=no
+1792537779.9388661 +1.634 HANG 1414ms
+1792537780.022233 +1.717 TIME reload.load 21.1ms
+1792537780.234127 +1.929 TIME reminders.compute(background) 203.3ms main=no
+1792537783.557163 +5.252 AUTOPILOT BEGIN scroll:schedule
+1792537784.162396 +5.857 HANG 595ms
+1792537784.162922 +5.858 STATS mem=57.3MB rows/5s=466 bodies/5s=44 top=HomeCardView=12,RootView=6,ScheduleRow=4,PlusLayer=4,ScheduleView=2,WeekStrip=2,HomeView=2,UpNextCard=2
+1792537785.6970701 +7.392 AUTOPILOT scrolling UpdateCoalescingCollectionView content=1450
+1792537789.1662722 +10.861 STATS mem=59.3MB rows/5s=0 bodies/5s=11 top=ScheduleRow=11
+1792537794.217061 +15.912 STATS mem=59.5MB rows/5s=0 bodies/5s=0 top=
+1792537797.79374 +19.489 AUTOPILOT RESULT scroll:schedule frames=398 hitches=171 hitchRatio=437.2ms/s worst=219ms elapsed=12103ms
+1792537798.832972 +20.528 AUTOPILOT present-check scroll:schedule begin
+1792537798.9364629 +20.631 APPEAR LogDoseSheet
+1792537799.4319382 +21.127 HANG 550ms
+1792537799.43215 +21.127 STATS mem=67.7MB rows/5s=0 bodies/5s=1 top=RootView=1
+1792537800.914331 +22.609 AUTOPILOT present-check scroll:schedule logRequest=set
+1792537801.673347 +23.368 DISAPPEAR LogDoseSheet
+1792537802.4573379 +24.152 AUTOPILOT END scroll:schedule
+1792537804.445558 +26.141 STATS mem=66.7MB rows/5s=210 bodies/5s=37 top=ScheduleRow=14,HomeCardView=11,RootView=2,StacksCard=1,TodayCard=1,ThisWeekCard=1,RecentCard=1,CaffeineCard=1
+1792537808.225328 +0.000 LAUNCH args=-seedFullTest -perfHarness -askedForNotifications YES -autopilot scroll:cabinet
+1792537808.437902 +0.213 SEED OK from /tmp/medjars-seed.json: 16 jars, 1257 entries, 2 stacks
+1792537808.977491 +0.752 TIME reload.load 60.3ms
+1792537809.071196 +0.846 TIME reminders.compute(background) 89.0ms main=no
+1792537809.93534 +1.710 HANG 1497ms
+1792537810.016052 +1.791 TIME reload.load 18.2ms
+1792537810.221427 +1.996 TIME reminders.compute(background) 201.3ms main=no
+1792537813.463601 +5.238 STATS mem=49.2MB rows/5s=438 bodies/5s=33 top=HomeCardView=12,RootView=5,PlusLayer=3,HomeView=2,UpNextCard=2,MissedCard=1,CaffeineCard=1,StacksCard=1
+1792537813.657206 +5.432 AUTOPILOT BEGIN scroll:cabinet
+1792537814.272736 +6.047 HANG 601ms
+1792537815.718602 +7.493 AUTOPILOT scrolling UpdateCoalescingCollectionView content=1343
+1792537818.488862 +10.264 STATS mem=56.2MB rows/5s=20 bodies/5s=24 top=JarRow=20,CabinetView=2,RootView=1,PlusLayer=1
+1792537823.492892 +15.268 STATS mem=56.2MB rows/5s=7 bodies/5s=7 top=JarRow=7
+1792537827.820385 +19.595 AUTOPILOT RESULT scroll:cabinet frames=377 hitches=165 hitchRatio=465.6ms/s worst=175ms elapsed=12112ms
+1792537828.542317 +20.317 STATS mem=56.2MB rows/5s=8 bodies/5s=8 top=JarRow=8
+1792537828.8410192 +20.616 AUTOPILOT present-check scroll:cabinet begin
+1792537829.039993 +20.815 APPEAR LogDoseSheet
+1792537829.662499 +21.437 HANG 808ms
+1792537830.932722 +22.707 AUTOPILOT present-check scroll:cabinet logRequest=set
+1792537831.259431 +23.034 HANG 304ms
+1792537831.8442202 +23.619 DISAPPEAR LogDoseSheet
+1792537832.533272 +24.308 AUTOPILOT END scroll:cabinet
+1792537833.5918632 +25.367 STATS mem=63.5MB rows/5s=0 bodies/5s=3 top=RootView=3
+1792537839.7583199 +0.000 LAUNCH args=-seedFullTest -perfHarness -askedForNotifications YES -autopilot scroll:history
+1792537840.018962 +0.261 SEED OK from /tmp/medjars-seed.json: 16 jars, 1257 entries, 2 stacks
+1792537840.6735349 +0.915 TIME reload.load 70.2ms
+1792537840.762002 +1.004 TIME reminders.compute(background) 84.8ms main=no
+1792537841.579351 +1.821 HANG 1560ms
+1792537841.68717 +1.929 TIME reload.load 18.2ms
+1792537841.883089 +2.125 TIME reminders.compute(background) 192.1ms main=no
+1792537845.0473099 +5.289 STATS mem=49.9MB rows/5s=452 bodies/5s=45 top=HomeCardView=23,RootView=5,PlusLayer=3,UpNextCard=2,RecentCard=2,HomeView=2,WorkingNowCard=1,ComingUpCard=1
+1792537845.2659779 +5.508 AUTOPILOT BEGIN scroll:history
+1792537845.865021 +6.107 HANG 557ms
+1792537846.705513 +6.947 HANG 783ms
+1792537848.018746 +8.261 AUTOPILOT scrolling UpdateCoalescingCollectionView content=68828
+1792537848.523596 +8.766 HANG 482ms
+1792537848.931036 +9.173 HANG 354ms
+1792537849.274235 +9.516 HANG 284ms
+1792537849.624831 +9.867 HANG 298ms
+1792537850.0205579 +10.262 HANG 333ms
+1792537850.262052 +10.504 STATS mem=72.2MB rows/5s=7 bodies/5s=14 top=JarRow=7,CabinetView=2,PlusLayer=2,RootView=2,HistoryView=1
+1792537850.588038 +10.830 HANG 275ms
+1792537851.509615 +11.752 HANG 278ms
+1792537855.52218 +15.764 HANG 306ms
+1792537855.522696 +15.765 STATS mem=75.0MB rows/5s=0 bodies/5s=0 top=
+1792537858.141096 +18.383 HANG 292ms
+1792537858.473896 +18.716 HANG 279ms
+1792537859.920708 +20.163 HANG 414ms
+1792537860.236177 +20.478 HANG 263ms
+1792537860.894624 +21.137 HANG 592ms
+1792537860.8952122 +21.137 STATS mem=82.6MB rows/5s=202 bodies/5s=27 top=HomeCardView=11,JarRow=7,RecentCard=1,ComingUpCard=1,UpNextCard=1,TodayCard=1,MissedCard=1,StacksCard=1
+1792537860.901845 +21.144 AUTOPILOT RESULT scroll:history frames=43 hitches=42 hitchRatio=942.7ms/s worst=611ms elapsed=12894ms
+1792537861.966856 +22.209 AUTOPILOT present-check scroll:history begin
+1792537862.13535 +22.377 APPEAR LogDoseSheet
+1792537862.7867699 +23.029 HANG 755ms
+1792537863.992595 +24.234 AUTOPILOT present-check scroll:history logRequest=set
+1792537864.709065 +24.951 DISAPPEAR LogDoseSheet
+1792537865.565487 +25.807 AUTOPILOT END scroll:history
+1792537865.919733 +26.162 STATS mem=86.9MB rows/5s=1 bodies/5s=3 top=RootView=3
+1792537874.318098 +0.000 LAUNCH args=-seedFullTest -perfHarness -askedForNotifications YES -autopilot scroll:page
+1792537874.516556 +0.198 SEED OK from /tmp/medjars-seed.json: 16 jars, 1257 entries, 2 stacks
+1792537875.2507281 +0.933 TIME reload.load 68.8ms
+1792537875.3708692 +1.053 TIME reminders.compute(background) 114.8ms main=no
+1792537876.0811992 +1.763 HANG 1564ms
+1792537876.191364 +1.873 TIME reload.load 14.5ms
+1792537876.469877 +2.152 TIME reminders.compute(background) 255.5ms main=no
+1792537879.518626 +5.201 STATS mem=48.9MB rows/5s=452 bodies/5s=41 top=HomeCardView=20,RootView=5,PlusLayer=3,UpNextCard=2,HomeView=2,ComingUpCard=1,StacksCard=1,RunningLowCard=1
+1792537879.758929 +5.441 AUTOPILOT BEGIN scroll:page
+1792537880.2719622 +5.954 HANG 497ms
+1792537882.045804 +7.728 HANG 1723ms
+1792537883.021823 +8.704 HANG 658ms
+1792537883.0288801 +8.711 AUTOPILOT scrolling UpdateCoalescingCollectionView content=2274
+1792537885.0329518 +10.715 HANG 724ms
+1792537885.0331612 +10.715 STATS mem=56.8MB rows/5s=9 bodies/5s=15 top=JarRow=7,CabinetView=2,RootView=2,PlusLayer=2,LogBar=1,JarDetailView=1
+1792537886.029738 +11.712 HANG 660ms
+1792537887.042623 +12.725 HANG 733ms
+1792537888.0273619 +13.709 HANG 685ms
+1792537889.020092 +14.702 HANG 671ms
+1792537890.036969 +15.719 HANG 693ms
+1792537890.0372071 +15.719 STATS mem=56.6MB rows/5s=0 bodies/5s=0 top=
+1792537890.916986 +16.599 HANG 464ms
+1792537892.3071651 +17.989 HANG 413ms
+1792537893.048787 +18.731 HANG 690ms
+1792537894.383048 +20.065 HANG 526ms
+1792537895.0380611 +20.720 STATS mem=57.1MB rows/5s=0 bodies/5s=0 top=
+1792537896.054425 +21.737 AUTOPILOT RESULT scroll:page frames=90 hitches=54 hitchRatio=876.0ms/s worst=748ms elapsed=13033ms
+1792537896.056056 +21.738 HANG 742ms
+1792537897.0000901 +22.682 HANG 644ms
+1792537897.089419 +22.771 AUTOPILOT present-check scroll:page begin
+1792537897.281189 +22.963 APPEAR LogDoseSheet
+1792537899.07896 +24.761 HANG 1937ms
+1792537899.125634 +24.808 AUTOPILOT present-check scroll:page logRequest=set
+1792537900.501731 +26.184 HANG 937ms
+1792537900.502157 +26.184 STATS mem=65.7MB rows/5s=0 bodies/5s=2 top=RootView=2
+1792537900.671061 +26.353 AUTOPILOT END scroll:page
+1792537901.049859 +26.732 DISAPPEAR LogDoseSheet
+1792537902.0039148 +27.686 HANG 614ms
+1792537903.020537 +28.703 HANG 652ms
+1792537904.04042 +29.723 HANG 707ms
+1792537905.0457501 +30.728 HANG 695ms
+1792537906.045733 +31.728 HANG 691ms
+1792537906.0460129 +31.728 STATS mem=64.0MB rows/5s=0 bodies/5s=1 top=RootView=1
+1792537907.047199 +32.729 HANG 741ms
+1792537908.044643 +33.727 HANG 738ms
+1792537911.6678061 +0.000 LAUNCH args=-seedFullTest -perfHarness -askedForNotifications YES -autopilot scroll:settings
+1792537911.8860312 +0.218 SEED OK from /tmp/medjars-seed.json: 16 jars, 1257 entries, 2 stacks
+1792537912.324492 +0.657 TIME reload.load 47.4ms
+1792537912.401556 +0.734 TIME reminders.compute(background) 73.8ms main=no
+1792537913.135779 +1.468 HANG 1249ms
+1792537913.266043 +1.598 TIME reload.load 18.8ms
+1792537913.4369369 +1.769 TIME reminders.compute(background) 161.4ms main=no
+1792537916.897007 +5.229 STATS mem=49.1MB rows/5s=452 bodies/5s=35 top=HomeCardView=14,RootView=5,PlusLayer=3,HomeView=2,UpNextCard=2,CaffeineCard=1,TodayCard=1,ThisWeekCard=1
+1792537917.092273 +5.424 AUTOPILOT BEGIN scroll:settings
+1792537918.600682 +6.933 HANG 925ms
+1792537919.720285 +8.053 AUTOPILOT scrolling UpdateCoalescingCollectionView content=2317
+1792537920.350848 +8.683 HANG 299ms
+1792537921.949332 +10.282 STATS mem=62.6MB rows/5s=196 bodies/5s=22 top=HomeCardView=11,PlusLayer=1,RootView=1,StacksCard=1,UpNextCard=1,CaffeineCard=1,RecentCard=1,MissedCard=1
+1792537922.917338 +11.250 HANG 301ms
+1792537927.001142 +15.333 STATS mem=63.0MB rows/5s=0 bodies/5s=0 top=
+1792537931.8070688 +20.139 AUTOPILOT RESULT scroll:settings frames=153 hitches=119 hitchRatio=786.7ms/s worst=369ms elapsed=12093ms
+1792537932.0296578 +20.362 STATS mem=63.0MB rows/5s=0 bodies/5s=0 top=
+1792537932.863069 +21.195 AUTOPILOT present-check scroll:settings begin
+1792537933.069665 +21.402 APPEAR LogDoseSheet
+1792537933.862482 +22.195 HANG 952ms
+1792537934.9096289 +23.241 AUTOPILOT present-check scroll:settings logRequest=set
+1792537935.265857 +23.598 HANG 344ms
+1792537935.809905 +24.142 DISAPPEAR LogDoseSheet
+1792537936.5110888 +24.843 AUTOPILOT END scroll:settings
+1792537937.051786 +25.384 STATS mem=66.6MB rows/5s=0 bodies/5s=3 top=RootView=3
+1792537944.968471 +0.000 LAUNCH args=-seedFullTest -perfHarness -askedForNotifications YES -autopilot scroll:stacks
+1792537945.271008 +0.303 SEED OK from /tmp/medjars-seed.json: 16 jars, 1257 entries, 2 stacks
+1792537946.01714 +1.049 TIME reload.load 61.6ms
+1792537946.127692 +1.159 TIME reminders.compute(background) 107.0ms main=no
+1792537946.978267 +2.010 HANG 1707ms
+1792537947.060213 +2.092 TIME reload.load 30.4ms
+1792537947.362426 +2.394 TIME reminders.compute(background) 262.1ms main=no
+1792537950.314835 +5.346 STATS mem=49.1MB rows/5s=452 bodies/5s=44 top=HomeCardView=23,RootView=5,PlusLayer=3,HomeView=2,UpNextCard=2,CaffeineCard=1,TodayCard=1,MissedCard=1
+1792537950.507351 +5.539 AUTOPILOT BEGIN scroll:stacks
+1792537950.981282 +6.013 HANG 321ms
+1792537952.609747 +7.641 AUTOPILOT no scroll view
+1792537955.37073 +10.402 STATS mem=49.9MB rows/5s=0 bodies/5s=4 top=StacksView=2,PlusLayer=1,RootView=1
+1792537960.4217072 +15.453 STATS mem=49.7MB rows/5s=0 bodies/5s=0 top=
+1792537964.921447 +19.953 AUTOPILOT RESULT scroll:stacks frames=718 hitches=8 hitchRatio=25.3ms/s worst=156ms elapsed=12308ms
+1792537965.456554 +20.488 STATS mem=49.7MB rows/5s=0 bodies/5s=0 top=
+1792537965.981357 +21.013 AUTOPILOT present-check scroll:stacks begin
+1792537966.3981252 +21.430 APPEAR LogDoseSheet
+1792537966.980836 +22.012 HANG 955ms
+1792537968.0854778 +23.117 AUTOPILOT present-check scroll:stacks logRequest=set
+1792537968.811106 +23.843 DISAPPEAR LogDoseSheet
+1792537969.6264849 +24.658 AUTOPILOT END scroll:stacks
+1792537970.467112 +25.499 STATS mem=56.4MB rows/5s=0 bodies/5s=3 top=RootView=3
+1792537990.708883 +0.000 LAUNCH args=-seedFullTest -perfHarness -askedForNotifications YES -autopilot tabs
+1792537990.980222 +0.271 SEED OK from /tmp/medjars-seed.json: 16 jars, 1257 entries, 2 stacks
+1792537992.458445 +1.750 TIME reload.load 81.5ms
+1792537992.5567951 +1.848 TIME reminders.compute(background) 91.8ms main=no
+1792537993.798713 +3.090 HANG 2818ms
+1792537993.9270658 +3.218 TIME reload.load 30.2ms
+1792537994.130785 +3.422 TIME reminders.compute(background) 198.8ms main=no
+1792537996.01119 +5.302 STATS mem=48.8MB rows/5s=452 bodies/5s=44 top=HomeCardView=23,RootView=5,PlusLayer=3,HomeView=2,UpNextCard=2,StacksCard=1,MissedCard=1,WorkingNowCard=1
+1792537996.1310902 +5.422 AUTOPILOT BEGIN tabs
+1792537999.246245 +8.537 HANG 681ms
+1792538000.1001558 +9.391 HANG 541ms
+1792538000.5163531 +9.808 HANG 364ms
+1792538001.078504 +10.370 HANG 277ms
+1792538001.079351 +10.371 STATS mem=64.3MB rows/5s=35 bodies/5s=30 top=JarRow=7,PlusLayer=5,RootView=5,ScheduleRow=4,ScheduleView=2,WeekStrip=2,CabinetView=2,StacksView=2
+1792538003.303763 +12.595 HANG 2117ms
+1792538004.7514539 +14.043 HANG 1387ms
+1792538006.20053 +15.492 HANG 1397ms
+1792538006.2008018 +15.492 STATS mem=63.3MB rows/5s=0 bodies/5s=6 top=PlusLayer=3,RootView=3
+1792538006.7568789 +16.048 HANG 505ms
+1792538007.228616 +16.520 HANG 419ms
+1792538008.649582 +17.941 HANG 258ms
+1792538009.364938 +18.656 HANG 293ms
+1792538009.797931 +19.089 HANG 316ms
+1792538010.5798311 +19.871 HANG 358ms
+1792538011.068892 +20.360 HANG 436ms
+1792538011.479383 +20.771 HANG 356ms
+1792538011.480422 +20.772 STATS mem=61.9MB rows/5s=0 bodies/5s=28 top=RootView=14,PlusLayer=14
+1792538012.243407 +21.535 HANG 295ms
+1792538012.6663241 +21.958 HANG 306ms
+1792538013.138437 +22.430 HANG 342ms
+1792538013.532817 +22.824 HANG 342ms
+1792538013.986548 +23.278 HANG 403ms
+1792538014.3520699 +23.643 HANG 315ms
+1792538015.8176289 +25.109 HANG 285ms
+1792538016.638025 +25.929 HANG 270ms
+1792538016.6389709 +25.930 STATS mem=64.4MB rows/5s=0 bodies/5s=30 top=RootView=15,PlusLayer=15
+1792538017.760802 +27.052 HANG 265ms
+1792538018.858543 +28.150 HANG 267ms
+1792538019.4034848 +28.695 AUTOPILOT RESULT tabs frames=69 hitches=38 hitchRatio=944.9ms/s worst=3303ms elapsed=21138ms
+1792538020.470402 +29.762 AUTOPILOT present-check tabs begin
+1792538020.617508 +29.909 APPEAR LogDoseSheet
+1792538021.230397 +30.522 HANG 746ms
+1792538021.6472979 +30.938 STATS mem=67.8MB rows/5s=0 bodies/5s=21 top=RootView=11,PlusLayer=10
+1792538022.482934 +31.774 AUTOPILOT present-check tabs logRequest=set
+1792538023.183636 +32.475 DISAPPEAR LogDoseSheet
+1792538024.012289 +33.303 AUTOPILOT END tabs
+1792538026.6916208 +35.983 STATS mem=67.0MB rows/5s=0 bodies/5s=2 top=RootView=2
+1792538036.26413 +-0.000 LAUNCH args=-seedFullTest -perfHarness -askedForNotifications YES -autopilot logundo
+1792538036.485375 +0.222 SEED OK from /tmp/medjars-seed.json: 16 jars, 1257 entries, 2 stacks
+1792538037.050221 +0.786 TIME reload.load 75.4ms
+1792538037.1569672 +0.893 TIME reminders.compute(background) 103.1ms main=no
+1792538037.817161 +1.553 HANG 1331ms
+1792538037.871636 +1.608 TIME reload.load 13.3ms
+1792538038.058603 +1.795 TIME reminders.compute(background) 171.6ms main=no
+1792538041.52269 +5.259 STATS mem=49.2MB rows/5s=662 bodies/5s=66 top=HomeCardView=34,RootView=5,UpNextCard=4,PlusLayer=3,CaffeineCard=3,ComingUpCard=2,RunningLowCard=2,ThisWeekCard=2
+1792538041.685785 +5.422 AUTOPILOT BEGIN logundo
+1792538043.794559 +7.531 TIME persist.save 101.8ms
+1792538043.802222 +7.538 PERSIST total 109.5ms
+1792538043.965267 +7.701 TIME reminders.compute(background) 163.6ms main=no
+1792538044.1887012 +7.925 TIME persist.save 12.9ms
+1792538044.1908798 +7.927 PERSIST total 15.1ms
+1792538044.321964 +8.058 TIME reminders.compute(background) 131.5ms main=no
+1792538044.572239 +8.308 TIME persist.save 12.6ms
+1792538044.5741081 +8.310 PERSIST total 14.5ms
+1792538044.6926851 +8.429 TIME reminders.compute(background) 115.2ms main=no
+1792538044.94916 +8.685 TIME persist.save 10.1ms
+1792538044.950797 +8.687 PERSIST total 11.7ms
+1792538045.028061 +8.764 TIME reminders.compute(background) 77.7ms main=no
+1792538045.340864 +9.077 TIME persist.save 14.5ms
+1792538045.342737 +9.079 PERSIST total 16.4ms
+1792538045.4226441 +9.159 TIME reminders.compute(background) 80.2ms main=no
+1792538045.726444 +9.463 TIME persist.save 10.2ms
+1792538045.7280889 +9.464 PERSIST total 11.9ms
+1792538045.833921 +9.570 TIME reminders.compute(background) 85.0ms main=no
+1792538046.139381 +9.876 TIME persist.save 28.1ms
+1792538046.141592 +9.878 PERSIST total 30.3ms
+1792538046.294189 +10.030 TIME reminders.compute(background) 153.3ms main=no
+1792538046.5263329 +10.263 TIME persist.save 12.4ms
+1792538046.528098 +10.264 PERSIST total 14.2ms
+1792538046.631053 +10.367 TIME reminders.compute(background) 103.5ms main=no
+1792538046.665022 +10.401 STATS mem=55.4MB rows/5s=2480 bodies/5s=72 top=HomeCardView=8,RecentCard=8,UpNextCard=8,ThisWeekCard=8,MissedCard=8,RunningLowCard=8,ComingUpCard=8,WorkingNowCard=8
+1792538046.916298 +10.653 TIME persist.save 12.5ms
+1792538046.917917 +10.654 PERSIST total 14.2ms
+1792538047.008782 +10.745 TIME reminders.compute(background) 91.4ms main=no
+1792538047.3062901 +11.042 TIME persist.save 12.6ms
+1792538047.308939 +11.045 PERSIST total 15.4ms
+1792538047.479147 +11.215 TIME reminders.compute(background) 153.1ms main=no
+1792538047.709669 +11.446 TIME persist.save 16.1ms
+1792538047.7120981 +11.448 PERSIST total 18.6ms
+1792538047.785706 +11.522 TIME reminders.compute(background) 74.4ms main=no
+1792538048.07587 +11.812 TIME persist.save 10.4ms
+1792538048.078335 +11.815 PERSIST total 12.9ms
+1792538048.177517 +11.914 TIME reminders.compute(background) 99.7ms main=no
+1792538048.458198 +12.194 TIME persist.save 14.7ms
+1792538048.459795 +12.196 PERSIST total 16.3ms
+1792538048.57485 +12.311 TIME reminders.compute(background) 115.4ms main=no
+1792538048.845124 +12.581 TIME persist.save 12.5ms
+1792538048.846947 +12.583 PERSIST total 14.4ms
+1792538048.981668 +12.718 TIME reminders.compute(background) 135.2ms main=no
+1792538049.2211509 +12.957 TIME persist.save 10.3ms
+1792538049.222709 +12.959 PERSIST total 11.9ms
+1792538049.324657 +13.061 TIME reminders.compute(background) 102.5ms main=no
+1792538049.6042829 +13.340 TIME persist.save 13.9ms
+1792538049.6068501 +13.343 PERSIST total 16.6ms
+1792538049.701529 +13.438 TIME reminders.compute(background) 95.3ms main=no
+1792538049.990469 +13.727 TIME persist.save 11.5ms
+1792538049.9921021 +13.728 PERSIST total 13.1ms
+1792538050.1119199 +13.848 TIME reminders.compute(background) 120.3ms main=no
+1792538050.361408 +14.098 TIME persist.save 12.6ms
+1792538050.362993 +14.099 PERSIST total 14.2ms
+1792538050.474632 +14.211 TIME reminders.compute(background) 112.1ms main=no
+1792538050.727377 +14.464 TIME persist.save 11.3ms
+1792538050.728907 +14.465 PERSIST total 12.9ms
+1792538050.837885 +14.574 TIME reminders.compute(background) 109.5ms main=no
+1792538051.103929 +14.840 TIME persist.save 11.9ms
+1792538051.105421 +14.842 PERSIST total 13.4ms
+1792538051.2769809 +15.013 TIME reminders.compute(background) 171.6ms main=no
+1792538051.494244 +15.230 TIME persist.save 15.0ms
+1792538051.495987 +15.232 PERSIST total 16.8ms
+1792538051.581636 +15.318 TIME reminders.compute(background) 84.5ms main=no
+1792538051.685801 +15.422 STATS mem=55.0MB rows/5s=4030 bodies/5s=117 top=ThisWeekCard=13,WorkingNowCard=13,RecentCard=13,UpNextCard=13,TodayCard=13,RunningLowCard=13,HomeCardView=13,MissedCard=13
+1792538051.876165 +15.612 TIME persist.save 14.6ms
+1792538051.877759 +15.614 PERSIST total 16.3ms
+1792538052.012542 +15.749 TIME reminders.compute(background) 135.2ms main=no
+1792538052.267365 +16.004 TIME persist.save 19.7ms
+1792538052.268914 +16.005 PERSIST total 21.3ms
+1792538052.412682 +16.149 TIME reminders.compute(background) 142.2ms main=no
+1792538052.638588 +16.375 TIME persist.save 10.5ms
+1792538052.6399221 +16.376 PERSIST total 11.9ms
+1792538052.721586 +16.458 TIME reminders.compute(background) 81.4ms main=no
+1792538053.028095 +16.764 TIME persist.save 12.8ms
+1792538053.029681 +16.766 PERSIST total 14.4ms
+1792538053.1493049 +16.886 TIME reminders.compute(background) 119.9ms main=no
+1792538053.401475 +17.138 TIME persist.save 12.3ms
+1792538053.404045 +17.140 PERSIST total 15.0ms
+1792538053.5180578 +17.254 TIME reminders.compute(background) 111.5ms main=no
+1792538053.795712 +17.532 TIME persist.save 13.7ms
+1792538053.797782 +17.534 PERSIST total 15.8ms
+1792538053.923625 +17.660 TIME reminders.compute(background) 124.5ms main=no
+1792538054.179498 +17.916 TIME persist.save 17.7ms
+1792538054.182541 +17.919 PERSIST total 20.8ms
+1792538054.278079 +18.014 TIME reminders.compute(background) 96.2ms main=no
+1792538054.569499 +18.306 TIME persist.save 10.7ms
+1792538054.57107 +18.307 PERSIST total 12.3ms
+1792538054.664793 +18.401 TIME reminders.compute(background) 94.2ms main=no
+1792538054.958057 +18.694 TIME persist.save 14.4ms
+1792538054.9602618 +18.696 PERSIST total 16.7ms
+1792538055.053627 +18.790 TIME reminders.compute(background) 94.2ms main=no
+1792538055.3267488 +19.063 AUTOPILOT RESULT logundo frames=373 hitches=49 hitchRatio=447.7ms/s worst=242ms elapsed=11638ms
+1792538056.3842258 +20.120 AUTOPILOT present-check logundo begin
+1792538056.543229 +20.279 APPEAR LogDoseSheet
+1792538057.026846 +20.763 HANG 613ms
+1792538057.027172 +20.763 STATS mem=63.4MB rows/5s=2790 bodies/5s=82 top=ThisWeekCard=9,MissedCard=9,WorkingNowCard=9,RunningLowCard=9,RecentCard=9,UpNextCard=9,ComingUpCard=9,TodayCard=9
+1792538058.387282 +22.123 AUTOPILOT present-check logundo logRequest=set
+1792538059.03901 +22.775 DISAPPEAR LogDoseSheet
+1792538059.904731 +23.641 AUTOPILOT END logundo
+1792538062.075522 +25.812 STATS mem=59.7MB rows/5s=0 bodies/5s=2 top=RootView=2
+1792538065.280221 +-0.000 LAUNCH args=-seedFullTest -perfHarness -askedForNotifications YES -autopilot reload
+1792538065.494398 +0.214 SEED OK from /tmp/medjars-seed.json: 16 jars, 1257 entries, 2 stacks
+1792538066.136911 +0.857 TIME reload.load 52.8ms
+1792538066.223882 +0.944 TIME reminders.compute(background) 82.5ms main=no
+1792538066.9173698 +1.637 HANG 1423ms
+1792538066.980262 +1.700 TIME reload.load 20.4ms
+1792538067.325419 +2.045 TIME reminders.compute(background) 335.2ms main=no
+1792538070.53682 +5.257 STATS mem=49.2MB rows/5s=466 bodies/5s=58 top=HomeCardView=33,RootView=5,RecentCard=3,PlusLayer=3,CaffeineCard=3,HomeView=2,UpNextCard=2,WorkingNowCard=1
+1792538070.698051 +5.418 AUTOPILOT BEGIN reload
+1792538072.836083 +7.556 TIME reload.load 12.0ms
+1792538072.93851 +7.658 TIME reminders.compute(background) 98.4ms main=no
+1792538073.268678 +7.989 TIME reload.load 14.2ms
+1792538073.3436399 +8.063 TIME reminders.compute(background) 73.1ms main=no
+1792538073.7096481 +8.430 TIME reload.load 31.8ms
+1792538073.772705 +8.493 TIME reminders.compute(background) 60.9ms main=no
+1792538074.141614 +8.861 TIME reload.load 9.9ms
+1792538074.1959472 +8.916 TIME reminders.compute(background) 52.6ms main=no
+1792538074.591145 +9.311 TIME reload.load 26.1ms
+1792538074.650405 +9.370 TIME reminders.compute(background) 57.7ms main=no
+1792538075.040756 +9.761 TIME reload.load 23.4ms
+1792538075.100206 +9.820 TIME reminders.compute(background) 57.5ms main=no
+1792538075.4629269 +10.183 TIME reload.load 11.4ms
+1792538075.527189 +10.247 TIME reminders.compute(background) 62.5ms main=no
+1792538075.53949 +10.259 STATS mem=49.1MB rows/5s=896 bodies/5s=28 top=RootView=7,UpNextCard=7,HomeCardView=7,PlusLayer=7
+1792538075.8966079 +10.616 TIME reload.load 12.8ms
+1792538075.971036 +10.691 TIME reminders.compute(background) 72.1ms main=no
+1792538076.3175569 +11.037 TIME reload.load 14.7ms
+1792538076.386054 +11.106 TIME reminders.compute(background) 67.0ms main=no
+1792538076.751287 +11.471 TIME reload.load 10.4ms
+1792538076.807311 +11.527 TIME reminders.compute(background) 54.4ms main=no
+1792538077.194195 +11.914 TIME reload.load 16.5ms
+1792538077.2469091 +11.967 TIME reminders.compute(background) 51.3ms main=no
+1792538077.633894 +12.354 TIME reload.load 17.3ms
+1792538077.7148728 +12.435 TIME reminders.compute(background) 50.1ms main=no
+1792538078.0994658 +12.819 TIME reload.load 14.5ms
+1792538078.177212 +12.897 TIME reminders.compute(background) 74.9ms main=no
+1792538078.527226 +13.247 TIME reload.load 12.7ms
+1792538078.596884 +13.317 TIME reminders.compute(background) 67.5ms main=no
+1792538078.9679708 +13.688 TIME reload.load 17.2ms
+1792538079.034522 +13.754 TIME reminders.compute(background) 64.4ms main=no
+1792538079.386342 +14.106 AUTOPILOT RESULT reload frames=367 hitches=16 hitchRatio=55.3ms/s worst=60ms elapsed=6562ms
+1792538080.436427 +15.156 AUTOPILOT present-check reload begin
+1792538080.559956 +15.280 APPEAR LogDoseSheet
+1792538081.1541672 +15.874 HANG 667ms
+1792538081.1543999 +15.874 STATS mem=57.9MB rows/5s=1024 bodies/5s=33 top=RootView=9,PlusLayer=8,UpNextCard=8,HomeCardView=8
+1792538082.464261 +17.184 AUTOPILOT present-check reload logRequest=set
+1792538083.1696339 +17.889 DISAPPEAR LogDoseSheet
+1792538083.9741979 +18.694 AUTOPILOT END reload
+1792538086.19039 +20.910 STATS mem=56.0MB rows/5s=0 bodies/5s=2 top=RootView=2
+1792538093.910044 +0.000 LAUNCH args=-seedFullTest -perfHarness -askedForNotifications YES -autopilot sheets
+1792538094.224334 +0.314 SEED OK from /tmp/medjars-seed.json: 16 jars, 1257 entries, 2 stacks
+1792538094.810904 +0.901 TIME reload.load 78.1ms
+1792538094.911086 +1.001 TIME reminders.compute(background) 96.5ms main=no
+1792538095.655978 +1.746 HANG 1431ms
+1792538095.723868 +1.814 TIME reload.load 26.9ms
+1792538096.105005 +2.195 TIME reminders.compute(background) 373.0ms main=no
+1792538099.238822 +5.329 STATS mem=49.1MB rows/5s=452 bodies/5s=46 top=HomeCardView=23,RootView=5,PlusLayer=3,CaffeineCard=2,HomeView=2,UpNextCard=2,RecentCard=2,WorkingNowCard=1
+1792538099.465934 +5.556 AUTOPILOT BEGIN sheets
+1792538101.6054502 +7.695 APPEAR LogDoseSheet
+1792538102.2805119 +8.371 HANG 758ms
+1792538103.08867 +9.179 HANG 256ms
+1792538103.7472959 +9.837 DISAPPEAR LogDoseSheet
+1792538103.795424 +9.885 APPEAR LogDoseSheet
+1792538104.031392 +10.121 HANG 300ms
+1792538104.248742 +10.339 STATS mem=59.8MB rows/5s=196 bodies/5s=24 top=HomeCardView=11,RootView=4,MissedCard=1,ComingUpCard=1,TodayCard=1,RecentCard=1,StacksCard=1,ThisWeekCard=1
+1792538105.340519 +11.431 DISAPPEAR LogDoseSheet
+1792538105.6663752 +11.756 APPEAR LogDoseSheet
+1792538106.1101751 +12.200 HANG 473ms
+1792538107.449664 +13.540 DISAPPEAR LogDoseSheet
+1792538107.517339 +13.607 APPEAR LogDoseSheet
+1792538107.6872082 +13.777 HANG 285ms
+1792538108.945231 +15.035 DISAPPEAR LogDoseSheet
+1792538109.0060701 +15.096 APPEAR LogDoseSheet
+1792538109.193521 +15.284 HANG 332ms
+1792538109.29759 +15.388 STATS mem=60.6MB rows/5s=0 bodies/5s=8 top=RootView=8
+1792538110.540298 +16.630 DISAPPEAR LogDoseSheet
+1792538110.631229 +16.721 APPEAR LogDoseSheet
+1792538110.879228 +16.969 HANG 484ms
+1792538112.1248422 +18.215 DISAPPEAR LogDoseSheet
+1792538112.1762161 +18.266 APPEAR LogDoseSheet
+1792538112.342659 +18.433 HANG 285ms
+1792538113.6127539 +19.703 DISAPPEAR LogDoseSheet
+1792538113.6756759 +19.766 APPEAR LogDoseSheet
+1792538113.8828511 +19.973 HANG 332ms
+1792538114.348415 +20.438 STATS mem=60.8MB rows/5s=0 bodies/5s=6 top=RootView=6
+1792538115.221074 +21.311 DISAPPEAR LogDoseSheet
+1792538115.263637 +21.354 APPEAR LogDoseSheet
+1792538116.647767 +22.738 DISAPPEAR LogDoseSheet
+1792538116.677026 +22.767 APPEAR LogDoseSheet
+1792538118.126652 +24.217 DISAPPEAR LogDoseSheet
+1792538118.19555 +24.286 APPEAR LogDoseSheet
+1792538118.3828049 +24.473 HANG 331ms
+1792538119.092978 +25.183 AUTOPILOT RESULT sheets frames=635 hitches=41 hitchRatio=358.8ms/s worst=530ms elapsed=17602ms
+1792538119.359551 +25.450 STATS mem=61.8MB rows/5s=0 bodies/5s=6 top=RootView=6
+1792538119.622196 +25.712 DISAPPEAR LogDoseSheet
+1792538120.150908 +26.241 AUTOPILOT present-check sheets begin
+1792538120.190227 +26.280 APPEAR LogDoseSheet
+1792538122.1979299 +28.288 AUTOPILOT present-check sheets logRequest=set
+1792538122.9071379 +28.997 DISAPPEAR LogDoseSheet
+1792538123.761551 +29.852 AUTOPILOT END sheets
+1792538124.3834538 +30.474 STATS mem=59.4MB rows/5s=0 bodies/5s=4 top=RootView=4
+1792538128.795086 +-0.000 LAUNCH args=-seedFullTest -perfHarness -askedForNotifications YES -autopilot chaos
+1792538129.054486 +0.259 SEED OK from /tmp/medjars-seed.json: 16 jars, 1257 entries, 2 stacks
+1792538129.5659509 +0.771 TIME reload.load 70.5ms
+1792538129.674742 +0.880 TIME reminders.compute(background) 104.4ms main=no
+1792538130.363083 +1.568 HANG 1308ms
+1792538130.488714 +1.694 TIME reload.load 18.7ms
+1792538130.6789742 +1.884 TIME reminders.compute(background) 186.4ms main=no
+1792538134.083716 +5.289 STATS mem=49.1MB rows/5s=508 bodies/5s=51 top=HomeCardView=23,RootView=5,PlusLayer=3,StacksCard=2,RunningLowCard=2,CaffeineCard=2,ComingUpCard=2,HomeView=2
+1792538134.307437 +5.512 AUTOPILOT BEGIN chaos
+1792538136.553463 +7.758 TIME persist.save 113.1ms
+1792538136.557987 +7.763 TIME persist.widgets 4.4ms
+1792538136.562252 +7.767 PERSIST total 121.9ms
+1792538136.5670671 +7.772 AUTOPILOT scrolling HostingScrollView content=1532
+1792538136.778321 +7.983 TIME reminders.compute(background) 217.7ms main=no
+1792538136.876824 +8.082 TIME persist.save 42.6ms
+1792538136.886657 +8.092 TIME persist.liveActivity 8.7ms
+1792538136.8872662 +8.092 PERSIST total 53.1ms
+1792538137.122899 +8.328 HANG 279ms
+1792538137.205483 +8.411 TIME reminders.compute(background) 253.8ms main=no
+1792538137.702602 +8.908 TIME persist.save 24.3ms
+1792538137.70958 +8.915 TIME persist.liveActivity 6.4ms
+1792538137.709807 +8.915 PERSIST total 31.6ms
+1792538137.9956121 +9.201 HANG 301ms
+1792538138.137681 +9.343 TIME reminders.compute(background) 428.6ms main=no
+1792538138.159663 +9.365 TIME persist.save 23.1ms
+1792538138.16292 +9.368 PERSIST total 26.4ms
+1792538138.392251 +9.597 TIME reminders.compute(background) 224.1ms main=no
+1792538138.5035272 +9.709 APPEAR LogDoseSheet
+1792538138.957633 +10.163 HANG 911ms
+1792538138.98037 +10.185 TIME persist.save 20.3ms
+1792538138.9840841 +10.189 PERSIST total 24.1ms
+1792538139.238194 +10.443 TIME reminders.compute(background) 247.4ms main=no
+1792538139.3093982 +10.514 HANG 299ms
+1792538139.3096771 +10.515 STATS mem=61.7MB rows/5s=1550 bodies/5s=46 top=RunningLowCard=5,ComingUpCard=5,RecentCard=5,MissedCard=5,WorkingNowCard=5,HomeCardView=5,TodayCard=5,ThisWeekCard=5
+1792538139.328773 +10.534 TIME persist.save 15.4ms
+1792538139.331244 +10.536 PERSIST total 18.0ms
+1792538139.488553 +10.694 TIME reminders.compute(background) 154.5ms main=no
+1792538140.115901 +11.321 TIME persist.save 17.6ms
+1792538140.119183 +11.324 PERSIST total 21.0ms
+1792538140.301775 +11.507 TIME reminders.compute(background) 183.4ms main=no
+1792538140.4042969 +11.609 DISAPPEAR LogDoseSheet
+1792538140.47823 +11.683 TIME persist.save 19.6ms
+1792538140.480227 +11.685 PERSIST total 21.6ms
+1792538140.725261 +11.930 TIME reminders.compute(background) 236.5ms main=no
+1792538141.14755 +12.353 HANG 614ms
+1792538141.278102 +12.483 TIME persist.save 22.3ms
+1792538141.2819052 +12.487 PERSIST total 26.2ms
+1792538141.499137 +12.704 TIME reminders.compute(background) 213.3ms main=no
+1792538141.55437 +12.759 HANG 299ms
+1792538141.659607 +12.865 TIME persist.save 18.4ms
+1792538141.662596 +12.868 PERSIST total 21.4ms
+1792538141.899681 +13.105 TIME reminders.compute(background) 234.6ms main=no
+1792538141.9690208 +13.174 HANG 362ms
+1792538142.472749 +13.678 TIME persist.save 21.3ms
+1792538142.476684 +13.682 PERSIST total 25.3ms
+1792538142.6759682 +13.881 TIME reminders.compute(background) 194.0ms main=no
+1792538142.8239598 +14.029 TIME persist.save 21.4ms
+1792538142.825659 +14.031 PERSIST total 23.2ms
+1792538142.93098 +14.136 TIME reminders.compute(background) 104.7ms main=no
+1792538143.065743 +14.271 APPEAR LogDoseSheet
+1792538143.420599 +14.626 HANG 632ms
+1792538143.628789 +14.834 TIME persist.save 20.1ms
+1792538143.631906 +14.837 PERSIST total 23.3ms
+1792538143.809362 +15.014 TIME reminders.compute(background) 171.6ms main=no
+1792538143.979692 +15.185 HANG 352ms
+1792538144.008985 +15.214 TIME persist.save 25.9ms
+1792538144.013227 +15.218 PERSIST total 30.2ms
+1792538144.200107 +15.405 TIME reminders.compute(background) 180.5ms main=no
+1792538144.653113 +15.858 HANG 621ms
+1792538144.653358 +15.858 STATS mem=71.1MB rows/5s=2909 bodies/5s=142 top=ScheduleRow=28,RecentCard=9,TodayCard=9,MissedCard=9,UpNextCard=9,ThisWeekCard=9,ComingUpCard=9,WorkingNowCard=9
+1792538145.048997 +16.254 HANG 343ms
+1792538145.07498 +16.280 TIME persist.save 21.8ms
+1792538145.078707 +16.284 PERSIST total 25.6ms
+1792538145.231297 +16.436 TIME reminders.compute(background) 143.3ms main=no
+1792538145.418971 +16.624 HANG 317ms
+1792538145.440295 +16.645 TIME persist.save 19.4ms
+1792538145.442981 +16.648 PERSIST total 22.1ms
+1792538145.5868769 +16.792 TIME reminders.compute(background) 141.6ms main=no
+1792538145.778364 +16.983 HANG 307ms
+1792538145.809382 +17.014 DISAPPEAR LogDoseSheet
+1792538146.2409148 +17.446 TIME persist.save 23.0ms
+1792538146.24318 +17.448 PERSIST total 25.3ms
+1792538146.390785 +17.596 TIME reminders.compute(background) 146.8ms main=no
+1792538146.5312 +17.736 TIME persist.save 16.9ms
+1792538146.556356 +17.761 TIME persist.liveActivity 24.9ms
+1792538146.556534 +17.762 PERSIST total 42.3ms
+1792538146.6551208 +17.860 TIME reminders.compute(background) 123.0ms main=no
+1792538147.363909 +18.569 TIME persist.save 13.8ms
+1792538147.365965 +18.571 PERSIST total 15.9ms
+1792538147.479484 +18.685 TIME reminders.compute(background) 113.9ms main=no
+1792538147.6628041 +18.868 TIME persist.save 12.9ms
+1792538147.664709 +18.870 PERSIST total 14.8ms
+1792538147.787739 +18.993 TIME reminders.compute(background) 117.1ms main=no
+1792538147.9158092 +19.121 APPEAR LogDoseSheet
+1792538148.5935922 +19.799 HANG 922ms
+1792538148.614337 +19.819 TIME persist.save 20.4ms
+1792538148.617861 +19.823 PERSIST total 23.9ms
+1792538148.8830872 +20.088 TIME reminders.compute(background) 257.4ms main=no
+1792538149.04533 +20.250 HANG 400ms
+1792538149.076534 +20.282 TIME persist.save 19.4ms
+1792538149.080976 +20.286 PERSIST total 23.8ms
+1792538149.286971 +20.492 TIME reminders.compute(background) 199.2ms main=no
+1792538149.363986 +20.569 HANG 266ms
+1792538149.706305 +20.911 STATS mem=78.4MB rows/5s=2676 bodies/5s=204 top=JarRow=84,ScheduleRow=32,ComingUpCard=8,MissedCard=8,RecentCard=8,TodayCard=8,RunningLowCard=8,HomeCardView=8
+1792538149.887288 +21.092 TIME persist.save 22.7ms
+1792538149.889645 +21.095 PERSIST total 25.1ms
+1792538150.112052 +21.317 TIME reminders.compute(background) 217.3ms main=no
+1792538150.230771 +21.436 HANG 317ms
+1792538150.257371 +21.462 TIME persist.save 22.0ms
+1792538150.2608972 +21.466 PERSIST total 25.6ms
+1792538150.300535 +21.506 DISAPPEAR LogDoseSheet
+1792538150.4476008 +21.653 TIME reminders.compute(background) 181.4ms main=no
+1792538150.5622559 +21.767 HANG 279ms
+1792538151.087757 +22.293 TIME persist.save 23.6ms
+1792538151.091607 +22.297 PERSIST total 27.5ms
+1792538151.358076 +22.563 TIME reminders.compute(background) 262.1ms main=no
+1792538151.4239578 +22.629 HANG 329ms
+1792538151.4771218 +22.682 TIME persist.save 15.3ms
+1792538151.481076 +22.686 PERSIST total 19.3ms
+1792538151.724022 +22.929 TIME reminders.compute(background) 238.9ms main=no
+1792538151.734836 +22.940 HANG 258ms
+1792538152.276245 +23.481 TIME persist.save 28.6ms
+1792538152.281273 +23.486 TIME persist.liveActivity 4.2ms
+1792538152.2817512 +23.487 PERSIST total 34.2ms
+1792538152.633473 +23.838 HANG 388ms
+1792538152.705631 +23.911 TIME persist.save 22.0ms
+1792538152.712912 +23.918 TIME persist.liveActivity 6.5ms
+1792538152.713042 +23.918 PERSIST total 29.5ms
+1792538152.730197 +23.935 TIME reminders.compute(background) 445.7ms main=no
+1792538153.000319 +24.205 APPEAR LogDoseSheet
+1792538153.034282 +24.239 TIME reminders.compute(background) 267.7ms main=no
+1792538153.470232 +24.675 HANG 784ms
+1792538153.581294 +24.786 TIME persist.save 19.0ms
+1792538153.583768 +24.789 PERSIST total 21.5ms
+1792538153.760782 +24.966 TIME reminders.compute(background) 176.1ms main=no
+1792538153.982067 +25.187 HANG 323ms
+1792538154.010678 +25.216 TIME persist.save 22.5ms
+1792538154.0132 +25.218 PERSIST total 25.0ms
+1792538154.326295 +25.531 HANG 292ms
+1792538154.395515 +25.601 TIME reminders.compute(background) 369.4ms main=no
+1792538154.735625 +25.941 HANG 305ms
+1792538154.735849 +25.941 STATS mem=77.8MB rows/5s=2648 bodies/5s=172 top=JarRow=57,ScheduleRow=32,DayHeader=8,WorkingNowCard=8,RecentCard=8,ThisWeekCard=8,TodayCard=8,RunningLowCard=8
+1792538154.844483 +26.050 TIME persist.save 34.8ms
+1792538154.847341 +26.052 PERSIST total 37.7ms
+1792538155.1775289 +26.383 HANG 322ms
+1792538155.258019 +26.463 TIME reminders.compute(background) 390.5ms main=no
+1792538155.264173 +26.469 TIME persist.save 21.8ms
+1792538155.267834 +26.473 PERSIST total 25.5ms
+1792538155.580363 +26.785 TIME reminders.compute(background) 248.2ms main=no
+1792538155.793283 +26.998 HANG 563ms
+1792538155.8115091 +27.017 DISAPPEAR LogDoseSheet
+1792538156.071173 +27.276 TIME persist.save 22.0ms
+1792538156.073904 +27.279 PERSIST total 24.7ms
+1792538156.26865 +27.474 TIME reminders.compute(background) 193.3ms main=no
+1792538156.3650432 +27.570 HANG 307ms
+1792538156.407562 +27.613 TIME persist.save 18.7ms
+1792538156.411365 +27.616 PERSIST total 22.6ms
+1792538156.623039 +27.828 TIME reminders.compute(background) 207.2ms main=no
+1792538156.696373 +27.901 HANG 279ms
+1792538157.235266 +28.440 TIME persist.save 17.7ms
+1792538157.2389622 +28.444 PERSIST total 21.5ms
+1792538157.395071 +28.600 TIME reminders.compute(background) 151.5ms main=no
+1792538157.4829988 +28.688 HANG 259ms
+1792538157.524018 +28.729 TIME persist.save 19.2ms
+1792538157.527625 +28.733 PERSIST total 22.8ms
+1792538157.643002 +28.848 TIME reminders.compute(background) 116.9ms main=no
+1792538157.758072 +28.963 APPEAR LogDoseSheet
+1792538158.114921 +29.320 HANG 580ms
+1792538158.3563318 +29.561 TIME persist.save 24.2ms
+1792538158.359511 +29.565 PERSIST total 27.4ms
+1792538158.5826778 +29.788 TIME reminders.compute(background) 218.9ms main=no
+1792538158.7139812 +29.919 HANG 340ms
+1792538158.740525 +29.946 TIME persist.save 22.0ms
+1792538158.7442079 +29.949 PERSIST total 25.7ms
+1792538158.886828 +30.092 TIME reminders.compute(background) 135.1ms main=no
+1792538159.150032 +30.355 HANG 384ms
+1792538159.526701 +30.732 HANG 324ms
+1792538159.5620441 +30.767 TIME persist.save 21.6ms
+1792538159.56558 +30.771 PERSIST total 25.1ms
+1792538159.723145 +30.928 TIME reminders.compute(background) 155.0ms main=no
+1792538159.8369222 +31.042 HANG 258ms
+1792538159.8372989 +31.042 STATS mem=77.4MB rows/5s=2980 bodies/5s=196 top=JarRow=64,ScheduleRow=36,WorkingNowCard=9,ComingUpCard=9,RecentCard=9,DayHeader=9,ThisWeekCard=9,HomeCardView=9
+1792538159.861199 +31.066 TIME persist.save 19.1ms
+1792538159.866837 +31.072 TIME persist.liveActivity 5.3ms
+1792538159.86729 +31.072 PERSIST total 25.1ms
+1792538160.2037292 +31.409 TIME reminders.compute(background) 320.0ms main=no
+1792538160.377133 +31.582 HANG 488ms
+1792538160.40203 +31.607 DISAPPEAR LogDoseSheet
+1792538160.667717 +31.873 AUTOPILOT RESULT chaos frames=282 hitches=58 hitchRatio=800.1ms/s worst=1288ms elapsed=24230ms
+1792538161.6723661 +32.877 AUTOPILOT present-check chaos begin
+1792538161.753443 +32.958 APPEAR LogDoseSheet
+1792538162.385709 +33.591 HANG 682ms
+1792538163.786093 +34.991 AUTOPILOT present-check chaos logRequest=set
+1792538164.210587 +35.416 HANG 412ms
+1792538164.774339 +35.979 DISAPPEAR LogDoseSheet
+1792538164.850432 +36.055 STATS mem=73.7MB rows/5s=549 bodies/5s=59 top=JarRow=15,HomeCardView=12,ScheduleRow=8,RootView=5,ComingUpCard=2,UpNextCard=2,DayHeader=2,ThisWeekCard=2
+1792538165.300185 +36.505 AUTOPILOT END chaos
+1792538169.902195 +41.107 STATS mem=74.1MB rows/5s=0 bodies/5s=0 top=
+1792538174.926518 +46.132 STATS mem=74.1MB rows/5s=0 bodies/5s=0 top=
