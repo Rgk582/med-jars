@@ -137,6 +137,7 @@ struct PlusLayer: View {
                 .padding(.horizontal, 18)
                 .frame(height: 46)
                 .glassPanel(cornerRadius: 23)
+                .contentShape(DebugFlags.pillShape ? AnyShape(RoundedRectangle(cornerRadius: 23)) : AnyShape(Rectangle().size(.zero)))
         }
         .buttonStyle(.plain)
         #if DEBUG

@@ -533,7 +533,9 @@ enum DebugFlags {
     static let noEffectChart = DebugHarness.flag("noEffectChart")
     static let allViaItem = DebugHarness.flag("allViaItem")
     static let fixedMenu = DebugHarness.flag("fixedMenu")
+    static let pillShape = DebugHarness.flag("pillShape")
     #else
+    static let pillShape = false
     static let fixedMenu = false
     static let noEffectChart = false
     static let allViaItem = false

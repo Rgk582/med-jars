@@ -566,6 +566,43 @@ final class B2_ReproTests: MedJarsUITestCase {
         }
     }
 
+    func test09_AllTapTargets() {
+        launch()
+        step("Tap right on the word All") {
+            tapPlus()
+            _ = plusMenuLog()
+            sleep(2)
+            app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: 356, dy: 677)).tap()
+            let ok = navBar("Log a Substance").waitForExistence(timeout: 5)
+            mark("REPRO all on-word tap shown=\(ok)")
+            snap("on word tap")
+            if ok { closeSheet() }
+        }
+        step("Tap the padding beside Log Next") {
+            tapPlus()
+            _ = plusMenuLog()
+            sleep(2)
+            app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: 256, dy: 621)).tap()
+            sleep(2)
+            mark("REPRO lognext padding tap")
+            closeSheet()
+        }
+        launch(extra: ["-pillShape"])
+        for i in 1...3 {
+            step("All with the whole pill tappable, attempt \(i)") {
+                tapPlus()
+                _ = plusMenuLog()
+                let all = button("All")
+                if waitFor(all, 3, "All button") { all.tap() }
+                let ok = navBar("Log a Substance").waitForExistence(timeout: 5)
+                mark("REPRO pill all \(i) shown=\(ok)")
+                check(ok, "All opens with the whole pill tappable (\(i))")
+                snap("pill all \(i)")
+                if ok { closeSheet() }
+            }
+        }
+    }
+
     func test05_CoffeeShowsRightAway() {
         launch()
         step("Coffee from the Caffeine tile shows right away") {

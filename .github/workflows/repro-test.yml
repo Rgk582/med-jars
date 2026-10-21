@@ -106,7 +106,7 @@ jobs:
           xcodebuild test-without-building -project MedJars.xcodeproj -scheme MedJars -configuration Debug \
             -destination "platform=iOS Simulator,id=$UDID" -derivedDataPath build \
             -parallel-testing-enabled NO -test-timeouts-enabled NO \
-            -only-testing:MedJarsFullUITests/B2_ReproTests/test07_AllGhostProbe -only-testing:MedJarsFullUITests/B2_ReproTests/test08_FixedMenu \
+            -only-testing:MedJarsFullUITests/B2_ReproTests/test09_AllTapTargets \
             -resultBundlePath out/result.xcresult CODE_SIGNING_ALLOWED=NO > out/test.log 2>&1
           echo "test status $?" | tee out/test-status.txt
           kill $MON 2>/dev/null
