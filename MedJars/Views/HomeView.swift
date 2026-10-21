@@ -21,7 +21,7 @@ struct HomeView: View {
         let _ = Self._printChanges()
         #endif
         TimelineView(.everyMinute) { context in
-            let now = context.date
+            let now = Date()
             ScrollView {
                 if store.jars.isEmpty {
                     ContentUnavailableView {
@@ -1395,7 +1395,7 @@ struct ComingUpSheet: View {
     var body: some View {
         NavigationStack {
             TimelineView(.everyMinute) { context in
-                let now = context.date
+                let now = Date()
                 let items = ComingUpItem.all(store, now: now)
                 let days = Dictionary(grouping: items) { DoseLogic.doseDayStart(for: $0.date) }
                 List {

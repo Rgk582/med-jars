@@ -101,7 +101,7 @@ struct CaffeineView: View {
 
     var body: some View {
         TimelineView(.everyMinute) { context in
-            list(now: context.date)
+            list(now: Date())
         }
         .navigationTitle("Caffeine")
         .toolbar {

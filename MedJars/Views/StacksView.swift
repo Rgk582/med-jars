@@ -17,7 +17,7 @@ struct StacksView: View {
         let _ = Self._printChanges()
         #endif
         TimelineView(.everyMinute) { context in
-            let now = context.date
+            let now = Date()
             Group {
                 if store.stacks.isEmpty {
                     ContentUnavailableView {
@@ -157,7 +157,7 @@ struct StackDetailView: View {
         #endif
         TimelineView(.everyMinute) { context in
             if let stack = store.stack(stackId) {
-                content(stack, now: context.date)
+                content(stack, now: Date())
             } else {
                 ContentUnavailableView("Stack Removed", systemImage: "square.stack.3d.up.slash")
             }

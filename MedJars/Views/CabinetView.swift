@@ -25,7 +25,7 @@ struct CabinetView: View {
                             .prominentButton()
                     }
                 } else {
-                    list(now: context.date)
+                    list(now: Date())
                 }
             }
         }

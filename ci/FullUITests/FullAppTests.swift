@@ -454,6 +454,38 @@ final class B2_ReproTests: MedJarsUITestCase {
             button("Log Magnesium Glycinate").tap()
             sleep(1)
             snap("plus suggestion sheet")
+            let early = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "This dose isn't due")).firstMatch.exists
+            mark("REPRO suggestion early-warning=\(early)")
+            check(!early, "plus offers the missed dose, not a later one")
+            closeSheet()
+        }
+    }
+
+    func test04_PagesSkippedEarlier() {
+        for id in ["ibuprofen", "zinc", "ashwagandha"] {
+            launch(extra: ["-previewRoute", "jar:\(id)"])
+            step("Page \(id) opened directly") {
+                check(button("Edit").waitForExistence(timeout: 8), "page \(id) shows Edit")
+                snap("\(id) top")
+                app.swipeUp(velocity: .fast); usleep(700_000); snap("\(id) middle")
+                app.swipeUp(velocity: .fast); app.swipeUp(velocity: .fast); usleep(700_000); snap("\(id) bottom")
+            }
+        }
+    }
+
+    func test05_CoffeeShowsRightAway() {
+        launch()
+        step("Coffee from the Caffeine tile shows right away") {
+            let cup = app.buttons.matching(labelContains("milligrams of caffeine")).firstMatch
+            scrollTo(cup)
+            let before = cup.label
+            if waitFor(cup, 5, "Caffeine tile button") { cup.tap() }
+            let coffee = button("Coffee, 95 mg")
+            if waitFor(coffee, 4, "Coffee preset in caffeine menu") { coffee.tap() }
+            sleep(1)
+            let after = app.buttons.matching(labelContains("milligrams of caffeine")).firstMatch.label
+            mark("REPRO coffee before=\(before) after=\(after)")
+            check(after != before, "caffeine label changed after adding coffee (\(before) -> \(after))")
         }
     }
 }

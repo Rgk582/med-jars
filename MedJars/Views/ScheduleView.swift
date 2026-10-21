@@ -27,7 +27,7 @@ struct ScheduleView: View {
         let _ = Self._printChanges()
         #endif
         TimelineView(.everyMinute) { context in
-            content(now: context.date)
+            content(now: Date())
         }
         .background(Palette.background)
         .navigationTitle("Schedule")
@@ -710,7 +710,7 @@ struct WeekOverviewSheet: View {
     var body: some View {
         NavigationStack {
             TimelineView(.everyMinute) { context in
-                list(now: context.date)
+                list(now: Date())
             }
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)

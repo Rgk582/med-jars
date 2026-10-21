@@ -233,7 +233,15 @@ enum DoseLogic {
     static func suggestion(_ rows: [SlotRow]) -> SlotRow? {
         // Planned doses are only offered once they're due, so an unplanned extra dose isn't logged as the planned one.
         let open = rows.filter { $0.at != nil && !$0.status.isHandled && $0.status != .waiting && !($0.isPlanned && $0.status == .later) }
-        if let best = open.min(by: { $0.distance < $1.distance }) { return best }
+        // Due now comes first, then a missed dose, then the next one coming up.
+        func rank(_ s: SlotStatus) -> Int {
+            switch s {
+            case .due: return 0
+            case .missed, .reminder: return 1
+            default: return 2
+            }
+        }
+        if let best = open.min(by: { (rank($0.status), $0.distance) < (rank($1.status), $1.distance) }) { return best }
         return rows.first { $0.at == nil }
     }
 

@@ -24,7 +24,7 @@ struct JarDetailView: View {
         #endif
         TimelineView(.everyMinute) { context in
             if let jar = store.jar(jarId) {
-                content(jar: jar, now: context.date)
+                content(jar: jar, now: Date())
             } else {
                 ContentUnavailableView {
                     Label("No Jar Uses This Link", systemImage: "questionmark.circle")
