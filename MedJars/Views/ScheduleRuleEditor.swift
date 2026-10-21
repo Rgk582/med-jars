@@ -282,6 +282,15 @@ struct BottleEditorView: View {
                 }
                 if jar.bottles.count > 1 {
                     Button("Delete This Jar", role: .destructive) { confirmDelete = true }
+                        .confirmationDialog("Delete this jar?", isPresented: $confirmDelete, titleVisibility: .visible) {
+                            Button("Delete Jar", role: .destructive) {
+                                jar.bottles.removeAll { $0.id == bottleId }
+                                if !jar.bottles.contains(where: { $0.id == jar.defaultBottleId }) { jar.defaultBottleId = jar.bottles.first?.id ?? jar.id }
+                                onClose()
+                            }
+                        } message: {
+                            Text("Doses already logged from it stay in the log.")
+                        }
                 }
             } footer: {
                 Text("The default jar's picture stands for the substance in the Cabinet.")
@@ -290,15 +299,6 @@ struct BottleEditorView: View {
         .keyboardBar()
         .navigationTitle(b.title)
         .navigationBarTitleDisplayMode(.inline)
-        .confirmationDialog("Delete this jar?", isPresented: $confirmDelete, titleVisibility: .visible) {
-            Button("Delete Jar", role: .destructive) {
-                jar.bottles.removeAll { $0.id == bottleId }
-                if !jar.bottles.contains(where: { $0.id == jar.defaultBottleId }) { jar.defaultBottleId = jar.bottles.first?.id ?? jar.id }
-                onClose()
-            }
-        } message: {
-            Text("Doses already logged from it stay in the log.")
-        }
         .alert("Can't Scan", isPresented: Binding(get: { scanAlert != nil }, set: { if !$0 { scanAlert = nil } })) {
             Button("OK", role: .cancel) {}
         } message: { Text(scanAlert?.message ?? "") }

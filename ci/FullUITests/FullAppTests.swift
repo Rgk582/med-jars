@@ -164,10 +164,13 @@ class MedJarsUITestCase: XCTestCase {
         scrollTo(row)
         guard tapIf(row) else { return false }
         let first = row.frame
-        sleep(1)
-        let confirm = app.buttons.matching(label(title)).allElementsBoundByIndex
-            .filter { $0.exists && $0.isHittable && $0.frame != first }.last
-        if let confirm { confirm.tap(); return true }
+        // The question pops up over the row with the same choice in it; wait for it.
+        for _ in 0..<10 {
+            let confirm = app.buttons.matching(label(title)).allElementsBoundByIndex
+                .filter { $0.exists && $0.isHittable && $0.frame != first }.last
+            if let confirm { confirm.tap(); return true }
+            usleep(500_000)
+        }
         return false
     }
 
@@ -788,9 +791,8 @@ final class D_ScheduleTests: MedJarsUITestCase {
                     wheel.adjust(toPickerWheelValue: current.hasPrefix("10") ? "9" : "10")
                     changed = true
                 }
-                // Close the wheel by tapping the sheet's note below it.
-                let note = app.staticTexts.matching(labelBegins("Doses set to a time before bed")).firstMatch
-                if note.exists { note.tap() } else { app.navigationBars["Bedtime"].coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap() }
+                // Close the wheel by tapping empty space low in the sheet, away from the wheel.
+                app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.9)).tap()
                 usleep(600_000)
             }
             let save = app.navigationBars["Bedtime"].buttons["Save"]
@@ -1128,9 +1130,11 @@ final class G_StackTests: MedJarsUITestCase {
             if len.exists {
                 len.tap()
                 snap("length menu")
-                // Close the menu by tapping above it, not on one of its choices.
-                app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.06)).tap()
-                usleep(600_000)
+                // Close the menu by tapping empty space beside the stack's picture, not one of its choices.
+                for _ in 0..<2 where app.buttons["Set an End Date"].exists || app.buttons.matching(labelContains("Run For")).firstMatch.exists {
+                    app.coordinate(withNormalizedOffset: CGVector(dx: 0.12, dy: 0.28)).tap()
+                    usleep(700_000)
+                }
                 if navBar("End Date").exists { closeSheet() }
             }
         }
@@ -1154,6 +1158,8 @@ final class G_StackTests: MedJarsUITestCase {
             scrollTo(add)
             if tapIf(add) { _ = tapIf(button("Zinc")) }
             snap("new stack")
+            // Picking a substance opens its settings in the stack; come back to the stack to save it.
+            if navBar("Zinc").waitForExistence(timeout: 2) { goBack(); usleep(600_000) }
             _ = tapIf(app.navigationBars.buttons["Save"].firstMatch)
             check(app.staticTexts["Test Stack"].waitForExistence(timeout: 4), "Test Stack saved")
         }

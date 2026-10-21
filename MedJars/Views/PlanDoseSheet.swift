@@ -111,6 +111,12 @@ struct PlanDoseSheet: View {
                     if isEdit {
                         Section {
                             Button("Delete Planned Dose", role: .destructive) { confirmDelete = true }
+                                .confirmationDialog("Delete this planned dose?", isPresented: $confirmDelete, titleVisibility: .visible) {
+                                    Button("Delete", role: .destructive) {
+                                        if let p = target.editing { store.deletePlanned(p.id) }
+                                        dismiss()
+                                    }
+                                }
                         }
                     }
                 } else {
@@ -135,12 +141,6 @@ struct PlanDoseSheet: View {
             .onChange(of: jarId) { _, _ in if didSetup && !isEdit { loadDefaults() } }
             .onChange(of: pills) { _, newValue in
                 if autoAmount, let jar { amount = Format.doseStrength(baseAmount, basePills: basePills, pills: newValue, perPill: jar.strength) }
-            }
-            .confirmationDialog("Delete this planned dose?", isPresented: $confirmDelete, titleVisibility: .visible) {
-                Button("Delete", role: .destructive) {
-                    if let p = target.editing { store.deletePlanned(p.id) }
-                    dismiss()
-                }
             }
         }
         .presentationDetents([.large])

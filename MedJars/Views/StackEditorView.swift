@@ -131,6 +131,13 @@ struct StackEditorView: View {
                 if !isNew {
                     Section {
                         Button("Delete Stack", role: .destructive) { confirmDelete = true }
+                            .confirmationDialog("Delete \(draft.displayName)?", isPresented: $confirmDelete, titleVisibility: .visible) {
+                                Button("Delete Stack", role: .destructive) {
+                                    store.deleteStack(draft.id)
+                                    router.stacksPath = []
+                                    dismiss()
+                                }
+                            }
                     } footer: {
                         Text("Its substances go back to their normal schedules. Doses you logged stay in the log.")
                     }
@@ -149,13 +156,6 @@ struct StackEditorView: View {
                     Button("Save", action: save)
                         .fontWeight(.semibold)
                         .disabled(draft.name.trimmingCharacters(in: .whitespaces).isEmpty)
-                }
-            }
-            .confirmationDialog("Delete \(draft.displayName)?", isPresented: $confirmDelete, titleVisibility: .visible) {
-                Button("Delete Stack", role: .destructive) {
-                    store.deleteStack(draft.id)
-                    router.stacksPath = []
-                    dismiss()
                 }
             }
             .onAppear {

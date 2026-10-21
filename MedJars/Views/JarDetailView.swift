@@ -395,6 +395,9 @@ struct JarDetailView: View {
                         .disabled(!TagScanner.isSupported)
                     if !jar.tagIds.isEmpty {
                         Button("Unpair Tag", role: .destructive) { confirmUnpair = true }
+                            .confirmationDialog("Unpair this jar's tag?", isPresented: $confirmUnpair, titleVisibility: .visible) {
+                                Button("Unpair Tag", role: .destructive) { store.unpairTags(jarId: jar.id) }
+                            }
                     }
                 } header: {
                     Text("NFC Tag")
@@ -405,9 +408,6 @@ struct JarDetailView: View {
         }
         .listStyle(.insetGrouped)
         .contentMargins(.bottom, 12, for: .scrollContent)
-        .confirmationDialog("Unpair this jar's tag?", isPresented: $confirmUnpair, titleVisibility: .visible) {
-            Button("Unpair Tag", role: .destructive) { store.unpairTags(jarId: jar.id) }
-        }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             VStack(spacing: 10) {
                 if let toast {

@@ -180,12 +180,6 @@ struct StackDetailView: View {
                 LogDoseSheet(jar: jar, slotId: target.slotId, slot: target.slot, editing: target.editing)
             }
         }
-        .confirmationDialog("Turn off \(store.stack(stackId)?.displayName ?? "this stack")?", isPresented: $confirmOff, titleVisibility: .visible) {
-            Button("Turn Off", role: .destructive) { store.turnOff(stackId: stackId) }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Its substances go back to their normal schedules from today. Turn it back on any time and it picks up where it left off.")
-        }
         .alert("Can't Scan", isPresented: Binding(get: { scanAlert != nil }, set: { if !$0 { scanAlert = nil } })) {
             Button("OK", role: .cancel) {}
         } message: { Text(scanAlert?.message ?? "") }
@@ -221,6 +215,12 @@ struct StackDetailView: View {
                 Section {
                     Toggle(isOn: onBinding(stack)) {
                         Label("On", systemImage: "power")
+                    }
+                    .confirmationDialog("Turn off \(stack.displayName)?", isPresented: $confirmOff, titleVisibility: .visible) {
+                        Button("Turn Off", role: .destructive) { store.turnOff(stackId: stackId) }
+                        Button("Cancel", role: .cancel) {}
+                    } message: {
+                        Text("Its substances go back to their normal schedules from today. Turn it back on any time and it picks up where it left off.")
                     }
                     lengthRow(stack, now: now)
                     if stack.hasCycle {

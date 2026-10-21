@@ -147,30 +147,6 @@ struct JarEditorView: View {
                 }
             }
             .onChange(of: draft.bottles) { _, _ in draft.syncDoseMode() }
-            .confirmationDialog("Delete \(draft.name)?", isPresented: $confirmDelete, titleVisibility: .visible) {
-                Button("Delete Substance", role: .destructive) {
-                    store.deleteJar(draft.id)
-                    router.path = []
-                    router.schedulePath = []
-                    router.homePath = []
-                    dismiss()
-                }
-            } message: {
-                Text("The substance, its jars and its dose card are removed. Logged doses stay in the dose log.")
-            }
-            .confirmationDialog("Move to \(mergeInto?.name ?? "")?", isPresented: Binding(get: { mergeInto != nil }, set: { if !$0 { mergeInto = nil } }),
-                                titleVisibility: .visible) {
-                Button("Move Jars") {
-                    if let other = mergeInto {
-                        store.merge(draft.id, into: other.id)
-                        router.path = [.jar(other.id)]
-                        dismiss()
-                    }
-                }
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text("\(draft.name)'s jars, dose log and planned doses join \(mergeInto?.name ?? "it"), which keeps its own schedule. \(draft.name) is then removed.")
-            }
             .onAppear(perform: setup)
             .alert("Can't Scan", isPresented: Binding(get: { scanAlert != nil }, set: { if !$0 { scanAlert = nil } })) {
                 Button("OK", role: .cancel) {}
@@ -489,12 +465,37 @@ struct JarEditorView: View {
                     } label: {
                         Label("Move These Jars to Another Substance", systemImage: "arrow.right.square")
                     }
+                    // On the row itself, so the question points at what was tapped.
+                    .confirmationDialog("Move to \(mergeInto?.name ?? "")?", isPresented: Binding(get: { mergeInto != nil }, set: { if !$0 { mergeInto = nil } }),
+                                        titleVisibility: .visible) {
+                        Button("Move Jars") {
+                            if let other = mergeInto {
+                                store.merge(draft.id, into: other.id)
+                                router.path = [.jar(other.id)]
+                                dismiss()
+                            }
+                        }
+                        Button("Cancel", role: .cancel) {}
+                    } message: {
+                        Text("\(draft.name)'s jars, dose log and planned doses join \(mergeInto?.name ?? "it"), which keeps its own schedule. \(draft.name) is then removed.")
+                    }
                 } footer: {
                     Text("For jars of the same thing you set up separately. Their jars, log and planned doses join the other substance, and this one is removed.")
                 }
             }
             Section {
                 Button("Delete Substance", role: .destructive) { confirmDelete = true }
+                    .confirmationDialog("Delete \(draft.name)?", isPresented: $confirmDelete, titleVisibility: .visible) {
+                        Button("Delete Substance", role: .destructive) {
+                            store.deleteJar(draft.id)
+                            router.path = []
+                            router.schedulePath = []
+                            router.homePath = []
+                            dismiss()
+                        }
+                    } message: {
+                        Text("The substance, its jars and its dose card are removed. Logged doses stay in the dose log.")
+                    }
             } footer: {
                 Text("Its past doses stay in the dose log.")
             }
