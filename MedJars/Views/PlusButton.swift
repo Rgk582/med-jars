@@ -137,7 +137,7 @@ struct PlusLayer: View {
                 .padding(.horizontal, 18)
                 .frame(height: 46)
                 .glassPanel(cornerRadius: 23)
-                .contentShape(DebugFlags.pillShape ? AnyShape(RoundedRectangle(cornerRadius: 23)) : AnyShape(Rectangle().size(.zero)))
+                .pillHitArea(DebugFlags.pillShape)
         }
         .buttonStyle(.plain)
         #if DEBUG
@@ -342,5 +342,12 @@ struct AllSubstancesSheet: View {
                 router.groupRequest = GroupLogTarget(title: "Log Doses", doses: doses)
             }
         }
+    }
+}
+
+private extension View {
+    /// Test switch: makes the whole glass pill tappable instead of only the icon and words.
+    @ViewBuilder func pillHitArea(_ on: Bool) -> some View {
+        if on { self.contentShape(RoundedRectangle(cornerRadius: 23)) } else { self }
     }
 }
