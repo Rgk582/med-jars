@@ -1971,11 +1971,16 @@ enum Format {
         return String(out.prefix(40))
     }
 
-    static func dayLabel(_ date: Date) -> String {
+    /// "Today", "Yesterday", "Tomorrow" or "Tue, Oct 20", by dose day like the rest of the app: a dose at 12:30 AM
+    /// still belongs to the day before, so it isn't labeled as a new day.
+    static func dayLabel(_ date: Date, now: Date = Date()) -> String {
         let cal = Calendar.current
-        if cal.isDateInToday(date) { return "Today" }
-        if cal.isDateInYesterday(date) { return "Yesterday" }
-        return dayLabelFormatter.string(from: date)
+        let day = DoseLogic.doseDayStart(for: date)
+        let today = DoseLogic.doseDayStart(for: now)
+        if day == today { return "Today" }
+        if let y = cal.date(byAdding: .day, value: -1, to: today), day == y { return "Yesterday" }
+        if let t = cal.date(byAdding: .day, value: 1, to: today), day == t { return "Tomorrow" }
+        return dayLabelFormatter.string(from: day)
     }
 
     /// Made once: building a date formatter costs far more than using one.

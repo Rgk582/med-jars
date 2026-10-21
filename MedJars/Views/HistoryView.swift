@@ -26,8 +26,8 @@ struct HistoryView: View {
     }
 
     private var groups: [DayGroup] {
-        let cal = Calendar.current
-        let grouped = Dictionary(grouping: store.entries) { cal.startOfDay(for: $0.takenAt) }
+        // By dose day, like Schedule: a dose taken after midnight counts toward the day before.
+        let grouped = Dictionary(grouping: store.entries) { DoseLogic.doseDayStart(for: $0.takenAt) }
         return grouped.keys.sorted(by: >).map { DayGroup(day: $0, entries: grouped[$0]!.sorted { $0.takenAt > $1.takenAt }) }
     }
 

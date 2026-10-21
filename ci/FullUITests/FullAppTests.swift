@@ -1098,8 +1098,10 @@ final class G_StackTests: MedJarsUITestCase {
             let f = app.staticTexts["Focus"].firstMatch
             if waitFor(f, 4, "Focus row") { f.tap() }
             sleep(1)
+            // The page opens scrolled to the next dose; the view picker is at the top.
+            scrollToTop()
             for v in ["Week", "Month", "Day"] {
-                _ = tapIf(button(v))
+                check(tapIf(button(v)), "\(v) view button")
                 snap("focus \(v)")
             }
             _ = tapIf(button("Next Day"))
