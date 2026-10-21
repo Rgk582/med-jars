@@ -1,0 +1,6 @@
+Test Case '-[MedJarsFullUITests.F_EditorTests test01_CreateSimple]' passed (153.990 seconds).
+	 Executed 1 test, with 0 failures (0 unexpected) in 153.990 (153.992) seconds
+Test Case '-[MedJarsFullUITests.G_StackTests test01_StackFlows]' passed (152.406 seconds).
+	 Executed 1 test, with 0 failures (0 unexpected) in 152.406 (152.408) seconds
+	 Executed 2 tests, with 0 failures (0 unexpected) in 306.396 (306.404) seconds
+	 Executed 2 tests, with 0 failures (0 unexpected) in 306.396 (306.406) seconds

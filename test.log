@@ -1,0 +1,725 @@
+Command line invocation:
+    /Applications/Xcode_26.3.app/Contents/Developer/usr/bin/xcodebuild test-without-building -project MedJars.xcodeproj -scheme MedJars -configuration Debug -destination "platform=iOS Simulator,id=517BAAA1-7BAB-4B50-8B25-04EF0238019B" -derivedDataPath build -parallel-testing-enabled NO -test-timeouts-enabled NO "-only-testing:MedJarsFullUITests/G_StackTests/test01_StackFlows" "-only-testing:MedJarsFullUITests/F_EditorTests/test01_CreateSimple" -resultBundlePath out/result.xcresult CODE_SIGNING_ALLOWED=NO
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Writing result bundle at path:
+	/Users/runner/work/med-jars/med-jars/out/result.xcresult
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS Simulator, arch:arm64, id:517BAAA1-7BAB-4B50-8B25-04EF0238019B, OS:26.0.1, name:iPhone 17 Pro }
+{ platform:iOS Simulator, arch:x86_64, id:517BAAA1-7BAB-4B50-8B25-04EF0238019B, OS:26.0.1, name:iPhone 17 Pro }
+2026-10-21 14:41:10.149304-0200 MedJarsFullUITests-Runner[8881:30622] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-10-21 14:41:20.640.
+Test Suite 'MedJarsFullUITests.xctest' started at 2026-10-21 14:41:20.641.
+Test Suite 'F_EditorTests' started at 2026-10-21 14:41:20.642.
+Test Case '-[MedJarsFullUITests.F_EditorTests test01_CreateSimple]' started.
+    t =     0.00s Start Test at 2026-10-21 14:41:20.643
+    t =     0.77s Set Up
+    t =     0.77s Open com.medjars.app
+    t =     0.77s     Launch com.medjars.app
+    t =    15.91s         Setting up automation session
+    t =    18.19s         Wait for com.medjars.app to idle
+    t =    22.37s Waiting 30.0s for TabBar (First Match) to exist
+    t =    23.39s     Checking `Expect predicate `existsNoRetry == 1` for object TabBar (First Match)`
+    t =    23.39s         Checking existence of `TabBar (First Match)`
+MARK 1792600904.513 LAUNCHED -[F_EditorTests test01_CreateSimple] in 23088ms ok=yes
+    t =    23.92s Checking existence of `"Allow" Button`
+    t =    24.31s Checking existence of `"Allow While Using App" Button`
+    t =    24.35s Checking existence of `"OK" Button`
+    t =    24.39s Checking existence of `"Don’t Allow" Button`
+MARK 1792600905.068 STEP BEGIN 001 New simple substance
+    t =    24.43s Checking existence of `"Allow" Button`
+    t =    24.49s Checking existence of `"Allow While Using App" Button`
+    t =    24.54s Checking existence of `"OK" Button`
+    t =    24.57s Checking existence of `"Don’t Allow" Button`
+    t =    24.63s 001 New simple substance
+    t =    24.63s     Waiting 5.0s for "Cabinet" Button to exist
+    t =    25.67s         Checking `Expect predicate `existsNoRetry == 1` for object "Cabinet" Button`
+    t =    25.67s             Checking existence of `"Cabinet" Button`
+    t =    26.02s     Tap "Cabinet" Button
+    t =    26.02s         Wait for com.medjars.app to idle
+    t =    26.03s         Find the "Cabinet" Button
+    t =    26.45s         Check for interrupting elements affecting "pills.fill" Button
+    t =    26.70s         Synthesize event
+    t =    27.43s         Wait for com.medjars.app to idle
+    t =    30.88s     Find the "pills.fill" Button
+    t =    31.76s     Waiting 8.0s for "Add Substance" Button to exist
+    t =    32.80s         Checking `Expect predicate `existsNoRetry == 1` for object "Add Substance" Button`
+    t =    32.80s             Checking existence of `"Add Substance" Button`
+    t =    34.42s     Tap "Add Substance" Button
+    t =    34.42s         Wait for com.medjars.app to idle
+    t =    34.42s         Find the "Add Substance" Button
+    t =    35.47s         Check for interrupting elements affecting "plus" Button
+    t =    35.82s         Synthesize event
+    t =    36.34s         Wait for com.medjars.app to idle
+    t =    37.90s     Waiting 5.0s for "Medication or Supplement" TextField to exist
+    t =    38.93s         Checking `Expect predicate `existsNoRetry == 1` for object "Medication or Supplement" TextField`
+    t =    38.93s             Checking existence of `"Medication or Supplement" TextField`
+    t =    39.85s     Checking existence of `"Medication or Supplement" TextField`
+    t =    40.15s     Find the "Medication or Supplement" TextField
+    t =    40.92s     Checking existence of `"Medication or Supplement" TextField`
+    t =    41.19s     Find the "Medication or Supplement" TextField
+    t =    41.61s     Tap "Medication or Supplement" TextField
+    t =    41.61s         Wait for com.medjars.app to idle
+    t =    41.61s         Find the "Medication or Supplement" TextField
+    t =    42.05s         Check for interrupting elements affecting "Medication or Supplement" TextField
+    t =    42.65s         Synthesize event
+    t =    43.33s         Wait for com.medjars.app to idle
+    t =    47.42s     Type 'Test Vitamin C' into "Medication or Supplement" TextField
+    t =    47.43s         Wait for com.medjars.app to idle
+    t =    47.45s         Find the "Medication or Supplement" TextField
+    t =    50.02s         Check for interrupting elements affecting "Medication or Supplement" TextField
+    t =    50.44s         Synthesize event
+    t =    50.96s         Wait for com.medjars.app to idle
+    t =    51.72s     Waiting 3.0s for "keyboard-done" Button to exist
+    t =    52.82s         Checking `Expect predicate `existsNoRetry == 1` for object "keyboard-done" Button`
+    t =    52.82s             Checking existence of `"keyboard-done" Button`
+    t =    55.02s             Capturing element debug description
+    t =    55.02s         Checking existence of `"keyboard-done" Button`
+    t =    58.84s     Get number of matches for: Elements matching predicate '"keyboard-done" IN identifiers'
+    t =    59.22s     Get number of matches for: Elements matching predicate '"keyboard-done" IN identifiers'
+    t =    59.70s     Tap "keyboard-done" Button
+    t =    59.70s         Wait for com.medjars.app to idle
+    t =    59.70s         Find the "keyboard-done" Button
+    t =    60.74s         Check for interrupting elements affecting "keyboard-done" Button
+    t =    61.01s         Synthesize event
+    t =    61.82s         Wait for com.medjars.app to idle
+    t =    62.84s     Checking existence of `"Medication or Supplement" TextField`
+    t =    63.67s     Find the "Medication or Supplement" TextField
+    t =    64.14s     Checking existence of `"Medication or Supplement" TextField`
+    t =    64.38s     Find the "Medication or Supplement" TextField
+    t =    64.64s     Tap "Medication or Supplement" TextField
+    t =    64.64s         Wait for com.medjars.app to idle
+    t =    64.65s         Find the "Medication or Supplement" TextField
+    t =    64.87s         Check for interrupting elements affecting "Medication or Supplement" TextField
+    t =    65.09s         Synthesize event
+    t =    65.40s         Wait for com.medjars.app to idle
+    t =    65.95s     Type ' XYZ' into "Medication or Supplement" TextField
+    t =    65.95s         Wait for com.medjars.app to idle
+    t =    66.18s         Find the "Medication or Supplement" TextField
+    t =    66.61s         Check for interrupting elements affecting "Medication or Supplement" TextField
+    t =    66.89s         Synthesize event
+    t =    67.25s         Wait for com.medjars.app to idle
+    t =    67.39s     Find the Target Application 'com.medjars.app'
+    t =    68.18s     Added attachment named 'keyboard bar'
+    t =    68.19s     Waiting 3.0s for "keyboard-cancel" Button to exist
+    t =    69.25s         Checking `Expect predicate `existsNoRetry == 1` for object "keyboard-cancel" Button`
+    t =    69.25s             Checking existence of `"keyboard-cancel" Button`
+    t =    69.94s     Tap "keyboard-cancel" Button
+    t =    69.94s         Wait for com.medjars.app to idle
+    t =    69.95s         Find the "keyboard-cancel" Button
+    t =    70.60s         Check for interrupting elements affecting "keyboard-cancel" Button
+    t =    70.83s         Synthesize event
+    t =    71.23s         Wait for com.medjars.app to idle
+    t =    73.23s     Find the "Medication or Supplement" TextField
+    t =    73.61s     Find the "Medication or Supplement" TextField
+    t =    73.85s     Checking existence of `"e.g. 30" TextField`
+    t =    74.27s     Find the "e.g. 30" TextField
+    t =    74.87s     Checking existence of `"e.g. 30" TextField`
+    t =    75.58s     Find the "e.g. 30" TextField
+    t =    76.15s     Tap "e.g. 30" TextField
+    t =    76.15s         Wait for com.medjars.app to idle
+    t =    76.16s         Find the "e.g. 30" TextField
+    t =    76.69s         Check for interrupting elements affecting "e.g. 30" TextField
+    t =    76.99s         Synthesize event
+    t =    77.35s         Wait for com.medjars.app to idle
+    t =    78.18s     Type '500' into "e.g. 30" TextField
+    t =    78.18s         Wait for com.medjars.app to idle
+    t =    78.36s         Find the "e.g. 30" TextField
+    t =    79.48s         Check for interrupting elements affecting "e.g. 30" TextField
+    t =    79.94s         Synthesize event
+    t =    80.23s         Wait for com.medjars.app to idle
+    t =    81.17s     Waiting 3.0s for "keyboard-done" Button to exist
+    t =    82.22s         Checking `Expect predicate `existsNoRetry == 1` for object "keyboard-done" Button`
+    t =    82.22s             Checking existence of `"keyboard-done" Button`
+    t =    83.03s     Get number of matches for: Elements matching predicate '"keyboard-done" IN identifiers'
+    t =    83.43s     Get number of matches for: Elements matching predicate '"keyboard-done" IN identifiers'
+    t =    83.73s     Tap "keyboard-done" Button
+    t =    83.73s         Wait for com.medjars.app to idle
+    t =    83.74s         Find the "keyboard-done" Button
+    t =    84.62s         Check for interrupting elements affecting "keyboard-done" Button
+    t =    84.95s         Synthesize event
+    t =    85.37s         Wait for com.medjars.app to idle
+    t =    86.65s     Tap "Save" Button
+    t =    86.65s         Wait for com.medjars.app to idle
+    t =    86.66s         Find the "Save" Button
+    t =    86.74s         Check for interrupting elements affecting "Save" Button
+    t =    87.01s         Synthesize event
+    t =    87.35s         Wait for com.medjars.app to idle
+    t =    91.89s     Waiting 4.0s for "Test Vitamin C" StaticText to exist
+    t =    92.93s         Checking `Expect predicate `existsNoRetry == 1` for object "Test Vitamin C" StaticText`
+    t =    92.94s             Checking existence of `"Test Vitamin C" StaticText`
+    t =    93.28s Find the Target Application 'com.medjars.app'
+    t =    93.65s Added attachment named '001 New simple substance'
+MARK 1792600974.368 STEP END 001 68652ms FAIL :: New simple substance
+MARK 1792600974.368 STEP BEGIN 002 Open new substance
+    t =    93.73s Checking existence of `"Allow" Button`
+    t =    93.93s Checking existence of `"Allow While Using App" Button`
+    t =    93.96s Checking existence of `"OK" Button`
+    t =    93.99s Checking existence of `"Don’t Allow" Button`
+    t =    94.02s 002 Open new substance
+    t =    94.03s     Tap "Test Vitamin C" StaticText
+    t =    94.03s         Wait for com.medjars.app to idle
+    t =    94.05s         Find the "Test Vitamin C" StaticText
+    t =    94.29s         Check for interrupting elements affecting "Test Vitamin C" StaticText
+    t =    94.45s         Synthesize event
+    t =    94.78s         Wait for com.medjars.app to idle
+    t =    94.79s     Waiting 4.0s for "Edit" Button to exist
+    t =    95.80s         Checking `Expect predicate `existsNoRetry == 1` for object "Edit" Button`
+    t =    95.80s             Checking existence of `"Edit" Button`
+    t =    95.98s     Checking existence of `"Missed" StaticText`
+    t =    96.07s Find the Target Application 'com.medjars.app'
+    t =    96.40s Added attachment named '002 Open new substance'
+MARK 1792600977.044 STEP END 002 2049ms OK :: Open new substance
+MARK 1792600977.044 STEP BEGIN 003 Delete it from the editor
+    t =    96.40s Checking existence of `"Allow" Button`
+    t =    96.45s Checking existence of `"Allow While Using App" Button`
+    t =    96.50s Checking existence of `"OK" Button`
+    t =    96.54s Checking existence of `"Don’t Allow" Button`
+    t =    96.58s 003 Delete it from the editor
+    t =    96.58s     Tap "Edit" Button
+    t =    96.58s         Wait for com.medjars.app to idle
+    t =    96.58s         Find the "Edit" Button
+    t =    96.83s         Check for interrupting elements affecting "Edit" Button
+    t =    96.96s         Synthesize event
+    t =    97.30s         Wait for com.medjars.app to idle
+    t =    98.63s     Checking existence of `"Delete Substance" Button`
+    t =    99.90s     Swipe up Target Application 'com.medjars.app'
+    t =    99.90s         Wait for com.medjars.app to idle
+    t =    99.91s         Find the Target Application 'com.medjars.app'
+    t =   100.10s         Check for interrupting elements affecting "Med Jars" Application
+    t =   100.29s         Synthesize event
+    t =   100.82s         Wait for com.medjars.app to idle
+    t =   102.96s     Checking existence of `"Delete Substance" Button`
+    t =   104.26s     Swipe up Target Application 'com.medjars.app'
+    t =   104.26s         Wait for com.medjars.app to idle
+    t =   104.86s         Find the Target Application 'com.medjars.app'
+    t =   105.03s         Check for interrupting elements affecting "Med Jars" Application
+    t =   105.22s         Synthesize event
+    t =   105.72s         Wait for com.medjars.app to idle
+    t =   107.91s     Checking existence of `"Delete Substance" Button`
+    t =   109.56s     Swipe up Target Application 'com.medjars.app'
+    t =   109.56s         Wait for com.medjars.app to idle
+    t =   109.81s         Find the Target Application 'com.medjars.app'
+    t =   109.96s         Check for interrupting elements affecting "Med Jars" Application
+    t =   110.12s         Synthesize event
+    t =   110.63s         Wait for com.medjars.app to idle
+    t =   112.62s     Checking existence of `"Delete Substance" Button`
+    t =   113.64s     Swipe up Target Application 'com.medjars.app'
+    t =   113.64s         Wait for com.medjars.app to idle
+    t =   113.89s         Find the Target Application 'com.medjars.app'
+    t =   114.03s         Check for interrupting elements affecting "Med Jars" Application
+    t =   114.18s         Synthesize event
+    t =   114.71s         Wait for com.medjars.app to idle
+    t =   116.69s     Checking existence of `"Delete Substance" Button`
+    t =   117.73s     Swipe up Target Application 'com.medjars.app'
+    t =   117.73s         Wait for com.medjars.app to idle
+    t =   117.95s         Find the Target Application 'com.medjars.app'
+    t =   118.12s         Check for interrupting elements affecting "Med Jars" Application
+    t =   118.33s         Synthesize event
+    t =   118.84s         Wait for com.medjars.app to idle
+    t =   120.79s     Checking existence of `"Delete Substance" Button`
+    t =   122.07s     Swipe up Target Application 'com.medjars.app'
+    t =   122.07s         Wait for com.medjars.app to idle
+    t =   122.32s         Find the Target Application 'com.medjars.app'
+    t =   122.47s         Check for interrupting elements affecting "Med Jars" Application
+    t =   122.60s         Synthesize event
+    t =   123.10s         Wait for com.medjars.app to idle
+    t =   125.17s     Checking existence of `"Delete Substance" Button`
+    t =   126.92s     Swipe up Target Application 'com.medjars.app'
+    t =   126.92s         Wait for com.medjars.app to idle
+    t =   127.17s         Find the Target Application 'com.medjars.app'
+    t =   127.30s         Check for interrupting elements affecting "Med Jars" Application
+    t =   127.46s         Synthesize event
+    t =   127.95s         Wait for com.medjars.app to idle
+    t =   129.04s     Checking existence of `"Delete Substance" Button`
+    t =   130.51s     Find the "Delete Substance" Button
+    t =   131.21s     Checking existence of `"Delete Substance" Button`
+    t =   131.98s     Find the "Delete Substance" Button
+    t =   132.69s     Find the "Delete Substance" Button
+    t =   133.19s     Waiting 3.0s for "Delete Substance" Button to exist
+    t =   134.20s         Checking `Expect predicate `existsNoRetry == 1` for object "Delete Substance" Button`
+    t =   134.20s             Checking existence of `"Delete Substance" Button`
+    t =   134.66s     Find the "Delete Substance" Button
+    t =   135.21s     Tap "Delete Substance" Button
+    t =   135.21s         Wait for com.medjars.app to idle
+    t =   135.21s         Find the "Delete Substance" Button
+    t =   135.66s         Check for interrupting elements affecting "Delete Substance" Button
+    t =   135.87s         Synthesize event
+    t =   136.20s         Wait for com.medjars.app to idle
+    t =   139.54s     Get all elements bound by index for: Elements matching predicate 'label == "Delete Substance"'
+    t =   139.90s     Checking existence of `Button (Element at index 0)`
+    t =   140.10s     Find the Button (Element at index 0)
+    t =   140.32s     Find the "Delete Substance" Button
+    t =   140.51s     Checking existence of `Button (Element at index 1)`
+    t =   140.68s     Find the Button (Element at index 1)
+    t =   141.68s     Get all elements bound by index for: Elements matching predicate 'label == "Delete Substance"'
+    t =   141.91s     Checking existence of `Button (Element at index 0)`
+    t =   142.11s     Find the Button (Element at index 0)
+    t =   142.65s     Find the "Delete Substance" Button
+    t =   143.22s     Checking existence of `Button (Element at index 1)`
+    t =   143.72s     Find the Button (Element at index 1)
+    t =   144.08s     Tap "Delete Substance" Button[0.50, 0.50]
+    t =   144.08s         Wait for com.medjars.app to idle
+    t =   144.08s         Find the "Delete Substance" Button
+    t =   144.40s         Check for interrupting elements affecting "Delete Substance" Button
+    t =   144.67s         Synthesize event
+    t =   144.67s             Find the "Delete Substance" Button
+    t =   144.93s             Find the "Delete Substance" Button
+    t =   145.16s             Find the "Delete Substance" Button
+    t =   145.85s         Wait for com.medjars.app to idle
+    t =   147.54s     Checking existence of `"Delete Substance" Button`
+    t =   149.89s     Checking existence of `"Delete Substance" Button`
+    t =   152.70s     Checking existence of `"Test Vitamin C" StaticText`
+    t =   152.91s Find the Target Application 'com.medjars.app'
+    t =   153.29s Added attachment named '003 Delete it from the editor'
+MARK 1792601033.932 STEP END 003 56336ms OK :: Delete it from the editor
+    t =   153.29s Tear Down
+Test Case '-[MedJarsFullUITests.F_EditorTests test01_CreateSimple]' passed (153.990 seconds).
+Test Suite 'F_EditorTests' passed at 2026-10-21 14:43:54.634.
+	 Executed 1 test, with 0 failures (0 unexpected) in 153.990 (153.992) seconds
+Test Suite 'G_StackTests' started at 2026-10-21 14:43:54.635.
+Test Case '-[MedJarsFullUITests.G_StackTests test01_StackFlows]' started.
+    t =     0.00s Start Test at 2026-10-21 14:43:54.638
+    t =     0.16s Set Up
+    t =     0.17s Open com.medjars.app
+    t =     0.17s     Launch com.medjars.app
+    t =     0.17s         Terminate com.medjars.app:9581
+    t =     3.39s         Setting up automation session
+    t =     8.35s         Wait for com.medjars.app to idle
+    t =    12.67s Waiting 30.0s for TabBar (First Match) to exist
+    t =    13.67s     Checking `Expect predicate `existsNoRetry == 1` for object TabBar (First Match)`
+    t =    13.67s         Checking existence of `TabBar (First Match)`
+MARK 1792601048.400 LAUNCHED -[G_StackTests test01_StackFlows] in 13598ms ok=yes
+    t =    13.77s Checking existence of `"Allow" Button`
+    t =    13.85s Checking existence of `"Allow While Using App" Button`
+    t =    13.90s Checking existence of `"OK" Button`
+    t =    13.96s Checking existence of `"Don’t Allow" Button`
+    t =    14.00s Waiting 5.0s for "Stacks" Button to exist
+    t =    15.02s     Checking `Expect predicate `existsNoRetry == 1` for object "Stacks" Button`
+    t =    15.02s         Checking existence of `"Stacks" Button`
+    t =    15.33s Tap "Stacks" Button
+    t =    15.33s     Wait for com.medjars.app to idle
+    t =    15.34s     Find the "Stacks" Button
+    t =    15.50s     Check for interrupting elements affecting "square.stack.3d.up.fill" Button
+    t =    15.66s     Synthesize event
+    t =    16.01s     Wait for com.medjars.app to idle
+    t =    18.74s Find the "square.stack.3d.up.fill" Button
+MARK 1792601053.474 STEP BEGIN 004 Stacks list
+    t =    18.84s Checking existence of `"Allow" Button`
+    t =    18.88s Checking existence of `"Allow While Using App" Button`
+    t =    18.91s Checking existence of `"OK" Button`
+    t =    18.94s Checking existence of `"Don’t Allow" Button`
+    t =    18.97s 004 Stacks list
+    t =    18.97s     Waiting 4.0s for "Stacks" NavigationBar to exist
+    t =    20.01s         Checking `Expect predicate `existsNoRetry == 1` for object "Stacks" NavigationBar`
+    t =    20.01s             Checking existence of `"Stacks" NavigationBar`
+    t =    20.05s Find the Target Application 'com.medjars.app'
+    t =    20.33s Added attachment named '004 Stacks list'
+MARK 1792601054.970 STEP END 004 1084ms OK :: Stacks list
+MARK 1792601054.970 STEP BEGIN 005 Focus detail and views
+    t =    20.33s Checking existence of `"Allow" Button`
+    t =    20.37s Checking existence of `"Allow While Using App" Button`
+    t =    20.42s Checking existence of `"OK" Button`
+    t =    20.45s Checking existence of `"Don’t Allow" Button`
+    t =    20.48s 005 Focus detail and views
+    t =    20.48s     Waiting 4.0s for "Focus" StaticText to exist
+    t =    21.49s         Checking `Expect predicate `existsNoRetry == 1` for object "Focus" StaticText`
+    t =    21.49s             Checking existence of `"Focus" StaticText`
+    t =    21.63s     Tap "Focus" StaticText
+    t =    21.63s         Wait for com.medjars.app to idle
+    t =    21.64s         Find the "Focus" StaticText
+    t =    21.77s         Check for interrupting elements affecting "Focus" StaticText
+    t =    21.85s         Synthesize event
+    t =    22.16s         Wait for com.medjars.app to idle
+    t =    25.23s     Swipe down Target Application 'com.medjars.app'
+    t =    25.23s         Wait for com.medjars.app to idle
+    t =    25.23s         Find the Target Application 'com.medjars.app'
+    t =    25.36s         Check for interrupting elements affecting "Med Jars" Application
+    t =    25.47s         Synthesize event
+    t =    25.87s         Wait for com.medjars.app to idle
+    t =    28.64s     Swipe down Target Application 'com.medjars.app'
+    t =    28.64s         Wait for com.medjars.app to idle
+    t =    28.64s         Find the Target Application 'com.medjars.app'
+    t =    28.78s         Check for interrupting elements affecting "Med Jars" Application
+    t =    28.88s         Synthesize event
+    t =    29.28s         Wait for com.medjars.app to idle
+    t =    30.82s     Swipe down Target Application 'com.medjars.app'
+    t =    30.82s         Wait for com.medjars.app to idle
+    t =    31.06s         Find the Target Application 'com.medjars.app'
+    t =    31.32s         Check for interrupting elements affecting "Med Jars" Application
+    t =    31.50s         Synthesize event
+    t =    31.90s         Wait for com.medjars.app to idle
+    t =    33.69s     Swipe down Target Application 'com.medjars.app'
+    t =    33.70s         Wait for com.medjars.app to idle
+    t =    33.70s         Find the Target Application 'com.medjars.app'
+    t =    33.80s         Check for interrupting elements affecting "Med Jars" Application
+    t =    33.91s         Synthesize event
+    t =    34.41s         Wait for com.medjars.app to idle
+    t =    36.08s     Swipe down Target Application 'com.medjars.app'
+    t =    36.08s         Wait for com.medjars.app to idle
+    t =    36.09s         Find the Target Application 'com.medjars.app'
+    t =    36.19s         Check for interrupting elements affecting "Med Jars" Application
+    t =    36.29s         Synthesize event
+    t =    36.71s         Wait for com.medjars.app to idle
+    t =    38.20s     Swipe down Target Application 'com.medjars.app'
+    t =    38.20s         Wait for com.medjars.app to idle
+    t =    38.21s         Find the Target Application 'com.medjars.app'
+    t =    38.30s         Check for interrupting elements affecting "Med Jars" Application
+    t =    38.38s         Synthesize event
+    t =    38.77s         Wait for com.medjars.app to idle
+    t =    40.54s     Waiting 3.0s for "Week" Button to exist
+    t =    41.58s         Checking `Expect predicate `existsNoRetry == 1` for object "Week" Button`
+    t =    41.58s             Checking existence of `"Week" Button`
+    t =    41.85s     Find the "Week" Button
+    t =    42.09s     Tap "Week" Button
+    t =    42.09s         Wait for com.medjars.app to idle
+    t =    42.09s         Find the "Week" Button
+    t =    42.36s         Check for interrupting elements affecting "Week" Button
+    t =    42.47s         Synthesize event
+    t =    42.80s         Wait for com.medjars.app to idle
+    t =    43.82s     Find the Target Application 'com.medjars.app'
+    t =    44.16s     Added attachment named 'focus Week'
+    t =    44.16s     Waiting 3.0s for "Month" Button to exist
+    t =    45.21s         Checking `Expect predicate `existsNoRetry == 1` for object "Month" Button`
+    t =    45.21s             Checking existence of `"Month" Button`
+    t =    45.44s     Find the "Month" Button
+    t =    45.66s     Tap "Month" Button
+    t =    45.66s         Wait for com.medjars.app to idle
+    t =    45.67s         Find the "Month" Button
+    t =    45.86s         Check for interrupting elements affecting "Month" Button
+    t =    45.94s         Synthesize event
+    t =    46.24s         Wait for com.medjars.app to idle
+    t =    47.70s     Find the Target Application 'com.medjars.app'
+    t =    48.16s     Added attachment named 'focus Month'
+    t =    48.17s     Waiting 3.0s for "Day" Button to exist
+    t =    49.21s         Checking `Expect predicate `existsNoRetry == 1` for object "Day" Button`
+    t =    49.21s             Checking existence of `"Day" Button`
+    t =    49.52s     Find the "Day" Button
+    t =    49.85s     Tap "Day" Button
+    t =    49.85s         Wait for com.medjars.app to idle
+    t =    49.85s         Find the "Day" Button
+    t =    50.19s         Check for interrupting elements affecting "Day" Button
+    t =    50.30s         Synthesize event
+    t =    50.63s         Wait for com.medjars.app to idle
+    t =    51.94s     Find the Target Application 'com.medjars.app'
+    t =    52.29s     Added attachment named 'focus Day'
+    t =    52.29s     Waiting 3.0s for "Next Day" Button to exist
+    t =    53.34s         Checking `Expect predicate `existsNoRetry == 1` for object "Next Day" Button`
+    t =    53.34s             Checking existence of `"Next Day" Button`
+    t =    53.68s     Find the "Next Day" Button
+    t =    54.04s     Tap "chevron.right" Button
+    t =    54.04s         Wait for com.medjars.app to idle
+    t =    54.05s         Find the "chevron.right" Button
+    t =    54.39s         Check for interrupting elements affecting "chevron.right" Button
+    t =    54.47s         Synthesize event
+    t =    54.79s         Wait for com.medjars.app to idle
+    t =    55.15s     Waiting 3.0s for "Previous Day" Button to exist
+    t =    56.22s         Checking `Expect predicate `existsNoRetry == 1` for object "Previous Day" Button`
+    t =    56.23s             Checking existence of `"Previous Day" Button`
+    t =    58.19s         Checking existence of `"Previous Day" Button`
+    t =    59.04s     Find the "Previous Day" Button
+    t =    59.61s     Tap "chevron.left" Button
+    t =    59.61s         Wait for com.medjars.app to idle
+    t =    59.62s         Find the "chevron.left" Button
+    t =    60.02s         Check for interrupting elements affecting "chevron.left" Button
+    t =    60.14s         Synthesize event
+    t =    60.47s         Wait for com.medjars.app to idle
+    t =    60.79s Find the Target Application 'com.medjars.app'
+    t =    61.21s Added attachment named '005 Focus detail and views'
+MARK 1792601095.844 STEP END 005 40307ms OK :: Focus detail and views
+MARK 1792601095.844 STEP BEGIN 006 Focus length menu
+    t =    61.21s Checking existence of `"Allow" Button`
+    t =    61.26s Checking existence of `"Allow While Using App" Button`
+    t =    61.29s Checking existence of `"OK" Button`
+    t =    61.32s Checking existence of `"Don’t Allow" Button`
+    t =    61.36s 006 Focus length menu
+    t =    61.36s     Checking existence of `Button (First Match)`
+    t =    61.69s     Tap Button (First Match)
+    t =    61.69s         Wait for com.medjars.app to idle
+    t =    61.69s         Find the Button (First Match)
+    t =    62.07s         Check for interrupting elements affecting "Length, Until turned off" Button
+    t =    62.20s         Synthesize event
+    t =    62.54s         Wait for com.medjars.app to idle
+    t =    64.88s     Find the Target Application 'com.medjars.app'
+    t =    65.57s     Added attachment named 'length menu'
+    t =    65.58s     Checking existence of `"Set an End Date" Button`
+    t =    65.94s     Tap Target Application 'com.medjars.app'[0.12, 0.28]
+    t =    65.94s         Wait for com.medjars.app to idle
+    t =    66.15s         Find the Target Application 'com.medjars.app'
+    t =    66.25s         Check for interrupting elements affecting "Med Jars" Application
+    t =    66.37s         Synthesize event
+    t =    66.38s             Find the Target Application 'com.medjars.app'
+    t =    66.47s             Find the Target Application 'com.medjars.app'
+    t =    66.56s             Find the Target Application 'com.medjars.app'
+    t =    66.92s         Wait for com.medjars.app to idle
+    t =    68.58s     Checking existence of `"Set an End Date" Button`
+    t =    68.68s     Checking existence of `Button (First Match)`
+    t =    68.86s     Checking existence of `"End Date" NavigationBar`
+    t =    69.07s Find the Target Application 'com.medjars.app'
+    t =    69.42s Added attachment named '006 Focus length menu'
+MARK 1792601104.062 STEP END 006 7705ms FAIL :: Focus length menu
+    t =    69.43s Checking existence of `"BackButton" Button`
+    t =    69.49s Find the "BackButton" Button
+    t =    69.61s Tap "BackButton" Button
+    t =    69.61s     Wait for com.medjars.app to idle
+    t =    69.61s     Find the "BackButton" Button
+    t =    69.69s     Check for interrupting elements affecting "BackButton" Button
+    t =    69.78s     Synthesize event
+    t =    70.13s     Wait for com.medjars.app to idle
+MARK 1792601105.789 STEP BEGIN 007 Turn on Sleep
+    t =    71.15s Checking existence of `"Allow" Button`
+    t =    71.23s Checking existence of `"Allow While Using App" Button`
+    t =    71.28s Checking existence of `"OK" Button`
+    t =    71.32s Checking existence of `"Don’t Allow" Button`
+    t =    71.37s 007 Turn on Sleep
+    t =    71.37s     Waiting 4.0s for "Sleep" StaticText to exist
+    t =    72.41s         Checking `Expect predicate `existsNoRetry == 1` for object "Sleep" StaticText`
+    t =    72.41s             Checking existence of `"Sleep" StaticText`
+    t =    72.69s     Tap "Sleep" StaticText
+    t =    72.69s         Wait for com.medjars.app to idle
+    t =    72.70s         Find the "Sleep" StaticText
+    t =    72.89s         Check for interrupting elements affecting "Sleep" StaticText
+    t =    72.98s         Synthesize event
+    t =    73.29s         Wait for com.medjars.app to idle
+    t =    74.60s     Waiting 4.0s for Switch (First Match) to exist
+    t =    75.61s         Checking `Expect predicate `existsNoRetry == 1` for object Switch (First Match)`
+    t =    75.62s             Checking existence of `Switch (First Match)`
+    t =    76.29s     Tap Switch (First Match)
+    t =    76.29s         Wait for com.medjars.app to idle
+    t =    76.30s         Find the Switch (First Match)
+    t =    76.81s         Check for interrupting elements affecting "On" Switch
+    t =    77.00s         Synthesize event
+    t =    77.34s         Wait for com.medjars.app to idle
+    t =    77.35s     Waiting 4.0s for "Turn On" Button to exist
+    t =    78.37s         Checking `Expect predicate `existsNoRetry == 1` for object "Turn On" Button`
+    t =    78.38s             Checking existence of `"Turn On" Button`
+    t =    78.75s             Capturing element debug description
+    t =    79.37s         Checking `Expect predicate `existsNoRetry == 1` for object "Turn On" Button`
+    t =    79.37s             Checking existence of `"Turn On" Button`
+    t =    79.69s             Capturing element debug description
+    t =    80.44s         Checking `Expect predicate `existsNoRetry == 1` for object "Turn On" Button`
+    t =    80.44s             Checking existence of `"Turn On" Button`
+    t =    80.70s             Capturing element debug description
+    t =    81.36s         Checking `Expect predicate `existsNoRetry == 1` for object "Turn On" Button`
+    t =    81.36s             Checking existence of `"Turn On" Button`
+    t =    81.58s             Capturing element debug description
+    t =    81.58s         Checking existence of `"Turn On" Button`
+    t =    81.83s     Collecting debug information to assist test failure triage
+    t =    81.83s         Requesting snapshot of accessibility hierarchy for app with pid 14719
+    t =    82.07s     Find the Target Application 'com.medjars.app'
+    t =    82.45s     Added attachment named 'sleep on'
+    t =    82.45s     Checking existence of `"On" Switch`
+    t =    82.61s     Tap "On" Switch
+    t =    82.61s         Wait for com.medjars.app to idle
+    t =    82.61s         Find the "On" Switch
+    t =    82.86s         Check for interrupting elements affecting "On" Switch
+    t =    82.97s         Synthesize event
+    t =    83.29s         Wait for com.medjars.app to idle
+    t =    83.30s     Waiting 3.0s for "Turn Off" Button to exist
+    t =    84.34s         Checking `Expect predicate `existsNoRetry == 1` for object "Turn Off" Button`
+    t =    84.34s             Checking existence of `"Turn Off" Button`
+    t =    84.79s             Capturing element debug description
+    t =    85.32s         Checking `Expect predicate `existsNoRetry == 1` for object "Turn Off" Button`
+    t =    85.32s             Checking existence of `"Turn Off" Button`
+    t =    85.60s             Capturing element debug description
+    t =    86.31s         Checking `Expect predicate `existsNoRetry == 1` for object "Turn Off" Button`
+    t =    86.31s             Checking existence of `"Turn Off" Button`
+    t =    86.61s             Capturing element debug description
+    t =    86.61s         Checking existence of `"Turn Off" Button`
+    t =    87.24s     Collecting debug information to assist test failure triage
+    t =    87.24s         Requesting snapshot of accessibility hierarchy for app with pid 14719
+    t =    87.51s Find the Target Application 'com.medjars.app'
+    t =    87.92s Added attachment named '007 Turn on Sleep'
+MARK 1792601122.559 STEP END 007 16143ms OK :: Turn on Sleep
+    t =    87.92s Checking existence of `"BackButton" Button`
+    t =    87.99s Find the "BackButton" Button
+    t =    88.16s Tap "BackButton" Button
+    t =    88.16s     Wait for com.medjars.app to idle
+    t =    88.17s     Find the "BackButton" Button
+    t =    88.24s     Check for interrupting elements affecting "BackButton" Button
+    t =    88.37s     Synthesize event
+    t =    88.73s     Wait for com.medjars.app to idle
+MARK 1792601124.371 STEP BEGIN 008 New stack
+    t =    89.74s Checking existence of `"Allow" Button`
+    t =    89.80s Checking existence of `"Allow While Using App" Button`
+    t =    89.84s Checking existence of `"OK" Button`
+    t =    89.89s Checking existence of `"Don’t Allow" Button`
+    t =    89.93s 008 New stack
+    t =    89.93s     Tap "New Stack" Button
+    t =    89.93s         Wait for com.medjars.app to idle
+    t =    89.94s         Find the "New Stack" Button
+    t =    90.10s         Check for interrupting elements affecting "plus" Button
+    t =    90.18s         Synthesize event
+    t =    90.51s         Wait for com.medjars.app to idle
+    t =    92.09s     Waiting 4.0s for "Name, e.g. Focus" TextField to exist
+    t =    93.10s         Checking `Expect predicate `existsNoRetry == 1` for object "Name, e.g. Focus" TextField`
+    t =    93.10s             Checking existence of `"Name, e.g. Focus" TextField`
+    t =    93.60s     Tap "Name, e.g. Focus" TextField
+    t =    93.60s         Wait for com.medjars.app to idle
+    t =    93.61s         Find the "Name, e.g. Focus" TextField
+    t =    93.84s         Check for interrupting elements affecting "Name, e.g. Focus" TextField
+    t =    94.12s         Synthesize event
+    t =    94.43s         Wait for com.medjars.app to idle
+    t =    95.59s     Type 'Test Stack' into "Name, e.g. Focus" TextField
+    t =    95.59s         Wait for com.medjars.app to idle
+    t =    95.91s         Find the "Name, e.g. Focus" TextField
+    t =    96.37s         Check for interrupting elements affecting "Name, e.g. Focus" TextField
+    t =    96.55s         Synthesize event
+    t =    96.94s         Wait for com.medjars.app to idle
+    t =    96.95s     Waiting 3.0s for "keyboard-done" Button to exist
+    t =    97.96s         Checking `Expect predicate `existsNoRetry == 1` for object "keyboard-done" Button`
+    t =    97.96s             Checking existence of `"keyboard-done" Button`
+    t =    98.35s     Get number of matches for: Elements matching predicate '"keyboard-done" IN identifiers'
+    t =    98.50s     Get number of matches for: Elements matching predicate '"keyboard-done" IN identifiers'
+    t =    98.66s     Tap "keyboard-done" Button
+    t =    98.66s         Wait for com.medjars.app to idle
+    t =    98.66s         Find the "keyboard-done" Button
+    t =    98.97s         Check for interrupting elements affecting "keyboard-done" Button
+    t =    99.08s         Synthesize event
+    t =    99.43s         Wait for com.medjars.app to idle
+    t =   100.67s     Checking existence of `"Add a Substance" Button`
+    t =   100.89s     Find the "Add a Substance" Button
+    t =   101.16s     Checking existence of `"Add a Substance" Button`
+    t =   101.40s     Find the "Add a Substance" Button
+    t =   101.62s     Waiting 3.0s for "Add a Substance" Button to exist
+    t =   102.67s         Checking `Expect predicate `existsNoRetry == 1` for object "Add a Substance" Button`
+    t =   102.67s             Checking existence of `"Add a Substance" Button`
+    t =   102.85s     Find the "Add a Substance" Button
+    t =   103.02s     Tap "Add a Substance" Button
+    t =   103.02s         Wait for com.medjars.app to idle
+    t =   103.02s         Find the "Add a Substance" Button
+    t =   103.19s         Check for interrupting elements affecting "Add a Substance" Button
+    t =   103.28s         Synthesize event
+    t =   103.64s         Wait for com.medjars.app to idle
+    t =   105.26s     Waiting 3.0s for "Zinc" Button to exist
+    t =   106.27s         Checking `Expect predicate `existsNoRetry == 1` for object "Zinc" Button`
+    t =   106.27s             Checking existence of `"Zinc" Button`
+    t =   106.38s     Find the "Zinc" Button
+    t =   106.56s     Tap "Zinc" Button
+    t =   106.56s         Wait for com.medjars.app to idle
+    t =   106.56s         Find the "Zinc" Button
+    t =   106.63s         Check for interrupting elements affecting "Zinc" Button
+    t =   106.79s         Synthesize event
+    t =   107.10s         Wait for com.medjars.app to idle
+    t =   109.27s     Find the Target Application 'com.medjars.app'
+    t =   109.94s     Added attachment named 'new stack'
+    t =   109.94s     Waiting 2.0s for "Zinc" NavigationBar to exist
+    t =   110.96s         Checking `Expect predicate `existsNoRetry == 1` for object "Zinc" NavigationBar`
+    t =   110.96s             Checking existence of `"Zinc" NavigationBar`
+    t =   111.01s     Checking existence of `"BackButton" Button`
+    t =   111.07s     Find the "BackButton" Button
+    t =   111.19s     Tap "BackButton" Button
+    t =   111.19s         Wait for com.medjars.app to idle
+    t =   111.21s         Find the "BackButton" Button
+    t =   111.32s         Check for interrupting elements affecting "BackButton" Button
+    t =   111.48s         Synthesize event
+    t =   111.81s         Wait for com.medjars.app to idle
+    t =   113.64s     Waiting 3.0s for "Save" Button to exist
+    t =   114.67s         Checking `Expect predicate `existsNoRetry == 1` for object "Save" Button`
+    t =   114.67s             Checking existence of `"Save" Button`
+    t =   114.90s     Find the "Save" Button
+    t =   115.23s     Tap "Save" Button
+    t =   115.23s         Wait for com.medjars.app to idle
+    t =   115.24s         Find the "Save" Button
+    t =   115.41s         Check for interrupting elements affecting "Save" Button
+    t =   115.80s         Synthesize event
+    t =   116.18s         Wait for com.medjars.app to idle
+    t =   118.57s     Waiting 4.0s for "Test Stack" StaticText to exist
+    t =   119.61s         Checking `Expect predicate `existsNoRetry == 1` for object "Test Stack" StaticText`
+    t =   119.61s             Checking existence of `"Test Stack" StaticText`
+    t =   119.93s Find the Target Application 'com.medjars.app'
+    t =   120.34s Added attachment named '008 New stack'
+MARK 1792601154.973 STEP END 008 30005ms FAIL :: New stack
+MARK 1792601154.973 STEP BEGIN 009 Delete the new stack
+    t =   120.34s Checking existence of `"Allow" Button`
+    t =   120.45s Checking existence of `"Allow While Using App" Button`
+    t =   120.49s Checking existence of `"OK" Button`
+    t =   120.53s Checking existence of `"Don’t Allow" Button`
+    t =   120.59s 009 Delete the new stack
+    t =   120.59s     Tap "Test Stack" StaticText
+    t =   120.59s         Wait for com.medjars.app to idle
+    t =   120.60s         Find the "Test Stack" StaticText
+    t =   120.73s         Check for interrupting elements affecting "Test Stack" StaticText
+    t =   120.88s         Synthesize event
+    t =   121.30s         Wait for com.medjars.app to idle
+    t =   121.31s     Waiting 3.0s for "Edit" Button to exist
+    t =   122.34s         Checking `Expect predicate `existsNoRetry == 1` for object "Edit" Button`
+    t =   122.34s             Checking existence of `"Edit" Button`
+    t =   122.55s     Find the "Edit" Button
+    t =   122.78s     Tap "Edit" Button
+    t =   122.78s         Wait for com.medjars.app to idle
+    t =   122.79s         Find the "Edit" Button
+    t =   122.97s         Check for interrupting elements affecting "Edit" Button
+    t =   123.15s         Synthesize event
+    t =   123.53s         Wait for com.medjars.app to idle
+    t =   125.03s     Checking existence of `"Delete Stack" Button`
+    t =   128.05s     Swipe up Target Application 'com.medjars.app'
+    t =   128.05s         Wait for com.medjars.app to idle
+    t =   128.11s         Find the Target Application 'com.medjars.app'
+    t =   128.33s         Check for interrupting elements affecting "Med Jars" Application
+    t =   128.50s         Synthesize event
+    t =   129.02s         Wait for com.medjars.app to idle
+    t =   131.25s     Checking existence of `"Delete Stack" Button`
+    t =   131.69s     Find the "Delete Stack" Button
+    t =   132.12s     Checking existence of `"Delete Stack" Button`
+    t =   132.58s     Find the "Delete Stack" Button
+    t =   133.84s     Find the "Delete Stack" Button
+    t =   135.15s     Waiting 3.0s for "Delete Stack" Button to exist
+    t =   136.19s         Checking `Expect predicate `existsNoRetry == 1` for object "Delete Stack" Button`
+    t =   136.19s             Checking existence of `"Delete Stack" Button`
+    t =   136.91s     Find the "Delete Stack" Button
+    t =   137.61s     Tap "Delete Stack" Button
+    t =   137.61s         Wait for com.medjars.app to idle
+    t =   137.63s         Find the "Delete Stack" Button
+    t =   138.38s         Check for interrupting elements affecting "Delete Stack" Button
+    t =   138.67s         Synthesize event
+    t =   139.05s         Wait for com.medjars.app to idle
+    t =   140.15s     Get all elements bound by index for: Elements matching predicate 'label == "Delete Stack"'
+    t =   140.56s     Checking existence of `Button (Element at index 0)`
+    t =   140.85s     Find the Button (Element at index 0)
+    t =   141.13s     Find the "Delete Stack" Button
+    t =   141.41s     Checking existence of `Button (Element at index 1)`
+    t =   141.70s     Find the Button (Element at index 1)
+    t =   142.82s     Get all elements bound by index for: Elements matching predicate 'label == "Delete Stack"'
+    t =   143.21s     Checking existence of `Button (Element at index 0)`
+    t =   143.46s     Find the Button (Element at index 0)
+    t =   143.75s     Find the "Delete Stack" Button
+    t =   144.01s     Checking existence of `Button (Element at index 1)`
+    t =   144.29s     Find the Button (Element at index 1)
+    t =   144.62s     Tap "Delete Stack" Button[0.50, 0.50]
+    t =   144.62s         Wait for com.medjars.app to idle
+    t =   144.62s         Find the "Delete Stack" Button
+    t =   144.89s         Check for interrupting elements affecting "Delete Stack" Button
+    t =   145.04s         Synthesize event
+    t =   145.05s             Find the "Delete Stack" Button
+    t =   145.23s             Find the "Delete Stack" Button
+    t =   145.43s             Find the "Delete Stack" Button
+    t =   145.91s         Wait for com.medjars.app to idle
+    t =   147.56s     Checking existence of `"Delete Stack" Button`
+    t =   149.61s     Checking existence of `"Delete Stack" Button`
+    t =   151.33s     Checking existence of `"Test Stack" StaticText`
+    t =   151.48s Find the Target Application 'com.medjars.app'
+    t =   151.91s Added attachment named '009 Delete the new stack'
+MARK 1792601186.547 STEP END 009 30883ms OK :: Delete the new stack
+    t =   151.92s Tear Down
+Test Case '-[MedJarsFullUITests.G_StackTests test01_StackFlows]' passed (152.406 seconds).
+Test Suite 'G_StackTests' passed at 2026-10-21 14:46:27.044.
+	 Executed 1 test, with 0 failures (0 unexpected) in 152.406 (152.408) seconds
+Test Suite 'MedJarsFullUITests.xctest' passed at 2026-10-21 14:46:27.045.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 306.396 (306.404) seconds
+Test Suite 'Selected tests' passed at 2026-10-21 14:46:27.046.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 306.396 (306.406) seconds
+2026-10-21 14:48:46.272 xcodebuild[7848:27242] [MT] IDETestOperationsObserverDebug: 470.047 elapsed -- Testing started completed.
+2026-10-21 14:48:46.274 xcodebuild[7848:27242] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-10-21 14:48:46.274 xcodebuild[7848:27242] [MT] IDETestOperationsObserverDebug: 470.047 sec, +470.047 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/runner/work/med-jars/med-jars/out/result.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started
