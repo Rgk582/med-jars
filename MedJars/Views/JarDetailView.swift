@@ -1,5 +1,4 @@
 import SwiftUI
-import Charts
 
 struct JarDetailView: View {
     let jarId: String
@@ -18,9 +17,12 @@ struct JarDetailView: View {
     @State private var planning: PlanTarget?
 
     var body: some View {
-        TimelineView(.everyMinute) { context in
+        #if DEBUG
+        let _ = DebugHarness.body("JarDetailView")
+        #endif
+        TimelineView(.everyMinute) { _ in
             if let jar = store.jar(jarId) {
-                content(jar: jar, now: context.date)
+                content(jar: jar, now: store.now)
             } else {
                 ContentUnavailableView {
                     Label("No Jar Uses This Link", systemImage: "questionmark.circle")
@@ -49,7 +51,7 @@ struct JarDetailView: View {
                         Button(jar.asNeeded ? "Log a Dose" : "Log an Extra Dose", systemImage: "plus.circle") { logging = extraTarget(jar) }
                             .disabled(!jar.isActive())
                         Button("Plan a Dose", systemImage: "calendar.badge.plus") { planning = PlanTarget(jarId: jar.id, date: Date().addingTimeInterval(3600)) }
-                        if let next = DoseLogic.suggestion(DoseLogic.rows(for: jar, entries: store.entries, planned: store.planned)), next.at != nil {
+                        if let next = store.suggestion(for: jar), next.at != nil {
                             Button("Skip \(next.slot.timeText) Dose", systemImage: "forward.end") { skipping = next.slot }
                         }
                     } label: {
@@ -92,7 +94,7 @@ struct JarDetailView: View {
     @ViewBuilder
     private func content(jar: Jar, now: Date) -> some View {
         let active = jar.isActive(on: DoseLogic.doseDayStart(for: now))
-        let rows = DoseLogic.rows(for: jar, entries: store.entries, planned: store.planned, now: now)
+        let rows = store.rows(for: jar)
         let suggestion = DoseLogic.suggestion(rows)
         let upcoming = store.upcomingPlanned(for: jar.id, now: now)
         let recent = Array(store.entries.filter { $0.jarId == jar.id }.prefix(5))
@@ -130,9 +132,7 @@ struct JarDetailView: View {
                 } else {
                     Section {
                         if timedRows.isEmpty {
-                            Text(jar.timedSlots.isEmpty && !jar.usesRule
-                                 ? "No dose times yet. Tap Edit to add them."
-                                 : "No doses scheduled today, so it's as needed today. Tap Log to log one.")
+                            Text(emptyTodayText(jar, now: now))
                                 .foregroundStyle(Palette.secondary)
                         } else {
                             ForEach(timedRows) { row in
@@ -337,7 +337,7 @@ struct JarDetailView: View {
                                 if e.skipped {
                                     Label("Skipped", systemImage: "forward.end.circle").foregroundStyle(Palette.secondary)
                                 } else {
-                                    Text(e.amountLine).font(.body)
+                                    Text(jar.amountText(of: e)).font(.body)
                                 }
                                 Text([e.slotLabel, e.skipped ? e.skipReason : e.note].filter { !$0.isEmpty }.joined(separator: " \u{00B7} "))
                                     .font(.footnote).foregroundStyle(Palette.secondary)
@@ -406,7 +406,7 @@ struct JarDetailView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             VStack(spacing: 10) {
                 if let toast {
-                    UndoToast(text: "Logged \(toast.amountLine) at \(Format.time12(toast.takenAt))") {
+                    UndoToast(text: "Logged \(jar.amountText(of: toast)), \(Format.time12(toast.takenAt))") {
                         store.undoLog(toast.id)
                         withAnimation { self.toast = nil }
                     }
@@ -427,6 +427,16 @@ struct JarDetailView: View {
     }
 
     // MARK: Actions
+
+    /// Why Today has no doses: none set up, added after today's dose times, or none on this day.
+    private func emptyTodayText(_ jar: Jar, now: Date) -> String {
+        if jar.timedSlots.isEmpty && !jar.usesRule { return "No dose times yet. Tap Edit to add them." }
+        let dayStart = DoseLogic.doseDayStart(for: now)
+        if let created = jar.createdAt, DoseLogic.sameDoseDay(created, now), !jar.slots(onDayStarting: dayStart).isEmpty {
+            return "Added after today's dose times, so the first one is tomorrow. Tap Log if you took some today."
+        }
+        return "No doses scheduled today, so it's as needed today. Tap Log to log one."
+    }
 
     /// An unscheduled dose, or the as-needed dose for as-needed jars.
     private func extraTarget(_ jar: Jar) -> LogTarget {
@@ -464,6 +474,76 @@ struct JarDetailView: View {
                 if let m = f.message { scanAlert = ScanAlert(message: m) }
             }
         }
+    }
+}
+
+/// A dose's effect curve: the part already behind you filled in, a line at now, and the hours along the bottom.
+/// Drawn as plain shapes, which costs far less to redraw than a chart.
+struct EffectCurveChart: View {
+    let profile: EffectProfile
+    let start: Date
+    let now: Date
+    let color: Color
+
+    /// The curve covers the effect plus a little after it wears off, the same span as EffectCurveShape.
+    private var span: TimeInterval { Double(profile.normalized.durationMinutes) * 60 * 1.12 }
+
+    private func x(_ date: Date, width: CGFloat) -> CGFloat {
+        width * CGFloat(min(1, max(0, date.timeIntervalSince(start) / max(span, 1))))
+    }
+
+    /// Whole hours inside the span, every hour or every few hours for long effects.
+    private var hourMarks: [Date] {
+        let cal = Calendar.current
+        let step = max(1, profile.normalized.durationMinutes / 240)
+        guard var t = cal.nextDate(after: start, matching: DateComponents(minute: 0, second: 0), matchingPolicy: .nextTime) else { return [] }
+        let end = start.addingTimeInterval(span)
+        var out: [Date] = []
+        while t < end {
+            if cal.component(.hour, from: t) % step == 0 { out.append(t) }
+            t = t.addingTimeInterval(3600)
+        }
+        return out
+    }
+
+    var body: some View {
+        let marks = hourMarks
+        VStack(spacing: 4) {
+            GeometryReader { geo in
+                let w = geo.size.width, h = geo.size.height
+                let nowX = x(now, width: w)
+                ZStack(alignment: .topLeading) {
+                    ForEach(marks, id: \.self) { m in
+                        Rectangle().fill(Palette.separator).frame(width: 0.5, height: h).offset(x: x(m, width: w))
+                    }
+                    EffectCurveShape(profile: profile)
+                        .fill(color.opacity(0.14))
+                    EffectCurveShape(profile: profile)
+                        .fill(LinearGradient(colors: [color.opacity(0.55), color.opacity(0.12)], startPoint: .top, endPoint: .bottom))
+                        .mask(alignment: .leading) { Rectangle().frame(width: nowX) }
+                    EffectCurveShape(profile: profile, filled: false)
+                        .stroke(color, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                    Path { path in
+                        path.move(to: CGPoint(x: nowX, y: 0))
+                        path.addLine(to: CGPoint(x: nowX, y: h))
+                    }
+                    .stroke(Palette.label.opacity(0.7), style: StrokeStyle(lineWidth: 1.5, dash: [3, 3]))
+                }
+            }
+            GeometryReader { geo in
+                ZStack(alignment: .topLeading) {
+                    ForEach(marks, id: \.self) { m in
+                        Text(m.formatted(.dateTime.hour()))
+                            .font(.caption2).foregroundStyle(Palette.secondary).monospacedDigit()
+                            .fixedSize()
+                            .position(x: min(max(x(m, width: geo.size.width), 14), geo.size.width - 14), y: 7)
+                    }
+                }
+            }
+            .frame(height: 14)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Effect curve")
     }
 }
 
@@ -529,12 +609,6 @@ struct EffectTimelineView: View {
     let dose: DoseEntry?
     let now: Date
 
-    private struct Point: Identifiable {
-        let date: Date
-        let level: Double
-        var id: Date { date }
-    }
-
     var body: some View {
         let p = (jar.effect ?? EffectProfile()).normalized
             VStack(alignment: .leading, spacing: 12) {
@@ -543,9 +617,6 @@ struct EffectTimelineView: View {
                     let onset = start.addingTimeInterval(Double(p.onsetMinutes) * 60)
                     let peak = start.addingTimeInterval(Double(p.peakMinutes) * 60)
                     let end = start.addingTimeInterval(Double(p.durationMinutes) * 60)
-                    let points = stride(from: 0.0, through: Double(p.durationMinutes) * 1.12, by: 5).map {
-                        Point(date: start.addingTimeInterval($0 * 60), level: p.level(at: $0))
-                    }
                     HStack(alignment: .firstTextBaseline) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(now < peak ? "Peaks in" : "Wears off in").font(.subheadline).foregroundStyle(Palette.secondary)
@@ -559,28 +630,8 @@ struct EffectTimelineView: View {
                             Text(start, style: .timer).font(.title3.weight(.semibold)).monospacedDigit()
                         }
                     }
-                    Chart {
-                        ForEach(points) { pt in
-                            AreaMark(x: .value("Time", pt.date), y: .value("Effect", pt.level))
-                                .foregroundStyle(LinearGradient(colors: [jar.lid.color.opacity(0.45), jar.lid.color.opacity(0.05)], startPoint: .top, endPoint: .bottom))
-                                .interpolationMethod(.catmullRom)
-                            LineMark(x: .value("Time", pt.date), y: .value("Effect", pt.level))
-                                .foregroundStyle(jar.lid.color)
-                                .interpolationMethod(.catmullRom)
-                        }
-                        RuleMark(x: .value("Now", now))
-                            .foregroundStyle(Palette.label.opacity(0.6))
-                            .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [3, 3]))
-                    }
-                    .chartYAxis(.hidden)
-                    .chartYScale(domain: 0...1.08)
-                    .chartXAxis {
-                        AxisMarks(values: .stride(by: .hour, count: max(1, p.durationMinutes / 240))) { _ in
-                            AxisGridLine()
-                            AxisValueLabel(format: .dateTime.hour())
-                        }
-                    }
-                    .frame(height: 140)
+                    EffectCurveChart(profile: p, start: start, now: now, color: jar.lid.color)
+                        .frame(height: 150)
                     HStack {
                         milestone("Kicks in", onset, done: now >= onset)
                         Spacer()

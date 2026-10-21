@@ -144,10 +144,19 @@ enum StackChange {
 
 enum StackLogic {
     /// Every stack and substance, set whenever data loads so schedules everywhere (app, widget, reminders) agree.
-    static var stacks: [Stack] = []
-    static var jars: [Jar] = []
+    static var stacks: [Stack] {
+        get { ScheduleContext.current.stacks }
+        set { ScheduleContext.current.stacks = newValue }
+    }
+    static var jars: [Jar] {
+        get { ScheduleContext.current.jars }
+        set { ScheduleContext.current.jars = newValue }
+    }
     /// Stops gap times from looking up other gap times forever.
-    private static var resolvingGap = false
+    private static var resolvingGap: Bool {
+        get { ScheduleContext.current.resolvingGap }
+        set { ScheduleContext.current.resolvingGap = newValue }
+    }
 
     static func dayStart(_ d: Date) -> Date { DoseLogic.doseDayStart(for: d) }
 

@@ -1,20 +1,41 @@
 import SwiftUI
 import UIKit
 
-/// The floating plus button in the bottom right of every tab (not Settings). Tap for Log and Schedule;
-/// Log then offers Log Next and All. Hold it to scan a jar.
+/// What to open once a sheet has finished closing: one dose to log, or several together.
+enum PendingLog {
+    case one(LogTarget)
+    case group(GroupLogTarget)
+
+    @MainActor
+    func open(_ router: Router) {
+        switch self {
+        case .one(let t): router.logRequest = t
+        case .group(let g): router.groupRequest = g
+        }
+    }
+}
+
+/// The floating plus button in the bottom right of every tab (not Settings or a substance's page, which has its
+/// own Log bar). Tap for Log and Schedule; Log then offers Log Next and All. Hold it to scan a jar.
 struct PlusLayer: View {
     @Environment(AppStore.self) private var store
     @Environment(Router.self) private var router
     @State private var open = false
     @State private var logMenu = false
     @State private var showAll = false
+    /// Picked in All, opened once All has closed, so the two sheets never overlap.
+    @State private var afterAll: PendingLog?
     @State private var planning: PlanTarget?
     @State private var unknownTag: UnknownTag?
+    /// A new substance for a scanned tag, opened once the tag sheet has closed.
+    @State private var afterTag: EditorTarget?
     @State private var editing: EditorTarget?
     @State private var message: ScanAlert?
 
     var body: some View {
+        #if DEBUG
+        let _ = DebugHarness.body("PlusLayer")
+        #endif
         ZStack(alignment: .bottomTrailing) {
             if open {
                 Color.black.opacity(0.4)
@@ -41,15 +62,26 @@ struct PlusLayer: View {
                 plus
             }
             .padding(.trailing, 18)
-            .padding(.bottom, 70 + router.plusLift)
+            .padding(.bottom, Router.plusBottom)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
         .animation(.snappy, value: open)
         .animation(.snappy, value: logMenu)
-        .animation(.snappy, value: router.plusLift)
-        .sheet(isPresented: $showAll) { AllSubstancesSheet() }
+        .sheet(isPresented: $showAll, onDismiss: {
+            guard let next = afterAll else { return }
+            afterAll = nil
+            next.open(router)
+        }) {
+            AllSubstancesSheet { afterAll = $0 }
+        }
         .sheet(item: $planning) { PlanDoseSheet(target: $0) }
-        .sheet(item: $unknownTag) { UnknownTagSheet(tag: $0.tag) { editing = $0 } }
+        .sheet(item: $unknownTag, onDismiss: {
+            guard let next = afterTag else { return }
+            afterTag = nil
+            editing = next
+        }) {
+            UnknownTagSheet(tag: $0.tag) { afterTag = $0 }
+        }
         .sheet(item: $editing) { JarEditorView(target: $0) }
         .alert(message?.message ?? "", isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })) {
             Button("OK", role: .cancel) {}
@@ -68,11 +100,6 @@ struct PlusLayer: View {
             .onTapGesture {
                 UISelectionFeedbackGenerator().selectionChanged()
                 if open { close(); return }
-                // On a substance's page, the plus logs that substance.
-                if let jar = pageJar {
-                    logJar(jar)
-                    return
-                }
                 logMenu = false
                 open = true
             }
@@ -82,11 +109,11 @@ struct PlusLayer: View {
                 scan()
             }
             .accessibilityElement()
-            .accessibilityLabel(open ? "Close" : (pageJar.map { "Log \($0.name)" } ?? "Log or Schedule"))
+            .accessibilityLabel(open ? "Close" : "Log or Schedule")
             .accessibilityHint("Hold to scan a jar.")
             .accessibilityAddTraits(.isButton)
             .accessibilityAction {
-                if open { close() } else if let jar = pageJar { logJar(jar) } else { open = true }
+                if open { close() } else { open = true }
             }
             .accessibilityAction(named: "Scan Jar") { scan() }
     }
@@ -99,6 +126,9 @@ struct PlusLayer: View {
                 .padding(.horizontal, 18)
                 .frame(height: 46)
                 .glassPanel(cornerRadius: 23)
+                // The whole pill takes the tap. Glass alone doesn't, so taps around the words fell through to the
+                // dimmed background and closed the menu.
+                .contentShape(RoundedRectangle(cornerRadius: 23, style: .continuous))
         }
         .buttonStyle(.plain)
         .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -107,22 +137,6 @@ struct PlusLayer: View {
     private func close() {
         open = false
         logMenu = false
-    }
-
-    /// The substance whose page is showing.
-    private var pageJar: Jar? {
-        guard case .jar(let id) = router.currentPath.last else { return nil }
-        return store.jar(id)
-    }
-
-    /// Logs a substance: its next dose, or an as-needed or extra dose.
-    private func logJar(_ jar: Jar) {
-        let rows = DoseLogic.rows(for: jar, entries: store.entries, planned: store.planned)
-        if jar.isActive(on: DoseLogic.doseDayStart(for: Date())), let s = DoseLogic.suggestion(rows)?.slot {
-            router.logRequest = LogTarget(jarId: jar.id, slotId: s.id, slot: s)
-        } else {
-            router.logRequest = LogTarget(jarId: jar.id, slotId: jar.asNeededSlot?.id ?? "")
-        }
     }
 
     static var nextHour: Date {
@@ -134,7 +148,7 @@ struct PlusLayer: View {
     /// The next dose, or every dose due with it, ready to log.
     private func logNext() {
         close()
-        let group = DoseLogic.nextGroup(jars: store.jars, entries: store.entries, planned: store.planned)
+        let group = store.nextGroup()
         guard let first = group.first else {
             message = ScanAlert(message: "Nothing is scheduled. Use All to log any substance.")
             return
@@ -172,12 +186,11 @@ enum ScanFlow {
         let (jar, bottle) = found
         if !bottle.tagIds.contains(tag.uid) { store.pair(tagUID: tag.uid, toJar: jar.id, bottleId: bottle.id) }
         let now = Date()
-        guard jar.isActive(on: now), let due = DoseLogic.dueRow(for: jar, entries: store.entries, planned: store.planned, now: now) else {
+        guard jar.isActive(on: now), let due = store.dueRow(for: jar) else {
             router.open(jarId: jar.id)
             return
         }
-        let day = DoseLogic.schedule(jars: store.jars, entries: store.entries, planned: store.planned,
-                                     dayStart: DoseLogic.doseDayStart(for: now), now: now)
+        let day = store.schedule()
         let group = DoseLogic.groups(day.items).first { g in g.contains { $0.jar.id == jar.id && $0.row.slot.id == due.slot.id } } ?? []
         let open = group.filter { !$0.row.status.isHandled && $0.row.status != .waiting }
         if open.count > 1 {
@@ -194,8 +207,9 @@ enum ScanFlow {
 
 /// Every substance, to log any of them now. Tap one to log it, or select several and log them together.
 struct AllSubstancesSheet: View {
+    /// Hands back what to log; it opens once this sheet has closed.
+    let onPick: (PendingLog) -> Void
     @Environment(AppStore.self) private var store
-    @Environment(Router.self) private var router
     @Environment(\.dismiss) private var dismiss
     @State private var selected: Set<String> = []
 
@@ -234,6 +248,9 @@ struct AllSubstancesSheet: View {
             }
         }
         .presentationDetents([.large])
+        #if DEBUG
+        .onAppear { DebugHarness.log("APPEAR AllSubstancesSheet") }
+        #endif
     }
 
     private func row(_ jar: Jar) -> some View {
@@ -265,7 +282,7 @@ struct AllSubstancesSheet: View {
 
     /// The dose to log now: one that's due, or the usual as-needed or extra dose.
     private func doseNow(_ jar: Jar) -> (DoseSlot?, Date?) {
-        if let due = DoseLogic.dueRow(for: jar, entries: store.entries, planned: store.planned) { return (due.slot, due.at) }
+        if let due = store.dueRow(for: jar) { return (due.slot, due.at) }
         return (jar.asNeededSlot, nil)
     }
 
@@ -277,10 +294,8 @@ struct AllSubstancesSheet: View {
 
     private func logOne(_ jar: Jar) {
         let (slot, _) = doseNow(jar)
+        onPick(.one(LogTarget(jarId: jar.id, slotId: slot?.id ?? "", slot: slot)))
         dismiss()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-            router.logRequest = LogTarget(jarId: jar.id, slotId: slot?.id ?? "", slot: slot)
-        }
     }
 
     private func logSelected() {
@@ -288,13 +303,11 @@ struct AllSubstancesSheet: View {
             let (slot, at) = doseNow(jar)
             return GroupDose(jarId: jar.id, slot: slot, scheduled: at)
         }
-        dismiss()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-            if doses.count == 1, let d = doses.first {
-                router.logRequest = LogTarget(jarId: d.jarId, slotId: d.slot?.id ?? "", slot: d.slot)
-            } else {
-                router.groupRequest = GroupLogTarget(title: "Log Doses", doses: doses)
-            }
+        if doses.count == 1, let d = doses.first {
+            onPick(.one(LogTarget(jarId: d.jarId, slotId: d.slot?.id ?? "", slot: d.slot)))
+        } else {
+            onPick(.group(GroupLogTarget(title: "Log Doses", doses: doses)))
         }
+        dismiss()
     }
 }

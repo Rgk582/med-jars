@@ -8,6 +8,8 @@ on:
       - ".github/workflows/preview.yml"
       - ".github/workflows/crash-repro.yml"
       - ".github/workflows/hang-sample.yml"
+      - ".github/workflows/full-test.yml"
+      - ".github/workflows/perf-test.yml"
       - "README.md"
   workflow_dispatch:
 

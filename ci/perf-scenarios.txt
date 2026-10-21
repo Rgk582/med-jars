@@ -1,0 +1,15 @@
+control-cards|
+control-list|
+scroll:home|
+scroll:schedule|
+scroll:cabinet|
+scroll:history|
+scroll:page|
+scroll:settings|
+still:page|
+still:home|
+still:schedule|
+logundo|
+tabs|
+sheets|
+chaos|

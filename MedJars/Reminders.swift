@@ -49,16 +49,53 @@ enum Reminders {
         let at: Date
     }
 
+    /// Reminder passes run here one at a time, in the background.
+    private static let queue = DispatchQueue(label: "com.medjars.reminders", qos: .utility)
+    private static let lock = NSLock()
+    nonisolated(unsafe) private static var latest = 0
+
+    private static func isLatest(_ pass: Int) -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        return pass == latest
+    }
+
+    /// Works out the next reminders in the background and replaces the pending ones. A newer pass makes an older one
+    /// stop, so a burst of changes ends with one pass using the newest data.
     static func reschedule(jars: [Jar], entries: [DoseEntry], planned: [PlannedDose], enabled: Bool, grouped: Bool) {
-        let stacks = StackLogic.stacks
+        lock.lock()
+        latest += 1
+        let pass = latest
+        lock.unlock()
+        // A copy of the schedule settings (stacks, bedtimes, wake-ups) as they are now. The main thread's own copy can
+        // change while this pass runs.
+        let context = ScheduleContext.current.copy()
+        let stacks = context.stacks
         let center = UNUserNotificationCenter.current()
-        center.getPendingNotificationRequests { pending in
+        queue.async {
+            guard isLatest(pass) else { return }
+            let fetched = DispatchSemaphore(value: 0)
+            var pending: [UNNotificationRequest] = []
+            center.getPendingNotificationRequests { pending = $0; fetched.signal() }
+            fetched.wait()
+            ScheduleContext.with(context) {
+                schedule(pass: pass, pending: pending, center: center, jars: jars, entries: entries, planned: planned,
+                         stacks: stacks, enabled: enabled, grouped: grouped)
+            }
+        }
+    }
+
+    private static func schedule(pass: Int, pending: [UNNotificationRequest], center: UNUserNotificationCenter, jars: [Jar],
+                                 entries: [DoseEntry], planned: [PlannedDose], stacks: [Stack], enabled: Bool, grouped: Bool) {
+        #if DEBUG
+        let computeStart = CFAbsoluteTimeGetCurrent()
+        defer { DebugHarness.log(String(format: "TIME reminders.compute(background) %.1fms", (CFAbsoluteTimeGetCurrent() - computeStart) * 1000)) }
+        #endif
+        do {
             let mine: (String) -> Bool = {
                 $0.hasPrefix(Notify.dosePrefix) || $0.hasPrefix(Notify.nudgePrefix) || $0.hasPrefix(Notify.groupPrefix)
                     || $0.hasPrefix(Notify.headsUpPrefix) || $0.hasPrefix(Notify.stackPrefix)
             }
             let ours = pending.map(\.identifier).filter(mine)
-            center.removePendingNotificationRequests(withIdentifiers: ours)
             let budget = max(8, pendingLimit - (pending.count - ours.count))
 
             let cal = Calendar.current
@@ -66,12 +103,13 @@ enum Reminders {
             let today = DoseLogic.doseDayStart(for: now)
             var onTime: [(Date, Due)] = []
             var items: [Item] = []
+            let index = DoseIndex(entries: entries, planned: [])
 
             for offset in 0..<8 {
                 guard let dayStart = cal.date(byAdding: .day, value: offset, to: today) else { continue }
                 for jar in jars where jar.isActive(on: dayStart) {
                     guard enabled || jar.nudge else { continue }
-                    for row in DoseLogic.rows(for: jar, entries: entries, planned: [], dayStart: dayStart, now: now) {
+                    for row in DoseLogic.rows(for: jar, source: index, dayStart: dayStart, now: now) {
                         guard let at = row.at, !row.isPlanned else { continue }
                         // Doses taken upon waking are reminded when Apple Health shows the wake-up, not at a clock time.
                         if row.slot.uponWaking { continue }
@@ -114,8 +152,9 @@ enum Reminders {
                     c.categoryIdentifier = Notify.groupCategory
                     c.threadIdentifier = "group"
                     c.userInfo = ["items": doses.map { "\($0.jar.id)|\($0.slot.id)" }.joined(separator: ";")]
-                    let f = DateFormatter(); f.dateFormat = "yyyyMMddHHmm"
-                    items.append(Item(id: "\(Notify.groupPrefix)\(f.string(from: at))", date: at, content: c))
+                    let parts = cal.dateComponents([.year, .month, .day, .hour, .minute], from: at)
+                    let stamp = String(format: "%04d%02d%02d%02d%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0, parts.hour ?? 0, parts.minute ?? 0)
+                    items.append(Item(id: "\(Notify.groupPrefix)\(stamp)", date: at, content: c))
                 } else {
                     for d in doses {
                         let c = UNMutableNotificationContent()
@@ -208,6 +247,9 @@ enum Reminders {
                 }
             }
 
+            // A newer pass is on its way with newer data; leave the reminders to it.
+            guard isLatest(pass) else { return }
+            center.removePendingNotificationRequests(withIdentifiers: ours)
             items.sort { $0.date < $1.date }
             for item in items.prefix(budget) {
                 let comps = cal.dateComponents([.year, .month, .day, .hour, .minute], from: item.date)

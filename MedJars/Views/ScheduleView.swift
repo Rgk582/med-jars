@@ -22,11 +22,16 @@ struct ScheduleView: View {
     @State private var bedtimeDay: BedtimeTarget?
 
     var body: some View {
-        TimelineView(.everyMinute) { context in
-            content(now: context.date)
+        #if DEBUG
+        let _ = DebugHarness.body("ScheduleView")
+        #endif
+        TimelineView(.everyMinute) { _ in
+            content(now: store.now)
         }
         .background(Palette.background)
         .navigationTitle("Schedule")
+        // A small title, so the frosted week strip under it never covers a large one.
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 if day != DoseLogic.doseDayStart(for: Date()) {
@@ -40,12 +45,13 @@ struct ScheduleView: View {
         }
         .safeAreaInset(edge: .bottom) {
             if let toast {
-                UndoToast(text: "Logged \(toast.jarName) at \(Format.time12(toast.takenAt))") {
+                UndoToast(text: "Logged \(toast.jarName), \(Format.time12(toast.takenAt))") {
                     store.undoLog(toast.id)
                     withAnimation { self.toast = nil }
                 }
                 .transition(.move(edge: .bottom).combined(with: .opacity))
-                .padding(.bottom, 8)
+                // Clear of the plus button below it.
+                .padding(.bottom, 74)
                 .task(id: toast.id) {
                     try? await Task.sleep(nanoseconds: 6_000_000_000)
                     withAnimation { if self.toast?.id == toast.id { self.toast = nil } }
@@ -92,10 +98,10 @@ struct ScheduleView: View {
 
     private func content(now: Date) -> some View {
         let today = DoseLogic.doseDayStart(for: now)
-        let schedule = DoseLogic.schedule(jars: store.jars, entries: store.entries, planned: store.planned, dayStart: day, now: now)
+        let schedule = store.schedule(on: day)
         let isToday = day == today
         let isPast = day < today
-        let groups = DoseLogic.groups(schedule.items)
+        let groups = DoseLogic.groups(schedule.items).map(DoseGroup.init)
         return List {
             Section {
                 DayHeader(day: day, isToday: isToday, isFuture: day > today, schedule: schedule)
@@ -111,7 +117,8 @@ struct ScheduleView: View {
                         .foregroundStyle(Palette.secondary)
                         .cardRow(.single)
                 }
-                ForEach(Array(groups.enumerated()), id: \.offset) { _, group in
+                ForEach(groups) { doseGroup in
+                    let group = doseGroup.items
                     let open = group.filter { !$0.row.status.isHandled && $0.row.status != .waiting }
                     if group.count > 1 {
                         GroupHeaderRow(group: group, canLog: isToday && open.count > 1) {
@@ -189,7 +196,7 @@ struct ScheduleView: View {
                         .font(.footnote).foregroundStyle(Palette.secondary)
                         .labelRow()
                 }
-                Color.clear.frame(height: 90).labelRow()
+                Color.clear.frame(height: Router.plusClearance).labelRow()
             }
         }
         .listStyle(.plain)
@@ -217,6 +224,12 @@ extension View {
             self.safeAreaInset(edge: .top, spacing: 0) { content().background(.bar) }
         }
     }
+}
+
+/// Doses due together, named after the first, so a group keeps its identity when one of them is logged.
+struct DoseGroup: Identifiable {
+    let items: [DayItem]
+    var id: String { items.first?.id ?? "" }
 }
 
 /// A day to change bedtime on.
@@ -573,10 +586,17 @@ private struct ScheduleRow: View {
                         .foregroundStyle(.tint)
                 }
                 if item.row.slot.uponWaking {
-                    Label(WakeTimes.detected(onDayStarting: dayStart) == nil ? "Upon waking, not up yet" : "Upon waking",
-                          systemImage: "sunrise.fill")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(Palette.secondary)
+                    // Once the wake-up is seen the time shows on the right, so say why. Before then the right side
+                    // already says "Upon waking".
+                    if WakeTimes.detected(onDayStarting: dayStart) != nil {
+                        Label("Upon waking", systemImage: "sunrise.fill")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(Palette.secondary)
+                    } else if isToday && !item.row.status.isHandled {
+                        Label("Not up yet", systemImage: "sunrise.fill")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(Palette.secondary)
+                    }
                 }
             }
             Spacer(minLength: 8)
@@ -643,7 +663,7 @@ private struct AsNeededDayRow: View {
     let onLog: () -> Void
 
     private var detail: String {
-        let taken = DoseLogic.entries(for: jar.id, entries: store.entries, dayStart: dayStart).filter { !$0.skipped }
+        let taken = store.doseIndex.entries(jarId: jar.id, dayStart: dayStart).filter { !$0.skipped }
         let kind = jar.asNeeded ? "As needed" : "No doses this day"
         guard let last = taken.first else { return kind }
         return "\(kind) \u{00B7} taken \(taken.count)\u{00D7}, last \(Format.time12(last.takenAt))"
@@ -693,8 +713,8 @@ struct WeekOverviewSheet: View {
 
     var body: some View {
         NavigationStack {
-            TimelineView(.everyMinute) { context in
-                list(now: context.date)
+            TimelineView(.everyMinute) { _ in
+                list(now: store.now)
             }
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
@@ -726,7 +746,7 @@ struct WeekOverviewSheet: View {
         let today = DoseLogic.doseDayStart(for: now)
         return List {
             ForEach(WeekStrip.week(of: weekOf), id: \.self) { day in
-                let schedule = DoseLogic.schedule(jars: store.jars, entries: store.entries, planned: store.planned, dayStart: day, now: now)
+                let schedule = store.schedule(on: day)
                 Section {
                     if schedule.items.isEmpty {
                         Button { open(day) } label: {

@@ -1,13 +1,14 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
+/// The dose log to share. The spreadsheet is only built when it's actually shared, not every time the list redraws.
 struct DoseLogCSV: Transferable {
-    let csv: String
+    let entries: [DoseEntry]
     static var transferRepresentation: some TransferRepresentation {
         FileRepresentation(exportedContentType: .commaSeparatedText) { item in
             let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
             let url = FileManager.default.temporaryDirectory.appendingPathComponent("dose-log-\(df.string(from: Date())).csv")
-            try item.csv.write(to: url, atomically: true, encoding: .utf8)
+            try AppStore.csv(for: item.entries).write(to: url, atomically: true, encoding: .utf8)
             return SentTransferredFile(url)
         }
     }
@@ -72,6 +73,7 @@ struct HistoryView: View {
                     }
                 }
                 .listStyle(.insetGrouped)
+                .contentMargins(.bottom, Router.plusClearance, for: .scrollContent)
             }
         }
         .background(Palette.background)
@@ -83,7 +85,7 @@ struct HistoryView: View {
         }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                ShareLink(item: DoseLogCSV(csv: store.csv), preview: SharePreview("Dose Log")) {
+                ShareLink(item: DoseLogCSV(entries: store.entries), preview: SharePreview("Dose Log")) {
                     Image(systemName: "square.and.arrow.up")
                 }
                 .disabled(store.entries.isEmpty)
@@ -100,7 +102,7 @@ struct HistoryView: View {
             JarIcon(jar: jar, size: 36)
             VStack(alignment: .leading, spacing: 2) {
                 JarNameStack(name: e.jarName, label: jar.labelName)
-                Text((e.skipped ? ["Skipped", e.slotLabel, e.skipReason] : [e.amountLine, e.slotLabel, e.note]).filter { !$0.isEmpty }.joined(separator: " \u{00B7} "))
+                Text((e.skipped ? ["Skipped", e.slotLabel, e.skipReason] : [jar.amountText(of: e), e.slotLabel, e.note]).filter { !$0.isEmpty }.joined(separator: " \u{00B7} "))
                     .font(.subheadline).foregroundStyle(Palette.secondary)
             }
             Spacer(minLength: 8)

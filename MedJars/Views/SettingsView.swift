@@ -4,13 +4,14 @@ import LocalAuthentication
 import UniformTypeIdentifiers
 import UserNotifications
 
+/// A backup to share. Written out only when it's actually shared, not every time Settings redraws.
 struct BackupFile: Transferable {
-    let data: Data
+    let file: StoreFile
     static var transferRepresentation: some TransferRepresentation {
         FileRepresentation(exportedContentType: .json) { item in
             let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
             let url = FileManager.default.temporaryDirectory.appendingPathComponent("Med Jars Backup \(df.string(from: Date())).json")
-            try item.data.write(to: url, options: .atomic)
+            try AppStore.encodeBackup(item.file).write(to: url, options: .atomic)
             return SentTransferredFile(url)
         }
     }
@@ -223,7 +224,7 @@ struct SettingsView: View {
             }
 
             Section {
-                ShareLink(item: BackupFile(data: store.backupData()), preview: SharePreview("Med Jars Backup")) {
+                ShareLink(item: BackupFile(file: store.backupSnapshot()), preview: SharePreview("Med Jars Backup")) {
                     Label { Text("Export Backup").foregroundStyle(Palette.label) } icon: { SettingsIcon(symbol: "square.and.arrow.up", color: .blue) }
                 }
                 Button {

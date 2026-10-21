@@ -130,6 +130,7 @@ enum WakeDetector {
         let work = Task { @MainActor in
             AppStore.shared.reload()
             await check()
+            AppStore.shared.flush()
             task.setTaskCompleted(success: true)
         }
         task.expirationHandler = { work.cancel() }

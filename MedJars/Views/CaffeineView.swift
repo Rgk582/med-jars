@@ -100,8 +100,8 @@ struct CaffeineView: View {
     }
 
     var body: some View {
-        TimelineView(.everyMinute) { context in
-            list(now: context.date)
+        TimelineView(.everyMinute) { _ in
+            list(now: store.now)
         }
         .navigationTitle("Caffeine")
         .toolbar {
@@ -143,5 +143,6 @@ struct CaffeineView: View {
             }
         }
         .listStyle(.insetGrouped)
+        .contentMargins(.bottom, Router.plusClearance, for: .scrollContent)
     }
 }

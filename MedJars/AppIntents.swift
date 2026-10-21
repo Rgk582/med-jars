@@ -56,7 +56,7 @@ struct OpenLogSheetIntent: AppIntent {
         store.reload()
         Router.shared.open(jarId: jar.id)
         if let j = store.jar(jar.id) {
-            let suggested = DoseLogic.suggestion(DoseLogic.rows(for: j, entries: store.entries, planned: store.planned))?.slot
+            let suggested = store.suggestion(for: j)?.slot
             Router.shared.logRequest = LogTarget(jarId: j.id, slotId: suggested?.id ?? j.asNeededSlot?.id ?? "", slot: suggested)
         }
         return .result()
@@ -91,6 +91,8 @@ struct LogNextDoseIntent: AppIntent {
             guard let entry = store.log(jarId: j.id, slot: slot, amount: slot.amount, pills: slot.pills, at: Date()) else {
                 return .result(dialog: "Couldn't log that dose.")
             }
+            // Runs without opening the app, which can stop as soon as this returns: save now.
+            store.flush()
             return .result(dialog: IntentDialog(stringLiteral: "Logged \(entry.amount.isEmpty ? j.name : "\(entry.amount) of \(j.name)") at \(Format.time12(entry.takenAt))."))
         }
         // Only a dose that's due now or was missed in the last 3 hours. Never an early one.
@@ -108,6 +110,7 @@ struct LogNextDoseIntent: AppIntent {
         guard let entry = store.log(jarId: j.id, slot: slot, amount: slot.amount, pills: slot.pills, at: Date()) else {
             return .result(dialog: "Couldn't log that dose.")
         }
+        store.flush()
         let what = entry.amount.isEmpty ? j.name : "\(entry.amount) of \(j.name)"
         var reply = "Logged \(what) at \(Format.time12(entry.takenAt))."
         if !interactionWarnings.isEmpty { reply += " Heads up: " + interactionWarnings.joined(separator: " ") }
@@ -220,6 +223,7 @@ struct SetDiscreetModeIntent: AppIntent {
         case .toggle: d.mode = d.isOn() ? .off : .on
         }
         store.setDiscreet(d)
+        store.flush()
         await LiveDoses.lastSync?.value
         return .result()
     }

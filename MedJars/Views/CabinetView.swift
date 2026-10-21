@@ -9,7 +9,10 @@ struct CabinetView: View {
     @State private var addingCaffeine = false
 
     var body: some View {
-        TimelineView(.everyMinute) { context in
+        #if DEBUG
+        let _ = DebugHarness.body("CabinetView")
+        #endif
+        TimelineView(.everyMinute) { _ in
             Group {
                 if store.jars.isEmpty {
                     ContentUnavailableView {
@@ -21,7 +24,7 @@ struct CabinetView: View {
                             .prominentButton()
                     }
                 } else {
-                    list(now: context.date)
+                    list(now: store.now)
                 }
             }
         }
@@ -71,6 +74,7 @@ struct CabinetView: View {
             }
         }
         .listStyle(.insetGrouped)
+        .contentMargins(.bottom, Router.plusClearance, for: .scrollContent)
     }
 
 }
@@ -119,7 +123,7 @@ private struct JarRow: View {
                 }
             }
             Spacer(minLength: 8)
-            let rows = DoseLogic.rows(for: jar, entries: store.entries, planned: store.planned, now: now)
+            let rows = store.rows(for: jar)
                 .filter { $0.at != nil && !jar.kind.remindOnly && $0.status != .waiting }
             if !rows.isEmpty {
                 let done = rows.filter { $0.status.isHandled }.count
@@ -205,9 +209,9 @@ struct UnknownTagSheet: View {
 
                 Section {
                     Button {
+                        // Opens once this sheet has finished closing.
+                        onAddNew(EditorTarget(jar: nil, pairTagUID: tag.uid))
                         dismiss()
-                        let target = EditorTarget(jar: nil, pairTagUID: tag.uid)
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { onAddNew(target) }
                     } label: {
                         Label("Add a New Substance for This Tag", systemImage: "plus.circle.fill")
                     }

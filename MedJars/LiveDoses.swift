@@ -12,11 +12,13 @@ enum LiveDoses {
     /// The update in flight, so a Shortcut can wait for it before it finishes.
     private(set) static var lastSync: Task<Void, Never>?
 
-    static func activeDoses(jars: [Jar], entries: [DoseEntry], now: Date = Date()) -> [ActiveDose] {
+    /// Doses whose effect is still running, newest first. The Live Activity only shows substances that have it on;
+    /// Working Now shows every substance with an effect timeline.
+    static func activeDoses(jars: [Jar], entries: [DoseEntry], now: Date = Date(), liveActivityOnly: Bool = false) -> [ActiveDose] {
         var out: [ActiveDose] = []
         for e in entries where !e.skipped && now.timeIntervalSince(e.takenAt) < 48 * 3600 && e.takenAt <= now {
             guard let jar = jars.first(where: { $0.id == e.jarId }), !jar.paused,
-                  let effect = jar.effect, effect.liveActivity else { continue }
+                  let effect = jar.effect, !liveActivityOnly || effect.liveActivity else { continue }
             let dose = effect.activeDose(id: e.id, jar: jar, amount: e.amount, start: e.takenAt)
             if dose.end > now { out.append(dose) }
         }
@@ -50,29 +52,32 @@ enum LiveDoses {
     @discardableResult
     static func sync(jars: [Jar], entries: [DoseEntry], discreet: DiscreetSettings?) -> Task<Void, Never>? {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return nil }
-        let now = Date()
-        let running = activeDoses(jars: jars, entries: entries, now: now)
-        let all = Activity<DoseActivityAttributes>.activities
-        let current = all.filter { $0.activityState == .active || $0.activityState == .stale }
-
-        // Swiped away: keep those doses off the Lock Screen for the rest of their effect.
-        var gone = dismissed.filter { $0.value > now.timeIntervalSince1970 }
-        for a in all where a.activityState == .dismissed {
-            for d in a.content.state.doses where d.end > now { gone[d.id] = d.end.timeIntervalSince1970 }
-        }
-        let wasShowing = shown
-        if current.isEmpty && !wasShowing.isEmpty {
-            for d in running where wasShowing.contains(d.id) { gone[d.id] = d.end.timeIntervalSince1970 }
-        }
-        dismissed = gone
-
-        let doses = running.filter { gone[$0.id] == nil }
-        let state = DoseActivityAttributes.ContentState(doses: doses, discreet: discreet, updated: now)
-        let next = nextChange(doses: doses, discreet: discreet, after: now)
-        let stale = next ?? doses.map(\.end).max()
-        scheduleRefresh(at: next)
-        let ids = doses.map(\.id)
+        // One update at a time: each waits for the one before, so two quick logs never both start an activity.
+        let previous = lastSync
         let task = Task { @MainActor in
+            await previous?.value
+            let now = Date()
+            let running = activeDoses(jars: jars, entries: entries, now: now, liveActivityOnly: true)
+            let all = Activity<DoseActivityAttributes>.activities
+            let current = all.filter { $0.activityState == .active || $0.activityState == .stale }
+
+            // Swiped away: keep those doses off the Lock Screen for the rest of their effect.
+            var gone = dismissed.filter { $0.value > now.timeIntervalSince1970 }
+            for a in all where a.activityState == .dismissed {
+                for d in a.content.state.doses where d.end > now { gone[d.id] = d.end.timeIntervalSince1970 }
+            }
+            let wasShowing = shown
+            if current.isEmpty && !wasShowing.isEmpty {
+                for d in running where wasShowing.contains(d.id) { gone[d.id] = d.end.timeIntervalSince1970 }
+            }
+            dismissed = gone
+
+            let doses = running.filter { gone[$0.id] == nil }
+            let state = DoseActivityAttributes.ContentState(doses: doses, discreet: discreet, updated: now)
+            let next = nextChange(doses: doses, discreet: discreet, after: now)
+            let stale = next ?? doses.map(\.end).max()
+            scheduleRefresh(at: next)
+            let ids = doses.map(\.id)
             if doses.isEmpty {
                 for activity in current { await activity.end(nil, dismissalPolicy: .immediate) }
                 shown = []
@@ -115,6 +120,7 @@ enum LiveDoses {
         let work = Task { @MainActor in
             let store = AppStore.shared
             store.reload()
+            store.flush()
             await sync(jars: store.jars, entries: store.entries, discreet: store.settings.discreet)?.value
             task.setTaskCompleted(success: true)
         }

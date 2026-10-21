@@ -67,6 +67,69 @@ struct DaySchedule {
     var total: Int { counted.count }
 }
 
+/// Where schedule math looks up logged and planned doses.
+protocol DoseSource {
+    /// A substance's doses logged in the dose day that starts at `dayStart`, in log order (newest first).
+    func entries(jarId: String, dayStart: Date) -> [DoseEntry]
+    /// Every dose of a substance logged against one dose id (a planned dose), in log order.
+    func entries(jarId: String, slotId: String) -> [DoseEntry]
+    /// A substance's planned doses on the dose day that starts at `dayStart`.
+    func planned(jarId: String, dayStart: Date) -> [PlannedDose]
+}
+
+/// Looks things up by scanning the whole log each time. Fine for one substance.
+struct ArrayDoseSource: DoseSource {
+    let entries: [DoseEntry]
+    let planned: [PlannedDose]
+
+    func entries(jarId: String, dayStart: Date) -> [DoseEntry] {
+        DoseLogic.entries(for: jarId, entries: entries, dayStart: dayStart)
+    }
+
+    func entries(jarId: String, slotId: String) -> [DoseEntry] {
+        entries.filter { $0.jarId == jarId && $0.slotId == slotId }
+    }
+
+    func planned(jarId: String, dayStart: Date) -> [PlannedDose] {
+        DoseLogic.planned(for: jarId, planned: planned, dayStart: dayStart)
+    }
+}
+
+/// The log and planned doses grouped by substance once, so working out many schedules (every substance, several
+/// days) doesn't scan the whole log for each one.
+final class DoseIndex: DoseSource, @unchecked Sendable {
+    private let byJar: [String: [DoseEntry]]
+    private let plannedByJar: [String: [PlannedDose]]
+
+    init(entries: [DoseEntry], planned: [PlannedDose]) {
+        byJar = Dictionary(grouping: entries, by: \.jarId)
+        plannedByJar = Dictionary(grouping: planned, by: \.jarId)
+    }
+
+    func entries(jarId: String, dayStart: Date) -> [DoseEntry] {
+        guard let list = byJar[jarId] else { return [] }
+        let end = Calendar.current.date(byAdding: .day, value: 1, to: dayStart) ?? dayStart
+        return list.filter { $0.takenAt >= dayStart && $0.takenAt < end }
+    }
+
+    func entries(jarId: String, slotId: String) -> [DoseEntry] {
+        (byJar[jarId] ?? []).filter { $0.slotId == slotId }
+    }
+
+    func planned(jarId: String, dayStart: Date) -> [PlannedDose] {
+        guard let list = plannedByJar[jarId] else { return [] }
+        let end = Calendar.current.date(byAdding: .day, value: 1, to: dayStart) ?? dayStart
+        return list.filter { $0.at >= dayStart && $0.at < end }
+    }
+}
+
+#if DEBUG
+/// Test-only counters read by the perf harness.
+enum DebugCounters {
+    nonisolated(unsafe) static var rows = 0
+}
+#endif
+
 enum DoseLogic {
     /// A "dose day" runs from 4 AM to 4 AM, so a 12:30 AM bedtime dose belongs to the evening before.
     static let dayStartHour = 4
@@ -139,8 +202,16 @@ enum DoseLogic {
     /// Doses logged earlier in the day under a schedule that has since changed (a stack turned on or off) count
     /// toward today's doses, so nothing gets doubled.
     static func rows(for jar: Jar, entries: [DoseEntry], planned: [PlannedDose], dayStart: Date, now: Date) -> [SlotRow] {
+        rows(for: jar, source: ArrayDoseSource(entries: entries, planned: planned), dayStart: dayStart, now: now)
+    }
+
+    /// The same, reading logged and planned doses from `source`.
+    static func rows(for jar: Jar, source: some DoseSource, dayStart: Date, now: Date) -> [SlotRow] {
+        #if DEBUG
+        DebugCounters.rows += 1
+        #endif
         guard jar.isActive(on: dayStart) else { return [] }
-        let todays = Self.entries(for: jar.id, entries: entries, dayStart: dayStart)
+        let todays = source.entries(jarId: jar.id, dayStart: dayStart)
         let today = doseDayStart(for: now)
         let (slots, fromStack) = jar.daySlots(onDayStarting: dayStart)
         var out: [SlotRow] = []
@@ -163,7 +234,7 @@ enum DoseLogic {
                 // taken, this one is skipped too.
                 if let gapSlot = slot.gapSlotId, let gapJar = slot.gapJarId {
                     let gap = Double(slot.gapMinutes ?? 0) * 60
-                    let anchorHits = Self.entries(for: gapJar, entries: entries, dayStart: dayStart).filter { $0.slotId == gapSlot }
+                    let anchorHits = source.entries(jarId: gapJar, dayStart: dayStart).filter { $0.slotId == gapSlot }
                     let anchor = anchorHits.first(where: { !$0.skipped }) ?? anchorHits.first
                     if let anchor, !anchor.skipped {
                         at = anchor.takenAt.addingTimeInterval(gap)
@@ -181,6 +252,8 @@ enum DoseLogic {
                     }
                 }
                 if jar.kind.remindOnly, result.0 == .missed { result = (.reminder, result.1) }
+                // A substance added partway through a day has nothing to take before it was added.
+                if hit == nil, let created = jar.createdAt, at < created { continue }
                 out.append(SlotRow(slot: slot, status: result.0, distance: result.1, at: at))
             }
             // Doses logged under another schedule earlier today count toward the doses still open.
@@ -203,8 +276,8 @@ enum DoseLogic {
                 out[i] = SlotRow(slot: out[i].slot, status: e.skipped ? .skipped(e) : .taken(e), distance: out[i].distance, at: out[i].at)
             }
         }
-        for p in Self.planned(for: jar.id, planned: planned, dayStart: dayStart) {
-            let hits = entries.filter { $0.jarId == jar.id && $0.slotId == p.slotId }
+        for p in source.planned(jarId: jar.id, dayStart: dayStart) {
+            let hits = source.entries(jarId: jar.id, slotId: p.slotId)
             var result = status(at: p.at, hit: hits.first(where: { !$0.skipped }) ?? hits.first, now: now)
             if jar.kind.remindOnly, result.0 == .missed { result = (.reminder, result.1) }
             out.append(SlotRow(slot: p.slot, status: result.0, distance: result.1, at: p.at))
@@ -223,7 +296,15 @@ enum DoseLogic {
     static func suggestion(_ rows: [SlotRow]) -> SlotRow? {
         // Planned doses are only offered once they're due, so an unplanned extra dose isn't logged as the planned one.
         let open = rows.filter { $0.at != nil && !$0.status.isHandled && $0.status != .waiting && !($0.isPlanned && $0.status == .later) }
-        if let best = open.min(by: { $0.distance < $1.distance }) { return best }
+        // A dose due now comes first, then one missed earlier today, then the next one coming up.
+        func rank(_ s: SlotStatus) -> Int {
+            switch s {
+            case .due: return 0
+            case .missed, .reminder: return 1
+            default: return 2
+            }
+        }
+        if let best = open.min(by: { (rank($0.status), $0.distance) < (rank($1.status), $1.distance) }) { return best }
         return rows.first { $0.at == nil }
     }
 
@@ -252,13 +333,19 @@ enum DoseLogic {
 
     /// The next dose and every other dose due with it (within the group window), across all jars.
     static func nextGroup(jars: [Jar], entries: [DoseEntry], planned: [PlannedDose] = [], at now: Date = Date()) -> [NextDose] {
+        let index = DoseIndex(entries: entries, planned: planned)
+        return nextGroup(jars: jars, at: now) { rows(for: $0, source: index, dayStart: $1, now: now) }
+    }
+
+    /// The same, with each substance's rows for a dose day coming from `rows`.
+    static func nextGroup(jars: [Jar], at now: Date, rows: (Jar, Date) -> [SlotRow]) -> [NextDose] {
         let cal = Calendar.current
         let today = doseDayStart(for: now)
         for offset in 0...7 {
             guard let dayStart = cal.date(byAdding: .day, value: offset, to: today) else { continue }
             var open: [NextDose] = []
             for jar in jars where jar.isActive(on: dayStart) {
-                for row in rows(for: jar, entries: entries, planned: planned, dayStart: dayStart, now: now) {
+                for row in rows(jar, dayStart) {
                     guard let at = row.at, at >= now.addingTimeInterval(-3600), !row.status.isHandled, row.status != .waiting else { continue }
                     open.append(NextDose(jar: jar, slot: row.slot, time: at))
                 }
@@ -313,10 +400,16 @@ enum DoseLogic {
 
     /// Everything on one dose day for the Schedule tab.
     static func schedule(jars: [Jar], entries: [DoseEntry], planned: [PlannedDose], dayStart: Date, now: Date) -> DaySchedule {
+        let index = DoseIndex(entries: entries, planned: planned)
+        return schedule(jars: jars, dayStart: dayStart) { rows(for: $0, source: index, dayStart: dayStart, now: now) }
+    }
+
+    /// The same, with each substance's rows coming from `rows`.
+    static func schedule(jars: [Jar], dayStart: Date, rows: (Jar) -> [SlotRow]) -> DaySchedule {
         var items: [DayItem] = []
         var asNeeded: [Jar] = []
         for jar in jars where jar.isActive(on: dayStart) {
-            let jarRows = rows(for: jar, entries: entries, planned: planned, dayStart: dayStart, now: now)
+            let jarRows = rows(jar)
             items += jarRows.filter { $0.at != nil }.map { DayItem(jar: jar, row: $0) }
             let hasTimed = jarRows.contains { $0.at != nil && !$0.isPlanned }
             if !jar.kind.remindOnly && !hasTimed { asNeeded.append(jar) }

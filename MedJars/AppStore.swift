@@ -3,6 +3,14 @@ import Observation
 import WidgetKit
 import SwiftUI
 
+/// Today's doses taken out of the total, and the ones still to take.
+struct TodayProgress {
+    var taken: Int
+    var total: Int
+    var left: [DayItem]
+    var fraction: Double { total == 0 ? 0 : Double(taken) / Double(total) }
+}
+
 @MainActor
 @Observable
 final class AppStore {
@@ -19,9 +27,25 @@ final class AppStore {
     private(set) var stacks: [Stack] = []
     var isLocked: Bool = false
     var saveError: String?
+    /// Goes up with every change to the data, so cached schedules know to start over. Screens that read cached
+    /// schedules depend on it, so they redraw when anything changes.
+    private(set) var revision = 0
+
+    /// Saves in the background, one write at a time.
+    @ObservationIgnored private let writer = StoreWriter()
+    /// The file as this app last read it, to skip reloading when nothing else wrote it.
+    @ObservationIgnored private var loadedStamp: StoreIO.Stamp?
+    /// Widgets, reminders, Siri and the Live Activity catch up a moment after the last change, not after every tap.
+    @ObservationIgnored private var sideEffects: Task<Void, Never>?
+    @ObservationIgnored private var backupTask: Task<Void, Never>?
+    @ObservationIgnored private var shortcutJars: [String] = []
 
     private init() {
+        #if DEBUG
+        DebugHarness.prepare()
+        #endif
         let file = StoreIO.load()
+        loadedStamp = StoreIO.stamp()
         jars = file.jars.sorted(by: Self.jarOrder)
         entries = file.entries.sorted { $0.takenAt > $1.takenAt }
         settings = file.settings
@@ -46,7 +70,133 @@ final class AppStore {
         StackLogic.jars = jars
         settings.apply()
         WakeTimes.byDay = wakeTimes
+        revision &+= 1
     }
+
+    // MARK: Cached schedules
+
+    /// Today's schedule and every substance's doses get worked out once per change (and once a minute), then shared
+    /// by every screen and card, instead of each one working them out again.
+    @ObservationIgnored private var cacheRevision = -1
+    @ObservationIgnored private var cacheMinute = -1
+    @ObservationIgnored private var cacheNow = Date()
+    @ObservationIgnored private var indexRevision = -1
+    @ObservationIgnored private var cachedIndex: DoseIndex?
+    @ObservationIgnored private var rowsCache: [String: [SlotRow]] = [:]
+    @ObservationIgnored private var scheduleCache: [Date: DaySchedule] = [:]
+    @ObservationIgnored private var nextGroupCache: [NextDose]?
+    @ObservationIgnored private var missedCache: [DayItem]?
+    @ObservationIgnored private var progressCache: TodayProgress?
+
+    /// The moment cached schedules are worked out for. Reading it makes a screen redraw when the data changes.
+    var now: Date {
+        prepareCaches()
+        return cacheNow
+    }
+
+    private func prepareCaches() {
+        let current = Date()
+        let minute = Int(current.timeIntervalSince1970 / 60)
+        if cacheRevision != revision || cacheMinute != minute {
+            cacheRevision = revision
+            cacheMinute = minute
+            cacheNow = current
+            rowsCache.removeAll(keepingCapacity: true)
+            scheduleCache.removeAll(keepingCapacity: true)
+            nextGroupCache = nil
+            missedCache = nil
+            progressCache = nil
+        }
+    }
+
+    /// The log and planned doses grouped by substance, rebuilt only when they change.
+    var doseIndex: DoseIndex {
+        if indexRevision != revision || cachedIndex == nil {
+            cachedIndex = DoseIndex(entries: entries, planned: planned)
+            indexRevision = revision
+        }
+        return cachedIndex!
+    }
+
+    /// A substance's doses on a dose day (today when nil), as of now.
+    func rows(for jar: Jar, dayStart: Date? = nil) -> [SlotRow] {
+        prepareCaches()
+        let day = dayStart ?? DoseLogic.doseDayStart(for: cacheNow)
+        let key = "\(jar.id)|\(day.timeIntervalSince1970)"
+        if let hit = rowsCache[key] { return hit }
+        let r = DoseLogic.rows(for: jar, source: doseIndex, dayStart: day, now: cacheNow)
+        rowsCache[key] = r
+        return r
+    }
+
+    /// Everything on a dose day (today when nil), as of now.
+    func schedule(on dayStart: Date? = nil) -> DaySchedule {
+        prepareCaches()
+        let day = dayStart ?? DoseLogic.doseDayStart(for: cacheNow)
+        if let hit = scheduleCache[day] { return hit }
+        let s = DoseLogic.schedule(jars: jars, dayStart: day) { self.rows(for: $0, dayStart: day) }
+        scheduleCache[day] = s
+        return s
+    }
+
+    /// The next dose and every dose due with it.
+    func nextGroup() -> [NextDose] {
+        prepareCaches()
+        if let hit = nextGroupCache { return hit }
+        let g = DoseLogic.nextGroup(jars: jars, at: cacheNow) { self.rows(for: $0, dayStart: $1) }
+        nextGroupCache = g
+        return g
+    }
+
+    /// Doses missed today and yesterday, newest first. Recreational doses only remind, so they never count.
+    func missedDoses() -> [DayItem] {
+        prepareCaches()
+        if let hit = missedCache { return hit }
+        let today = DoseLogic.doseDayStart(for: cacheNow)
+        let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: today) ?? today
+        var out: [DayItem] = []
+        for day in [today, yesterday] {
+            out += schedule(on: day).items.filter { $0.row.status == .missed && !$0.jar.kind.remindOnly }
+        }
+        out.sort { ($0.row.at ?? .distantPast) > ($1.row.at ?? .distantPast) }
+        missedCache = out
+        return out
+    }
+
+    /// Today's doses taken and to take. As-needed and extra doses count on both sides once taken.
+    func todayProgress() -> TodayProgress {
+        prepareCaches()
+        if let hit = progressCache { return hit }
+        let dayStart = DoseLogic.doseDayStart(for: cacheNow)
+        let dayEnd = DoseLogic.doseDayEnd(for: cacheNow)
+        let s = schedule(on: dayStart)
+        var countedIds = Set<String>()
+        for item in s.counted {
+            if case .taken(let e) = item.row.status { countedIds.insert(e.id) }
+        }
+        let extras = entries.filter {
+            !$0.skipped && $0.takenAt >= dayStart && $0.takenAt < dayEnd && $0.takenAt <= cacheNow && !countedIds.contains($0.id)
+        }.count
+        let p = TodayProgress(taken: s.taken + extras, total: s.total + extras, left: s.counted.filter { !$0.row.status.isHandled })
+        progressCache = p
+        return p
+    }
+
+    /// A dose that's due now or was missed within the last 3 hours. Never a future one.
+    func dueRow(for jar: Jar) -> SlotRow? {
+        rows(for: jar)
+            .filter { row in
+                switch row.status {
+                case .due: return true
+                case .missed, .reminder: return row.distance <= 180
+                default: return false
+                }
+            }
+            .min { $0.distance < $1.distance }
+    }
+
+    /// The dose the Log button offers for a substance.
+    func suggestion(for jar: Jar) -> SlotRow? { DoseLogic.suggestion(rows(for: jar)) }
 
     func setFaceIDLock(_ on: Bool) {
         settings.faceIDLock = on
@@ -102,6 +252,8 @@ final class AppStore {
         WakeTimes.byDay = wakeTimes
         persist()
         remindWakingDoses(woke: woke)
+        // Usually seen in the background, which can stop at any moment.
+        flush()
     }
 
     private func remindWakingDoses(woke: Date) {
@@ -247,6 +399,7 @@ final class AppStore {
             jars[i] = j
         } else {
             j.order = (jars.map(\.order).max() ?? 0) + 1
+            if j.createdAt == nil { j.createdAt = Date() }
             jars.append(j)
         }
         // A tag belongs to one jar: take this substance's tags off anything else.
@@ -273,6 +426,7 @@ final class AppStore {
             j.plans = [DosePlan(days: DoseSlot.everyDay, dailyPills: 1, splitEqual: true,
                                 doses: [DoseSlot(label: "Morning", time: "08:00", amount: "", pills: 1, share: 1)])]
             j.order = (jars.map(\.order).max() ?? 0) + 1
+            j.createdAt = Date()
             jars.append(j)
             added += 1
         }
@@ -415,6 +569,7 @@ final class AppStore {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let data = trimmed.data(using: .utf8), !trimmed.isEmpty else { return "Paste a jar first." }
         let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = Self.flexibleDates
         var incoming: [Jar] = []
         if let many = try? decoder.decode([Jar].self, from: data) { incoming = many }
         else if let one = try? decoder.decode(Jar.self, from: data) { incoming = [one] }
@@ -450,6 +605,24 @@ final class AppStore {
         return "Imported \(added) new and updated \(updated) existing jar\(added + updated == 1 ? "" : "s")."
     }
 
+    /// Reads dates the way the app saves them (seconds since 1970), or as milliseconds, ISO 8601 or yyyy-MM-dd text.
+    nonisolated static let flexibleDates = JSONDecoder.DateDecodingStrategy.custom { decoder in
+        let c = try decoder.singleValueContainer()
+        if let n = try? c.decode(Double.self) {
+            return Date(timeIntervalSince1970: n > 100_000_000_000 ? n / 1000 : n)
+        }
+        let text = try c.decode(String.self)
+        let iso = ISO8601DateFormatter()
+        if let d = iso.date(from: text) { return d }
+        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let d = iso.date(from: text) { return d }
+        let day = DateFormatter()
+        day.locale = Locale(identifier: "en_US_POSIX")
+        day.dateFormat = "yyyy-MM-dd"
+        if let d = day.date(from: text) { return d }
+        throw DecodingError.dataCorruptedError(in: c, debugDescription: "Not a date: \(text)")
+    }
+
     // MARK: Logging
 
     private var file: StoreFile {
@@ -457,13 +630,24 @@ final class AppStore {
     }
 
     private func adopt(_ f: StoreFile) {
-        jars = f.jars.sorted(by: Self.jarOrder)
-        entries = f.entries
-        caffeine = f.caffeine.sorted { $0.at > $1.at }
-        planned = f.planned.sorted { $0.at < $1.at }
-        wakeTimes = f.wakeTimes
-        stacks = f.stacks.sorted { $0.order < $1.order }
+        apply(jars: f.jars, entries: f.entries, caffeine: f.caffeine, planned: f.planned, wakeTimes: f.wakeTimes, stacks: f.stacks)
         syncContext()
+    }
+
+    /// Takes new data, only touching what actually changed, so screens that show the rest don't redraw.
+    private func apply(jars newJars: [Jar], entries newEntries: [DoseEntry], caffeine newCaffeine: [CaffeineEntry],
+                       planned newPlanned: [PlannedDose], wakeTimes newWake: [String: Date], stacks newStacks: [Stack]) {
+        let j = newJars.sorted(by: Self.jarOrder)
+        if j != jars { jars = j }
+        let e = newEntries.sorted { $0.takenAt > $1.takenAt }
+        if e != entries { entries = e }
+        let c = newCaffeine.sorted { $0.at > $1.at }
+        if c != caffeine { caffeine = c }
+        let p = newPlanned.sorted { $0.at < $1.at }
+        if p != planned { planned = p }
+        if newWake != wakeTimes { wakeTimes = newWake }
+        let s = newStacks.sorted { $0.order < $1.order }
+        if s != stacks { stacks = s }
     }
 
     /// A jar's dose time or planned dose by id.
@@ -789,14 +973,21 @@ final class AppStore {
     }
     private(set) var backupError: String?
 
-    func backupData() -> Data {
+    /// Everything that goes in a backup, without the backup folder itself.
+    func backupSnapshot() -> StoreFile {
+        var f = file
+        f.settings.backupBookmark = nil
+        return f
+    }
+
+    nonisolated static func encodeBackup(_ f: StoreFile) -> Data {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        var f = file
-        f.settings.backupBookmark = nil
         return (try? encoder.encode(f)) ?? Data()
     }
+
+    func backupData() -> Data { Self.encodeBackup(backupSnapshot()) }
 
     /// Replaces everything with a backup file's contents. Returns a message for the person.
     func restoreBackup(from data: Data) -> String {
@@ -829,31 +1020,74 @@ final class AppStore {
         persist()
     }
 
+    @ObservationIgnored private var folderNameCache: (Data, String?)?
+
     var backupFolderName: String? {
         guard let data = settings.backupBookmark else { return nil }
+        if let cached = folderNameCache, cached.0 == data { return cached.1 }
         var stale = false
-        return (try? URL(resolvingBookmarkData: data, options: [], relativeTo: nil, bookmarkDataIsStale: &stale))?.lastPathComponent
+        let name = (try? URL(resolvingBookmarkData: data, options: [], relativeTo: nil, bookmarkDataIsStale: &stale))?.lastPathComponent
+        folderNameCache = (data, name)
+        return name
     }
 
+    /// Writes the backup right away (Back Up Now, or right after picking the folder).
     func backupNow() {
-        guard let data = settings.backupBookmark else { return }
+        guard let bookmark = settings.backupBookmark else { return }
+        let result = Self.writeBackup(backupSnapshot(), bookmark: bookmark)
+        finishBackup(result)
+    }
+
+    /// Automatic backup: a few seconds after the last change, written in the background.
+    private func scheduleBackup() {
+        guard settings.backupBookmark != nil else { return }
+        backupTask?.cancel()
+        backupTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 4_000_000_000)
+            guard let self, !Task.isCancelled else { return }
+            self.backupInBackground()
+        }
+    }
+
+    private func backupInBackground() {
+        backupTask = nil
+        guard let bookmark = settings.backupBookmark else { return }
+        let snapshot = backupSnapshot()
+        writer.queue.async {
+            let result = Self.writeBackup(snapshot, bookmark: bookmark)
+            Task { @MainActor in AppStore.shared.finishBackup(result) }
+        }
+    }
+
+    private func finishBackup(_ result: String?) {
+        if let result {
+            if backupError != result { backupError = result }
+        } else {
+            UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "lastBackup")
+            if backupError != nil { backupError = nil }
+        }
+    }
+
+    /// Writes the backup file. Returns a problem to show, or nil when it worked.
+    nonisolated private static func writeBackup(_ f: StoreFile, bookmark: Data) -> String? {
         var stale = false
-        guard let folder = try? URL(resolvingBookmarkData: data, options: [], relativeTo: nil, bookmarkDataIsStale: &stale) else {
-            backupError = "Can't reach the backup folder. Choose it again in Settings."
-            return
+        guard let folder = try? URL(resolvingBookmarkData: bookmark, options: [], relativeTo: nil, bookmarkDataIsStale: &stale) else {
+            return "Can't reach the backup folder. Choose it again in Settings."
         }
         let ok = folder.startAccessingSecurityScopedResource()
         defer { if ok { folder.stopAccessingSecurityScopedResource() } }
         do {
-            try backupData().write(to: folder.appendingPathComponent("Med Jars Backup.json"), options: .atomic)
-            UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "lastBackup")
-            backupError = nil
+            try encodeBackup(f).write(to: folder.appendingPathComponent("Med Jars Backup.json"), options: .atomic)
+            return nil
         } catch {
-            backupError = "Backup failed: \(error.localizedDescription)"
+            return "Backup failed: \(error.localizedDescription)"
         }
     }
 
-    var csv: String {
+    var csv: String { Self.csv(for: entries) }
+
+    /// The dose log as a spreadsheet, oldest first. Built only when it's exported.
+    nonisolated static func csv(for entries: [DoseEntry]) -> String {
         func cell(_ s: String) -> String { s.contains(where: { $0 == "," || $0 == "\"" || $0.isNewline }) ? "\"" + s.replacingOccurrences(of: "\"", with: "\"\"") + "\"" : s }
         let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
         var out = ["Date,Time,Jar,Type,Dose,Status,Amount,Pills,Note,Focus,Mood,Side effects"]
@@ -869,34 +1103,113 @@ final class AppStore {
 
     // MARK: Saving
 
+    /// Picks up changes made outside the app (Control Center, a widget, a Shortcut). Skips the work when the file
+    /// hasn't changed since this app last wrote or read it, which is almost every time the app comes back.
     func reload() {
+        let written = writer.lastStamp()
+        let stamp = StoreIO.stamp()
+        if let stamp, stamp == written || stamp == loadedStamp { return }
+        #if DEBUG
+        let f = DebugHarness.measure("reload.load") { StoreIO.load() }
+        #else
         let f = StoreIO.load()
-        jars = f.jars.sorted(by: Self.jarOrder)
-        entries = f.entries.sorted { $0.takenAt > $1.takenAt }
-        caffeine = f.caffeine.sorted { $0.at > $1.at }
-        planned = f.planned.sorted { $0.at < $1.at }
-        wakeTimes = f.wakeTimes
-        stacks = f.stacks.sorted { $0.order < $1.order }
-        settings.bedtime = f.settings.bedtime ?? settings.bedtime
-        settings.usualWake = f.settings.usualWake ?? settings.usualWake
-        settings.bedtimeByDate = f.settings.bedtimeByDate ?? settings.bedtimeByDate
-        settings.bedtimeByWeekday = f.settings.bedtimeByWeekday ?? settings.bedtimeByWeekday
+        #endif
+        loadedStamp = StoreIO.stamp()
+        apply(jars: f.jars, entries: f.entries, caffeine: f.caffeine, planned: f.planned, wakeTimes: f.wakeTimes, stacks: f.stacks)
+        var s = settings
+        s.bedtime = f.settings.bedtime ?? s.bedtime
+        s.usualWake = f.settings.usualWake ?? s.usualWake
+        s.bedtimeByDate = f.settings.bedtimeByDate ?? s.bedtimeByDate
+        s.bedtimeByWeekday = f.settings.bedtimeByWeekday ?? s.bedtimeByWeekday
+        if s != settings { settings = s }
         syncContext()
     }
 
+    /// Saves in the background, then catches widgets, reminders, Siri, the Live Activity and the backup up a moment
+    /// after the last change.
     private func persist() {
+        #if DEBUG
+        let started = CFAbsoluteTimeGetCurrent()
+        defer { DebugHarness.log(String(format: "PERSIST total %.1fms", (CFAbsoluteTimeGetCurrent() - started) * 1000)) }
+        #endif
         syncContext()
-        do {
-            try StoreIO.save(file)
-            saveError = nil
-        } catch {
-            saveError = "Couldn't save: \(error.localizedDescription)"
+        writer.save(file) { error in
+            Task { @MainActor in
+                let store = AppStore.shared
+                if let error {
+                    store.saveError = "Couldn't save: \(error.localizedDescription)"
+                } else if store.saveError != nil {
+                    store.saveError = nil
+                }
+            }
         }
+        sideEffects?.cancel()
+        sideEffects = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 700_000_000)
+            guard let self, !Task.isCancelled else { return }
+            self.runSideEffects()
+        }
+        scheduleBackup()
+    }
+
+    private func runSideEffects() {
+        sideEffects = nil
+        // Widgets and Control Center read the saved file, so it has to be written first.
+        writer.wait()
         WidgetCenter.shared.reloadAllTimelines()
         ControlCenter.shared.reloadAllControls()
         Reminders.reschedule(jars: jars, entries: entries, planned: planned, enabled: settings.reminders, grouped: groupRemindersOn)
-        MedJarsShortcuts.updateAppShortcutParameters()
+        let names = jars.map { $0.id + "|" + $0.name }
+        if names != shortcutJars {
+            shortcutJars = names
+            MedJarsShortcuts.updateAppShortcutParameters()
+        }
         LiveDoses.sync(jars: jars, entries: entries, discreet: settings.discreet)
-        backupNow()
     }
+
+    /// Finishes everything now: the file write, then widgets, reminders and the Live Activity, then the backup.
+    /// For when the app may stop running soon (going to the background, a Shortcut or a notification action).
+    func flush() {
+        writer.wait()
+        if sideEffects != nil {
+            sideEffects?.cancel()
+            runSideEffects()
+        }
+        if backupTask != nil {
+            backupTask?.cancel()
+            backupTask = nil
+            backupNow()
+        }
+    }
+}
+
+/// Writes the data file on a background queue, one save at a time, and remembers the file as last written.
+final class StoreWriter: @unchecked Sendable {
+    let queue = DispatchQueue(label: "com.medjars.store.writer", qos: .userInitiated)
+    /// Only touched on `queue`.
+    private var stamp: StoreIO.Stamp?
+
+    func save(_ file: StoreFile, done: @escaping @Sendable (Error?) -> Void) {
+        queue.async {
+            #if DEBUG
+            let started = CFAbsoluteTimeGetCurrent()
+            #endif
+            do {
+                try StoreIO.save(file)
+                self.stamp = StoreIO.stamp()
+                done(nil)
+            } catch {
+                done(error)
+            }
+            #if DEBUG
+            DebugHarness.log(String(format: "TIME persist.save(background) %.1fms", (CFAbsoluteTimeGetCurrent() - started) * 1000))
+            #endif
+        }
+    }
+
+    /// Waits for every save already started.
+    func wait() { queue.sync {} }
+
+    /// The file as last written by this app, after any save in progress lands.
+    func lastStamp() -> StoreIO.Stamp? { queue.sync { stamp } }
 }

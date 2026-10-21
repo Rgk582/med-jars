@@ -53,14 +53,23 @@ final class Router {
         }
     }
 
-    /// The plus button stays off Settings (and anything opened from it).
-    var plusHidden: Bool { currentPath.contains(.settings) }
-
-    /// A substance's page has a Log bar at the bottom, so the plus button sits above it.
-    var plusLift: CGFloat {
-        if case .jar = currentPath.last { return 84 }
-        return 0
+    /// The plus button stays off Settings (and anything opened from it) and off a substance's page, whose own
+    /// Log bar logs that substance.
+    var plusHidden: Bool {
+        if currentPath.contains(.settings) { return true }
+        if case .jar = currentPath.last { return true }
+        return false
     }
+
+    var onJarPage: Bool {
+        if case .jar = currentPath.last { return true }
+        return false
+    }
+
+    /// How far the plus button sits above the bottom of the screen's safe area.
+    static let plusBottom: CGFloat = 70
+    /// Room to leave at the end of a list so its last rows can scroll clear of the plus button.
+    static let plusClearance: CGFloat = 84
 
     /// Opens a jar from outside (NFC, a notification, a link) in the Cabinet tab.
     func open(jarId: String) {
@@ -187,6 +196,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
                     Router.shared.open(jarId: jarId)
                 }
             }
+            // Actions like Log Dose run with the app in the background, which can stop right after: save now.
+            store.flush()
             completionHandler()
         }
     }
@@ -242,12 +253,13 @@ struct RootView: View {
         .tint(store.accentColor)
         .overlay(alignment: .bottom) {
             if let removed = store.lastDeleted {
-                UndoToast(text: removed.skipped ? "Removed the skip for \(removed.jarName)" : "Deleted \(removed.jarName) at \(Format.time12(removed.takenAt))",
+                UndoToast(text: removed.skipped ? "Removed the skip for \(removed.jarName)" : "Deleted \(removed.jarName), \(Format.time12(removed.takenAt))",
                           deleted: true) {
                     store.restore(removed)
                     withAnimation { store.lastDeleted = nil }
                 }
-                .padding(.bottom, router.plusHidden ? 64 : 70 + router.plusLift + 6)
+                // Above the plus button, or above a substance page's Log bar.
+                .padding(.bottom, router.onJarPage ? 150 : (router.plusHidden ? 64 : Router.plusBottom + 70))
                 .transition(.move(edge: .bottom).combined(with: .opacity))
                 .task(id: removed.id) {
                     try? await Task.sleep(nanoseconds: 6_000_000_000)
@@ -277,6 +289,7 @@ struct RootView: View {
             }
         }
         .onAppear {
+            // The store loaded the file moment ago; this only picks up anything written since.
             store.reload()
             refreshBackgroundWork()
             if store.isLocked {
@@ -295,6 +308,7 @@ struct RootView: View {
             #endif
         }
         .onChange(of: scenePhase) { _, phase in
+            if phase == .background { saveBeforeSuspending() }
             guard store.settings.faceIDLock else {
                 if phase == .active { store.reload(); refreshBackgroundWork() }
                 return
@@ -318,6 +332,17 @@ struct RootView: View {
             @unknown default: break
             }
         }
+    }
+
+    /// Finishes saving (and the widget, reminder and Live Activity updates) before iOS suspends the app.
+    private func saveBeforeSuspending() {
+        var task = UIBackgroundTaskIdentifier.invalid
+        task = UIApplication.shared.beginBackgroundTask(withName: "save") {
+            UIApplication.shared.endBackgroundTask(task)
+            task = .invalid
+        }
+        store.flush()
+        if task != .invalid { UIApplication.shared.endBackgroundTask(task) }
     }
 
     private func refreshBackgroundWork() {

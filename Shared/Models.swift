@@ -96,7 +96,10 @@ enum PickOrder: String, Codable, CaseIterable, Identifiable {
 
 /// App-wide choices the shared logic reads, set whenever data loads (like Bedtime).
 enum PickPrefs {
-    static var order: PickOrder = .wholeFirst
+    static var order: PickOrder {
+        get { ScheduleContext.current.pickOrder }
+        set { ScheduleContext.current.pickOrder = newValue }
+    }
 }
 
 /// One physical jar of a substance: its pills, their strength and look, its supply and its NFC tags.
@@ -340,18 +343,30 @@ enum LidColor: String, Codable, CaseIterable, Identifiable {
 enum Bedtime {
     static let defaultMinutes = 23 * 60
     /// The regular bedtime.
-    static var minutes = defaultMinutes
+    static var minutes: Int {
+        get { ScheduleContext.current.bedtimeMinutes }
+        set { ScheduleContext.current.bedtimeMinutes = newValue }
+    }
     /// A different regular bedtime on some weekdays (Calendar weekday as text, 1 is Sunday).
-    static var byWeekday: [String: Int] = [:]
+    static var byWeekday: [String: Int] {
+        get { ScheduleContext.current.bedtimeByWeekday }
+        set { ScheduleContext.current.bedtimeByWeekday = newValue }
+    }
     /// Bedtime changed for one dose day (key yyyyMMdd of the dose day).
-    static var byDate: [String: Int] = [:]
+    static var byDate: [String: Int] {
+        get { ScheduleContext.current.bedtimeByDate }
+        set { ScheduleContext.current.bedtimeByDate = newValue }
+    }
 
     /// The bedtime on a dose day: a change for that date first, then that weekday's bedtime, then the regular one.
     static func minutes(onDayStarting dayStart: Date) -> Int {
-        if let m = byDate[WakeTimes.key(dayStart)] { return m }
-        let weekday = Calendar.current.component(.weekday, from: DoseLogic.doseDayStart(for: dayStart))
-        if let m = byWeekday[String(weekday)] { return m }
-        return minutes
+        let ctx = ScheduleContext.current
+        if !ctx.bedtimeByDate.isEmpty, let m = ctx.bedtimeByDate[WakeTimes.key(dayStart)] { return m }
+        if !ctx.bedtimeByWeekday.isEmpty {
+            let weekday = Calendar.current.component(.weekday, from: DoseLogic.doseDayStart(for: dayStart))
+            if let m = ctx.bedtimeByWeekday[String(weekday)] { return m }
+        }
+        return ctx.bedtimeMinutes
     }
 
     /// Where the bedtime on a dose day came from.
@@ -362,15 +377,28 @@ enum Bedtime {
 /// before today's wake-up has been seen. Set whenever data loads.
 enum WakeTimes {
     static let defaultMinutes = 7 * 60
-    static var usualMinutes = defaultMinutes
-    static var byDay: [String: Date] = [:]
-
-    static func key(_ date: Date) -> String {
-        let f = DateFormatter(); f.dateFormat = "yyyyMMdd"
-        return f.string(from: DoseLogic.doseDayStart(for: date))
+    static var usualMinutes: Int {
+        get { ScheduleContext.current.usualWakeMinutes }
+        set { ScheduleContext.current.usualWakeMinutes = newValue }
+    }
+    static var byDay: [String: Date] {
+        get { ScheduleContext.current.wakeByDay }
+        set { ScheduleContext.current.wakeByDay = newValue }
     }
 
-    static func detected(onDayStarting dayStart: Date) -> Date? { byDay[key(dayStart)] }
+    /// "yyyyMMdd" of the dose day a date falls in. Built from calendar parts, which is far cheaper than a date
+    /// formatter, because schedules ask for it for every dose they place.
+    static func key(_ date: Date) -> String {
+        let c = Calendar.current.dateComponents([.year, .month, .day], from: DoseLogic.doseDayStart(for: date))
+        let n = (c.year ?? 0) * 10000 + (c.month ?? 0) * 100 + (c.day ?? 0)
+        let s = String(n)
+        return s.count >= 8 ? s : String(repeating: "0", count: 8 - s.count) + s
+    }
+
+    static func detected(onDayStarting dayStart: Date) -> Date? {
+        let map = ScheduleContext.current.wakeByDay
+        return map.isEmpty ? nil : map[key(dayStart)]
+    }
 }
 
 /// One scheduled dose. `time` is "HH:mm" (24 h) or nil for "as needed".
@@ -889,6 +917,8 @@ struct Jar: Codable, Identifiable, Hashable {
     var rule: ScheduleRule? = nil
     /// When two active stacks both set this substance's schedule, the one that wins.
     var stackOwner: String? = nil
+    /// When the substance was added. Its doses before then don't count as due or missed.
+    var createdAt: Date? = nil
 
     init(id: String, name: String) {
         self.id = id
@@ -901,7 +931,7 @@ struct Jar: Codable, Identifiable, Hashable {
         case id, name, labelName, kind, schedule, howTo, food, avoid, absorb, summary, order
         case nudge, nudgeMinutes, nudgeRepeats, checkIn, checkInMinutes
         case asNeeded, minGapMinutes, maxPerDay, followUpMinutes, effect, paused, breakFrom, breakUntil, interactions
-        case plans, bottles, defaultBottleId, pickOrder, rule, stackOwner
+        case plans, bottles, defaultBottleId, pickOrder, rule, stackOwner, createdAt
         // Written before substances had several jars; read into the first jar.
         case form, strength, lid, pillShape, scoreLine, imprint, pillsLeft, refillWarnDays, lowNotified, tagIds
     }
@@ -943,6 +973,7 @@ struct Jar: Codable, Identifiable, Hashable {
         pickOrder = try? c.decodeIfPresent(PickOrder.self, forKey: .pickOrder)
         rule = try? c.decodeIfPresent(ScheduleRule.self, forKey: .rule)
         stackOwner = try? c.decodeIfPresent(String.self, forKey: .stackOwner)
+        createdAt = try? c.decodeIfPresent(Date.self, forKey: .createdAt)
 
         let decodedBottles = ((try? c.decodeIfPresent([Lossy<Bottle>].self, forKey: .bottles)) ?? []).compactMap(\.value)
         if decodedBottles.isEmpty {
@@ -1000,6 +1031,7 @@ struct Jar: Codable, Identifiable, Hashable {
         try c.encodeIfPresent(pickOrder, forKey: .pickOrder)
         try c.encodeIfPresent(rule, forKey: .rule)
         try c.encodeIfPresent(stackOwner, forKey: .stackOwner)
+        try c.encodeIfPresent(createdAt, forKey: .createdAt)
         // The default jar's details under the old names, so pasted and older copies still read it.
         let b = defaultBottle
         try c.encode(b.form, forKey: .form)
@@ -1179,10 +1211,29 @@ struct Jar: Codable, Identifiable, Hashable {
     func amountText(for slot: DoseSlot?) -> String {
         if usesStrength {
             let d = dose(for: slot).map { "\(Format.trimmed($0)) \(unit.label)" } ?? ""
-            return [d, partsText(parts(for: slot))].filter { !$0.isEmpty }.joined(separator: " \u{00B7} ")
+            let picked = parts(for: slot)
+            // From a single jar the dose already says the strength, so "30 mg · 1 tablet" rather than "1 × 30 mg tablet".
+            if !d.isEmpty, picked.count == 1, let p = picked.first, let b = bottle(p.bottleId) {
+                return "\(d) \u{00B7} \(Format.pills(p.pills, b.form))"
+            }
+            return [d, partsText(picked)].filter { !$0.isEmpty }.joined(separator: " \u{00B7} ")
         }
         guard let slot else { return "" }
         return slot.amountLine(form)
+    }
+
+    /// How much a logged dose was: the strength saved with it (or worked out from the jars it came from, for doses
+    /// saved without one) and the pill count. "30 mg · 1 tablet".
+    func amountText(of e: DoseEntry) -> String {
+        var amount = e.amount.trimmingCharacters(in: .whitespaces)
+        if amount.isEmpty, bottles.count > 1 || usesStrength {
+            let total = StoreFile.parts(of: e, jar: self).reduce(0.0) { sum, p in
+                sum + (bottle(p.bottleId)?.strength(in: unit) ?? 0) * p.pills
+            }
+            if total > 0 { amount = "\(Format.trimmed(total)) \(unit.label)" }
+        }
+        let line = [amount, Format.pills(e.pills, e.form)].filter { !$0.isEmpty }.joined(separator: " \u{00B7} ")
+        return line.isEmpty ? "Dose" : line
     }
 
     /// The strength text logged with a dose.
@@ -1910,9 +1961,15 @@ enum Format {
         let cal = Calendar.current
         if cal.isDateInToday(date) { return "Today" }
         if cal.isDateInYesterday(date) { return "Yesterday" }
-        let f = DateFormatter(); f.dateFormat = "EEE, MMM d"
-        return f.string(from: date)
+        return dayLabelFormatter.string(from: date)
     }
+
+    /// Made once: building a date formatter costs far more than using one.
+    private static let dayLabelFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "EEE, MMM d"
+        return f
+    }()
 
     static func ago(_ date: Date, now: Date = Date()) -> String {
         let m = now.timeIntervalSince(date) / 60

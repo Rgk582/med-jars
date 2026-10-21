@@ -12,8 +12,11 @@ struct StacksView: View {
     @State private var editing: StackEditTarget?
 
     var body: some View {
-        TimelineView(.everyMinute) { context in
-            let now = context.date
+        #if DEBUG
+        let _ = DebugHarness.body("StacksView")
+        #endif
+        TimelineView(.everyMinute) { _ in
+            let now = store.now
             Group {
                 if store.stacks.isEmpty {
                     ContentUnavailableView {
@@ -37,6 +40,7 @@ struct StacksView: View {
                         }
                     }
                     .listStyle(.insetGrouped)
+                    .contentMargins(.bottom, Router.plusClearance, for: .scrollContent)
                 }
             }
         }
@@ -94,6 +98,8 @@ struct StackBadge: View {
             .foregroundStyle(.white)
             .frame(width: size, height: size)
             .background(stack.color.color.gradient, in: RoundedRectangle(cornerRadius: size * 0.26, style: .continuous))
+            // Decoration next to the stack's name, which VoiceOver reads instead.
+            .accessibilityHidden(true)
     }
 }
 
@@ -147,9 +153,9 @@ struct StackDetailView: View {
     @State private var didScroll = false
 
     var body: some View {
-        TimelineView(.everyMinute) { context in
+        TimelineView(.everyMinute) { _ in
             if let stack = store.stack(stackId) {
-                content(stack, now: context.date)
+                content(stack, now: store.now)
             } else {
                 ContentUnavailableView("Stack Removed", systemImage: "square.stack.3d.up.slash")
             }
@@ -317,9 +323,9 @@ struct StackDetailView: View {
                 } footer: {
                     Text("Scanning it opens this stack at its next doses, ready to log.")
                 }
-                Color.clear.frame(height: 60).listRowBackground(Color.clear)
             }
             .listStyle(.insetGrouped)
+            .contentMargins(.bottom, Router.plusClearance, for: .scrollContent)
             .onAppear {
                 guard !didScroll else { return }
                 didScroll = true

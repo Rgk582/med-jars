@@ -105,13 +105,16 @@ struct LogDoseSheet: View {
     private var hasMajor: Bool { warnings.contains { $0.hasPrefix("Major") } }
 
     private var doseLine: String {
-        if let e = editing { return "\(e.slotLabel) \u{00B7} \(Format.dayLabel(e.takenAt))" }
+        if let e = editing {
+            return [e.slotLabel, Format.dayLabel(e.takenAt)].filter { !$0.isEmpty }.joined(separator: " \u{00B7} ")
+        }
         guard let slot else { return jar.asNeeded ? "As needed" : "Extra dose" }
         if slot.minutes == nil { return "As needed" }
         let time = scheduledAt.map { Format.time12($0) } ?? slot.timeText
-        if slot.isPlanned { return "Planned \u{00B7} \(slot.label) \u{00B7} \(time)" }
+        if slot.isPlanned { return ["Planned", slot.label, time].filter { !$0.isEmpty }.joined(separator: " \u{00B7} ") }
         if let stackId = slot.stackId, let s = store.stack(stackId) { return "\(s.displayName) \u{00B7} \(time)" }
-        return "\(slot.displayLabel) \u{00B7} \(time)"
+        // An unnamed dose is called by its time, so don't say the time twice.
+        return slot.label.isEmpty ? time : "\(slot.label) \u{00B7} \(time)"
     }
 
     /// The scanned jar when it isn't one the dose would use.
@@ -229,6 +232,10 @@ struct LogDoseSheet: View {
             }
         }
         .presentationDetents([.large])
+        #if DEBUG
+        .onAppear { DebugHarness.log("APPEAR LogDoseSheet") }
+        .onDisappear { DebugHarness.log("DISAPPEAR LogDoseSheet") }
+        #endif
     }
 
     private var timingTitle: String {
@@ -290,7 +297,7 @@ struct LogDoseSheet: View {
             if !isEdit && !timedSlots.isEmpty && extraSlot == nil && !(jar.asNeeded && timedSlots.allSatisfy { $0.stackId == nil }) {
                 Picker("Dose", selection: $slotId) {
                     ForEach(timedSlots) { s in
-                        Text("\(s.displayLabel) \u{00B7} \(s.timeText)").tag(s.id)
+                        Text(s.label.isEmpty ? s.timeText : "\(s.label) \u{00B7} \(s.timeText)").tag(s.id)
                     }
                     Text(jar.asNeeded ? "As Needed" : "Extra Dose").tag(jar.asNeeded ? (jar.asNeededSlot?.id ?? "") : "")
                 }

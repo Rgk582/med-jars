@@ -14,10 +14,15 @@ struct HomeView: View {
     @State private var editing = false
     @State private var addingCaffeine = false
     @State private var sheet: HomeSheet?
+    /// A page picked in a popout, opened once the popout has closed.
+    @State private var afterSheet: Route?
 
     var body: some View {
-        TimelineView(.everyMinute) { context in
-            let now = context.date
+        #if DEBUG
+        let _ = DebugHarness.body("HomeView")
+        #endif
+        TimelineView(.everyMinute) { _ in
+            let now = store.now
             ScrollView {
                 if store.jars.isEmpty {
                     ContentUnavailableView {
@@ -67,7 +72,11 @@ struct HomeView: View {
         }
         .sheet(isPresented: $editing) { HomeEditSheet() }
         .sheet(isPresented: $addingCaffeine) { CaffeineAddSheet() }
-        .sheet(item: $sheet) { which in
+        .sheet(item: $sheet, onDismiss: {
+            guard let route = afterSheet else { return }
+            afterSheet = nil
+            if case .stack(let id) = route { router.open(stackId: id) } else { router.homePath.append(route) }
+        }) { which in
             Group {
                 switch which {
                 case .missed: MissedSheet()
@@ -81,12 +90,10 @@ struct HomeView: View {
         }
     }
 
-    /// Closes the popout and opens a page from it.
+    /// Closes the popout, then opens a page from it once it has finished closing.
     private func open(_ route: Route) {
+        afterSheet = route
         sheet = nil
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-            if case .stack(let id) = route { router.open(stackId: id) } else { router.homePath.append(route) }
-        }
     }
 
     /// Small cards sit two to a row; medium and large ones take a full row.
@@ -193,6 +200,9 @@ struct HomeCardView: View {
                     .foregroundStyle(discreetOn ? AnyShapeStyle(Color.white.opacity(0.85)) : AnyShapeStyle(Palette.secondary))
                     .labelStyle(.titleAndIcon)
                     .lineLimit(1)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(card.kind.title)
+                    .accessibilityAddTraits(.isHeader)
             }
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -203,7 +213,7 @@ struct HomeCardView: View {
         .background(discreetOn ? AnyShapeStyle(store.accentColor) : AnyShapeStyle(Palette.card), in: shape)
         .overlay {
             if card.kind == .today {
-                shape.strokeBorder(TodayCard.borderColor(TodayCard.progress(store: store, now: now)), lineWidth: 3)
+                shape.strokeBorder(TodayCard.borderColor(store.todayProgress()), lineWidth: 3)
             }
         }
         .animation(.snappy, value: discreetOn)
@@ -216,7 +226,7 @@ struct HomeCardView: View {
     @ViewBuilder private var content: some View {
         switch card.kind {
         case .upNext: UpNextCard(size: card.size, now: now)
-        case .today: TodayCard(size: card.size, now: now)
+        case .today: TodayCard(size: card.size)
         case .workingNow: WorkingNowCard(size: card.size)
         case .caffeine: CaffeineCard(size: card.size, now: now, onAdd: onAddCaffeine)
         case .stacks: StacksCard(size: card.size, now: now)
@@ -305,7 +315,9 @@ private struct CardSubstance: View {
                 Text(jar.name)
                     .font(rowHeight > 52 ? .headline : .subheadline.weight(.semibold))
                     .foregroundStyle(Palette.label)
-                    .lineLimit(1)
+                    // Long names get a second line when the row has room, and shrink a little before cutting off.
+                    .lineLimit(rowHeight >= 46 ? 2 : 1)
+                    .minimumScaleFactor(0.8)
                 if !detail.isEmpty {
                     Text(detail).font(.caption).foregroundStyle(detailColor).lineLimit(1)
                 }
@@ -345,7 +357,7 @@ private struct UpNextCard: View {
     private var rowCount: Int { size == .large ? 7 : 3 }
 
     var body: some View {
-        let group = DoseLogic.nextGroup(jars: store.jars, entries: store.entries, planned: store.planned, at: now)
+        let group = store.nextGroup()
         if let first = group.first {
             let due = first.time <= now.addingTimeInterval(45 * 60)
             let time = Format.time12(first.time)
@@ -353,6 +365,9 @@ private struct UpNextCard: View {
             let capacity = columns * rowCount
             let shown = group.count > capacity ? Array(group.prefix(capacity - 1)) : group
             let extra = group.count - shown.count
+            // A few doses get bigger rows (one column, one row each) instead of sitting at the top of empty space.
+            let cols = shown.count + (extra > 0 ? 1 : 0) <= rowCount ? 1 : columns
+            let usedRows = max(1, Int((Double(shown.count + (extra > 0 ? 1 : 0)) / Double(cols)).rounded(.up)))
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 8) {
                     Text(due && size != .small ? "Due \(when)" : when)
@@ -376,10 +391,10 @@ private struct UpNextCard: View {
                     .controlSize(.small)
                     .tint(store.accentColor)
                 }
-                FillRows(count: rowCount, spacing: 6) { r, h in
+                FillRows(count: min(rowCount, usedRows), spacing: 6) { r, h in
                     HStack(spacing: 10) {
-                        ForEach(0..<columns, id: \.self) { c in
-                            let i = r * columns + c
+                        ForEach(0..<cols, id: \.self) { c in
+                            let i = r * cols + c
                             Group {
                                 if i < shown.count {
                                     let d = shown[i]
@@ -407,39 +422,15 @@ private struct UpNextCard: View {
 
 private struct TodayCard: View {
     let size: HomeCardSize
-    let now: Date
     @Environment(AppStore.self) private var store
 
-    struct Progress {
-        var taken: Int
-        var total: Int
-        var left: [DayItem]
-        var fraction: Double { total == 0 ? 0 : Double(taken) / Double(total) }
-    }
-
-    /// The day's doses taken and to take. As-needed and extra doses count on both sides once taken.
-    static func progress(store: AppStore, now: Date) -> Progress {
-        let dayStart = DoseLogic.doseDayStart(for: now)
-        let dayEnd = DoseLogic.doseDayEnd(for: now)
-        let s = DoseLogic.schedule(jars: store.jars, entries: store.entries, planned: store.planned, dayStart: dayStart, now: now)
-        var countedIds = Set<String>()
-        for item in s.counted {
-            if case .taken(let e) = item.row.status { countedIds.insert(e.id) }
-        }
-        let extras = store.entries.filter {
-            !$0.skipped && $0.takenAt >= dayStart && $0.takenAt < dayEnd && $0.takenAt <= Date() && !countedIds.contains($0.id)
-        }.count
-        return Progress(taken: s.taken + extras, total: s.total + extras,
-                        left: s.counted.filter { !$0.row.status.isHandled })
-    }
-
     /// Gray with nothing taken, green when everything is.
-    static func borderColor(_ p: Progress) -> Color {
+    static func borderColor(_ p: TodayProgress) -> Color {
         Palette.tertiary.mix(with: Palette.taken, by: p.fraction)
     }
 
     var body: some View {
-        let p = Self.progress(store: store, now: now)
+        let p = store.todayProgress()
         switch size {
         case .small:
             number(p).frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -460,7 +451,7 @@ private struct TodayCard: View {
     }
 
     /// The big taken/total, about 70% of the card's height.
-    private func number(_ p: Progress) -> some View {
+    private func number(_ p: TodayProgress) -> some View {
         (Text("\(p.taken)").foregroundStyle(Palette.label) + Text("/\(p.total)").foregroundStyle(Palette.secondary))
             .font(.system(size: size == .large ? 150 : 128, weight: .bold, design: .rounded))
             .monospacedDigit()
@@ -470,7 +461,7 @@ private struct TodayCard: View {
             .accessibilityLabel("\(p.taken) of \(p.total) doses taken today")
     }
 
-    private func leftList(_ p: Progress, max cap: Int) -> some View {
+    private func leftList(_ p: TodayProgress, max cap: Int) -> some View {
         let items = Array(p.left.prefix(cap))
         return FillRows(count: items.count, spacing: 4) { i, h in
             let item = items[i]
@@ -523,7 +514,10 @@ private struct WorkingRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: compact ? 2 : 4) {
             HStack(spacing: 6) {
-                Text(dose.name).font(.subheadline.weight(.semibold)).foregroundStyle(Palette.label).lineLimit(1)
+                // The amount tells two doses of one substance (10 mg and 30 mg jars) apart.
+                (Text(dose.name).foregroundStyle(Palette.label)
+                 + Text(dose.amount.isEmpty ? "" : "  \(dose.amount)").foregroundStyle(Palette.secondary))
+                    .font(.subheadline.weight(.semibold)).lineLimit(1)
                 Spacer(minLength: 4)
                 Group {
                     if now < dose.peak {
@@ -888,7 +882,7 @@ private struct ThisWeekCard: View {
     private enum DayState { case done, partial, missed, upcoming, none }
 
     private func state(_ d: Date, today: Date) -> (DayState, DaySchedule) {
-        let s = DoseLogic.schedule(jars: store.jars, entries: store.entries, planned: store.planned, dayStart: d, now: now)
+        let s = store.schedule(on: d)
         if s.total == 0 { return (.none, s) }
         if d > today { return (.upcoming, s) }
         if s.taken == s.total { return (.done, s) }
@@ -983,7 +977,7 @@ struct ComingUpItem: Identifiable {
         // Scheduled doses today and tomorrow, grouped when they're due together.
         for offset in 0...1 {
             guard let day = cal.date(byAdding: .day, value: offset, to: today) else { continue }
-            let s = DoseLogic.schedule(jars: store.jars, entries: store.entries, planned: store.planned, dayStart: day, now: now)
+            let s = store.schedule(on: day)
             let upcoming = s.items.filter { item in
                 guard let at = item.row.at, at > now, !item.row.isPlanned else { return false }
                 return !item.row.status.isHandled
@@ -1112,7 +1106,7 @@ private struct RecentCard: View {
             }
             VStack(alignment: .leading, spacing: 0) {
                 Text(e.jarName).font(.subheadline.weight(.semibold)).foregroundStyle(Palette.label).lineLimit(1)
-                Text(size == .small ? when : (e.skipped ? "Skipped" : e.amountLine))
+                Text(size == .small ? when : (e.skipped ? "Skipped" : (store.jar(e.jarId)?.amountText(of: e) ?? e.amountLine)))
                     .font(.caption).foregroundStyle(Palette.secondary).lineLimit(1)
             }
             Spacer(minLength: 4)
@@ -1125,19 +1119,6 @@ private struct RecentCard: View {
 
 // MARK: Missed
 
-/// Doses missed today and yesterday, newest first. Recreational doses only remind, so they never count.
-@MainActor
-func missedDoses(_ store: AppStore, now: Date) -> [DayItem] {
-    let today = DoseLogic.doseDayStart(for: now)
-    let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: today) ?? today
-    var out: [DayItem] = []
-    for day in [today, yesterday] {
-        let s = DoseLogic.schedule(jars: store.jars, entries: store.entries, planned: store.planned, dayStart: day, now: now)
-        out += s.items.filter { $0.row.status == .missed && !$0.jar.kind.remindOnly }
-    }
-    return out.sorted { ($0.row.at ?? .distantPast) > ($1.row.at ?? .distantPast) }
-}
-
 private struct MissedCard: View {
     let size: HomeCardSize
     let now: Date
@@ -1147,7 +1128,7 @@ private struct MissedCard: View {
     private var rowCount: Int { size == .large ? 7 : 3 }
 
     var body: some View {
-        let list = missedDoses(store, now: now)
+        let list = store.missedDoses()
         if list.isEmpty {
             VStack(spacing: 6) {
                 Image(systemName: "checkmark.circle.fill")
@@ -1166,7 +1147,7 @@ private struct MissedCard: View {
                 Text("\(list.count) Missed")
                     .font(size == .small ? .title3.weight(.bold) : .title2.weight(.bold))
                     .foregroundStyle(Palette.missed)
-                FillRows(count: max(usedRows, size == .large ? 4 : 3), spacing: 6) { r, h in
+                FillRows(count: max(usedRows, size == .large ? 4 : 2), spacing: 6) { r, h in
                     HStack(spacing: 10) {
                         ForEach(0..<columns, id: \.self) { c in
                             let i = r * columns + c
@@ -1219,7 +1200,7 @@ struct MissedSheet: View {
     var body: some View {
         NavigationStack {
             TimelineView(.everyMinute) { context in
-                let list = missedDoses(store, now: Date())
+                let list = store.missedDoses()
                 List {
                     if list.isEmpty {
                         ContentUnavailableView("Nothing Missed", systemImage: "checkmark.circle.fill",
@@ -1346,8 +1327,8 @@ struct ComingUpSheet: View {
 
     var body: some View {
         NavigationStack {
-            TimelineView(.everyMinute) { context in
-                let now = context.date
+            TimelineView(.everyMinute) { _ in
+                let now = store.now
                 let items = ComingUpItem.all(store, now: now)
                 let days = Dictionary(grouping: items) { DoseLogic.doseDayStart(for: $0.date) }
                 List {

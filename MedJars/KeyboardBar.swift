@@ -10,15 +10,20 @@ final class KeyboardBar: NSObject {
     private weak var field: UIView?
     private var original = ""
 
-    private lazy var done = UIBarButtonItem(title: "Done", style: .done, target: self, action: #selector(doneTapped))
+    /// Each text box gets its own bar. One bar shared by every box could be taken back by the box being left just as
+    /// the next one put it up, leaving no Done button.
+    private final class Bar: UIToolbar {}
 
-    private lazy var bar: UIToolbar = {
-        let toolbar = UIToolbar(frame: CGRect(x: 0, y: 0, width: 320, height: 44))
+    private func makeBar() -> UIToolbar {
+        let toolbar = Bar(frame: CGRect(x: 0, y: 0, width: 320, height: 44))
         let cancel = UIBarButtonItem(title: "Cancel", style: .plain, target: self, action: #selector(cancelTapped))
+        let done = UIBarButtonItem(title: "Done", style: .done, target: self, action: #selector(doneTapped))
+        // Done follows the theme color picked in Settings.
+        done.tintColor = UIColor(AppStore.shared.accentColor)
         toolbar.items = [cancel, UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil), done]
         toolbar.sizeToFit()
         return toolbar
-    }()
+    }
 
     func start() {
         NotificationCenter.default.addObserver(self, selector: #selector(began(_:)), name: UITextField.textDidBeginEditingNotification, object: nil)
@@ -26,20 +31,18 @@ final class KeyboardBar: NSObject {
     }
 
     @objc private func began(_ note: Notification) {
-        // Done follows the theme color picked in Settings.
-        done.tintColor = UIColor(AppStore.shared.accentColor)
         if let textField = note.object as? UITextField {
             field = textField
             original = textField.text ?? ""
-            if textField.inputAccessoryView !== bar {
-                textField.inputAccessoryView = bar
+            if !(textField.inputAccessoryView is Bar) {
+                textField.inputAccessoryView = makeBar()
                 textField.reloadInputViews()
             }
         } else if let textView = note.object as? UITextView, textView.isEditable {
             field = textView
             original = textView.text ?? ""
-            if textView.inputAccessoryView !== bar {
-                textView.inputAccessoryView = bar
+            if !(textView.inputAccessoryView is Bar) {
+                textView.inputAccessoryView = makeBar()
                 textView.reloadInputViews()
             }
         }

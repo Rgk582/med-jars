@@ -90,6 +90,19 @@ enum StoreIO {
         return StoreFile()
     }
 
+    /// When the saved file last changed and how big it is, to tell whether anything else wrote it since.
+    struct Stamp: Equatable {
+        let modified: Date
+        let size: Int
+    }
+
+    static func stamp() -> Stamp? {
+        guard let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
+              let modified = attrs[.modificationDate] as? Date,
+              let size = (attrs[.size] as? NSNumber)?.intValue else { return nil }
+        return Stamp(modified: modified, size: size)
+    }
+
     static func save(_ file: StoreFile) throws {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .secondsSince1970

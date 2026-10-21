@@ -28,10 +28,7 @@ enum Notify {
     static let maxNudges = 10
 
     /// Key for the dose day a date falls in (4 AM to 4 AM).
-    static func dayKey(_ date: Date) -> String {
-        let f = DateFormatter(); f.dateFormat = "yyyyMMdd"
-        return f.string(from: DoseLogic.doseDayStart(for: date))
-    }
+    static func dayKey(_ date: Date) -> String { WakeTimes.key(date) }
 
     static func doseId(jar: String, slot: String, day: Date) -> String { "\(dosePrefix)\(jar).\(slot).\(dayKey(day))" }
     static func nudgeId(jar: String, slot: String, day: Date, n: Int) -> String { "\(nudgePrefix)\(jar).\(slot).\(dayKey(day)).\(n)" }
