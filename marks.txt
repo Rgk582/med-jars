@@ -1,0 +1,17 @@
+MARK 1792546954.273 LAUNCHED -[B2_ReproTests test09_AllTapTargets] in 20708ms ok=yes
+MARK 1792546954.587 STEP BEGIN 001 Tap right on the word All
+MARK 1792546968.209 REPRO all on-word tap shown=false
+MARK 1792546969.254 STEP END 001 14169ms OK :: Tap right on the word All
+MARK 1792546969.254 STEP BEGIN 002 Tap the padding beside Log Next
+MARK 1792546977.551 REPRO lognext padding tap
+MARK 1792546983.143 STEP END 002 13450ms OK :: Tap the padding beside Log Next
+MARK 1792546999.660 LAUNCHED -[B2_ReproTests test09_AllTapTargets] in 16512ms ok=yes
+MARK 1792546999.873 STEP BEGIN 003 All with the whole pill tappable, attempt 1
+MARK 1792547006.523 REPRO pill all 1 shown=true
+MARK 1792547010.378 STEP END 003 9807ms OK :: All with the whole pill tappable, attempt 1
+MARK 1792547010.378 STEP BEGIN 004 All with the whole pill tappable, attempt 2
+MARK 1792547019.135 REPRO pill all 2 shown=true
+MARK 1792547022.395 STEP END 004 11456ms OK :: All with the whole pill tappable, attempt 2
+MARK 1792547022.395 STEP BEGIN 005 All with the whole pill tappable, attempt 3
+MARK 1792547028.967 REPRO pill all 3 shown=true
+MARK 1792547032.193 STEP END 005 9261ms OK :: All with the whole pill tappable, attempt 3

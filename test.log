@@ -1,0 +1,347 @@
+Command line invocation:
+    /Applications/Xcode_26.3.app/Contents/Developer/usr/bin/xcodebuild test-without-building -project MedJars.xcodeproj -scheme MedJars -configuration Debug -destination "platform=iOS Simulator,id=517BAAA1-7BAB-4B50-8B25-04EF0238019B" -derivedDataPath build -parallel-testing-enabled NO -test-timeouts-enabled NO "-only-testing:MedJarsFullUITests/B2_ReproTests/test09_AllTapTargets" -resultBundlePath out/result.xcresult CODE_SIGNING_ALLOWED=NO
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Writing result bundle at path:
+	/Users/runner/work/med-jars/med-jars/out/result.xcresult
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS Simulator, arch:arm64, id:517BAAA1-7BAB-4B50-8B25-04EF0238019B, OS:26.0.1, name:iPhone 17 Pro }
+{ platform:iOS Simulator, arch:x86_64, id:517BAAA1-7BAB-4B50-8B25-04EF0238019B, OS:26.0.1, name:iPhone 17 Pro }
+2026-10-20 20:42:02.331042-0500 MedJarsFullUITests-Runner[36229:103977] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-10-20 20:42:12.559.
+Test Suite 'MedJarsFullUITests.xctest' started at 2026-10-20 20:42:12.560.
+Test Suite 'B2_ReproTests' started at 2026-10-20 20:42:12.560.
+Test Case '-[MedJarsFullUITests.B2_ReproTests test09_AllTapTargets]' started.
+    t =     0.00s Start Test at 2026-10-20 20:42:12.561
+    t =     0.99s Set Up
+    t =     0.99s Open com.medjars.app
+    t =     0.99s     Launch com.medjars.app
+    t =    13.04s         Setting up automation session
+    t =    15.97s         Wait for com.medjars.app to idle
+    t =    20.57s Waiting 30.0s for TabBar (First Match) to exist
+    t =    21.64s     Checking `Expect predicate `existsNoRetry == 1` for object TabBar (First Match)`
+    t =    21.64s         Checking existence of `TabBar (First Match)`
+MARK 1792546954.273 LAUNCHED -[B2_ReproTests test09_AllTapTargets] in 20708ms ok=yes
+    t =    21.72s Checking existence of `"Allow" Button`
+    t =    21.94s Checking existence of `"Allow While Using App" Button`
+    t =    21.97s Checking existence of `"OK" Button`
+    t =    22.00s Checking existence of `"Don’t Allow" Button`
+MARK 1792546954.587 STEP BEGIN 001 Tap right on the word All
+    t =    22.03s Checking existence of `"Allow" Button`
+    t =    22.05s Checking existence of `"Allow While Using App" Button`
+    t =    22.08s Checking existence of `"OK" Button`
+    t =    22.11s Checking existence of `"Don’t Allow" Button`
+    t =    22.15s 001 Tap right on the word All
+    t =    22.15s     Get all elements bound by index for: Elements matching predicate 'label != "Log Next"'
+    t =    22.34s     Checking existence of `Button (Element at index 0)`
+    t =    22.47s     Find the Button (Element at index 0)
+    t =    22.63s     Find the "Log or Schedule" Button
+    t =    22.81s     Find the "Log or Schedule" Button
+    t =    22.97s     Checking existence of `"Log or Schedule" Button`
+    t =    22.98s     Find the "Log or Schedule" Button
+    t =    23.00s     Tap "Log or Schedule" Button
+    t =    23.00s         Wait for com.medjars.app to idle
+    t =    23.00s         Find the "Log or Schedule" Button
+    t =    23.01s         Check for interrupting elements affecting "Log or Schedule" Button
+    t =    23.13s         Synthesize event
+    t =    23.57s         Wait for com.medjars.app to idle
+    t =    23.59s     Get all elements bound by index for: Elements matching predicate 'label == "Log"'
+    t =    23.84s     Checking existence of `Button (Element at index 0)`
+    t =    24.06s     Find the Button (Element at index 0)
+    t =    24.20s     Checking existence of `Button (Element at index 1)`
+    t =    24.32s     Find the Button (Element at index 1)
+    t =    24.52s     Tap "Log" Button
+    t =    24.52s         Wait for com.medjars.app to idle
+    t =    24.52s         Find the "Log" Button
+    t =    24.63s         Check for interrupting elements affecting "Log" Button
+    t =    24.70s         Synthesize event
+    t =    25.00s         Wait for com.medjars.app to idle
+    t =    27.01s     Tap Target Application 'com.medjars.app'[0.00, 0.00] -> (356.0, 677.0)
+    t =    27.01s         Wait for com.medjars.app to idle
+    t =    27.02s         Find the Target Application 'com.medjars.app'
+    t =    27.16s         Check for interrupting elements affecting "Med Jars" Application
+    t =    27.26s         Synthesize event
+    t =    27.26s             Find the Target Application 'com.medjars.app'
+    t =    27.35s             Find the Target Application 'com.medjars.app'
+    t =    27.43s             Find the Target Application 'com.medjars.app'
+    t =    27.80s         Wait for com.medjars.app to idle
+    t =    27.81s     Waiting 5.0s for "Log a Substance" NavigationBar to exist
+    t =    28.86s         Checking `Expect predicate `existsNoRetry == 1` for object "Log a Substance" NavigationBar`
+    t =    28.86s             Checking existence of `"Log a Substance" NavigationBar`
+    t =    29.13s             Capturing element debug description
+    t =    29.86s         Checking `Expect predicate `existsNoRetry == 1` for object "Log a Substance" NavigationBar`
+    t =    29.86s             Checking existence of `"Log a Substance" NavigationBar`
+    t =    30.31s             Capturing element debug description
+    t =    30.84s         Checking `Expect predicate `existsNoRetry == 1` for object "Log a Substance" NavigationBar`
+    t =    30.84s             Checking existence of `"Log a Substance" NavigationBar`
+    t =    31.53s             Capturing element debug description
+    t =    31.84s         Checking `Expect predicate `existsNoRetry == 1` for object "Log a Substance" NavigationBar`
+    t =    31.84s             Checking existence of `"Log a Substance" NavigationBar`
+    t =    32.29s             Capturing element debug description
+    t =    32.81s         Checking `Expect predicate `existsNoRetry == 1` for object "Log a Substance" NavigationBar`
+    t =    32.81s             Checking existence of `"Log a Substance" NavigationBar`
+    t =    33.11s             Capturing element debug description
+    t =    33.11s         Checking existence of `"Log a Substance" NavigationBar`
+    t =    35.41s     Collecting debug information to assist test failure triage
+    t =    35.41s         Requesting snapshot of accessibility hierarchy for app with pid 36997
+MARK 1792546968.209 REPRO all on-word tap shown=false
+    t =    35.65s     Find the Target Application 'com.medjars.app'
+    t =    36.30s     Added attachment named 'on word tap'
+    t =    36.31s Find the Target Application 'com.medjars.app'
+    t =    36.69s Added attachment named '001 Tap right on the word All'
+MARK 1792546969.254 STEP END 001 14169ms OK :: Tap right on the word All
+MARK 1792546969.254 STEP BEGIN 002 Tap the padding beside Log Next
+    t =    36.70s Checking existence of `"Allow" Button`
+    t =    36.76s Checking existence of `"Allow While Using App" Button`
+    t =    36.78s Checking existence of `"OK" Button`
+    t =    36.80s Checking existence of `"Don’t Allow" Button`
+    t =    36.83s 002 Tap the padding beside Log Next
+    t =    36.83s     Get all elements bound by index for: Elements matching predicate 'label != "Log Next"'
+    t =    37.00s     Checking existence of `Button (Element at index 0)`
+    t =    37.46s     Find the Button (Element at index 0)
+    t =    37.79s     Find the "Log or Schedule" Button
+    t =    38.10s     Find the "Log or Schedule" Button
+    t =    38.28s     Checking existence of `"Log or Schedule" Button`
+    t =    38.35s     Find the "Log or Schedule" Button
+    t =    38.42s     Tap "Log or Schedule" Button
+    t =    38.42s         Wait for com.medjars.app to idle
+    t =    38.42s         Find the "Log or Schedule" Button
+    t =    38.46s         Check for interrupting elements affecting "Log or Schedule" Button
+    t =    38.56s         Synthesize event
+    t =    38.87s         Wait for com.medjars.app to idle
+    t =    38.89s     Get all elements bound by index for: Elements matching predicate 'label == "Log"'
+    t =    39.18s     Checking existence of `Button (Element at index 0)`
+    t =    39.29s     Find the Button (Element at index 0)
+    t =    39.41s     Checking existence of `Button (Element at index 1)`
+    t =    39.52s     Find the Button (Element at index 1)
+    t =    39.66s     Tap "Log" Button
+    t =    39.66s         Wait for com.medjars.app to idle
+    t =    39.66s         Find the "Log" Button
+    t =    39.78s         Check for interrupting elements affecting "Log" Button
+    t =    39.85s         Synthesize event
+    t =    40.15s         Wait for com.medjars.app to idle
+    t =    42.16s     Tap Target Application 'com.medjars.app'[0.00, 0.00] -> (256.0, 621.0)
+    t =    42.17s         Wait for com.medjars.app to idle
+    t =    42.17s         Find the Target Application 'com.medjars.app'
+    t =    42.30s         Check for interrupting elements affecting "Med Jars" Application
+    t =    42.44s         Synthesize event
+    t =    42.44s             Find the Target Application 'com.medjars.app'
+    t =    42.51s             Find the Target Application 'com.medjars.app'
+    t =    42.57s             Find the Target Application 'com.medjars.app'
+    t =    42.98s         Wait for com.medjars.app to idle
+MARK 1792546977.551 REPRO lognext padding tap
+    t =    44.99s     Checking existence of `"Cancel" Button`
+    t =    45.28s     Checking existence of `"Done" Button`
+    t =    45.82s     Checking existence of `"Close" Button`
+    t =    48.00s     Swipe down Target Application 'com.medjars.app'
+    t =    48.00s         Wait for com.medjars.app to idle
+    t =    48.01s         Find the Target Application 'com.medjars.app'
+    t =    48.16s         Check for interrupting elements affecting "Med Jars" Application
+    t =    48.26s         Synthesize event
+    t =    48.67s         Wait for com.medjars.app to idle
+    t =    50.28s Find the Target Application 'com.medjars.app'
+    t =    50.58s Added attachment named '002 Tap the padding beside Log Next'
+MARK 1792546983.143 STEP END 002 13450ms OK :: Tap the padding beside Log Next
+    t =    50.59s Open com.medjars.app
+    t =    50.59s     Launch com.medjars.app
+    t =    50.59s         Terminate com.medjars.app:36997
+    t =    57.88s         Setting up automation session
+    t =    61.69s         Wait for com.medjars.app to idle
+    t =    66.00s Waiting 30.0s for TabBar (First Match) to exist
+    t =    67.04s     Checking `Expect predicate `existsNoRetry == 1` for object TabBar (First Match)`
+    t =    67.04s         Checking existence of `TabBar (First Match)`
+MARK 1792546999.660 LAUNCHED -[B2_ReproTests test09_AllTapTargets] in 16512ms ok=yes
+    t =    67.10s Checking existence of `"Allow" Button`
+    t =    67.19s Checking existence of `"Allow While Using App" Button`
+    t =    67.24s Checking existence of `"OK" Button`
+    t =    67.28s Checking existence of `"Don’t Allow" Button`
+MARK 1792546999.873 STEP BEGIN 003 All with the whole pill tappable, attempt 1
+    t =    67.31s Checking existence of `"Allow" Button`
+    t =    67.35s Checking existence of `"Allow While Using App" Button`
+    t =    67.38s Checking existence of `"OK" Button`
+    t =    67.41s Checking existence of `"Don’t Allow" Button`
+    t =    67.44s 003 All with the whole pill tappable, attempt 1
+    t =    67.44s     Get all elements bound by index for: Elements matching predicate 'label != "Log Next"'
+    t =    67.69s     Checking existence of `Button (Element at index 0)`
+    t =    67.83s     Find the Button (Element at index 0)
+    t =    67.96s     Find the "Log or Schedule" Button
+    t =    68.08s     Find the "Log or Schedule" Button
+    t =    68.24s     Checking existence of `"Log or Schedule" Button`
+    t =    68.26s     Find the "Log or Schedule" Button
+    t =    68.30s     Tap "Log or Schedule" Button
+    t =    68.30s         Wait for com.medjars.app to idle
+    t =    68.31s         Find the "Log or Schedule" Button
+    t =    68.34s         Check for interrupting elements affecting "Log or Schedule" Button
+    t =    68.48s         Synthesize event
+    t =    68.82s         Wait for com.medjars.app to idle
+    t =    68.82s     Get all elements bound by index for: Elements matching predicate 'label == "Log"'
+    t =    69.07s     Checking existence of `Button (Element at index 0)`
+    t =    69.24s     Find the Button (Element at index 0)
+    t =    69.47s     Checking existence of `Button (Element at index 1)`
+    t =    69.62s     Find the Button (Element at index 1)
+    t =    69.79s     Tap "Log" Button
+    t =    69.79s         Wait for com.medjars.app to idle
+    t =    69.79s         Find the "Log" Button
+    t =    69.93s         Check for interrupting elements affecting "Log" Button
+    t =    70.05s         Synthesize event
+    t =    70.35s         Wait for com.medjars.app to idle
+    t =    70.35s     Waiting 3.0s for "All" Button to exist
+    t =    71.40s         Checking `Expect predicate `existsNoRetry == 1` for object "All" Button`
+    t =    71.40s             Checking existence of `"All" Button`
+    t =    71.45s     Tap "All" Button
+    t =    71.45s         Wait for com.medjars.app to idle
+    t =    71.46s         Find the "All" Button
+    t =    71.48s         Check for interrupting elements affecting "All" Button
+    t =    71.59s         Synthesize event
+    t =    71.91s         Wait for com.medjars.app to idle
+    t =    72.76s     Waiting 5.0s for "Log a Substance" NavigationBar to exist
+    t =    73.77s         Checking `Expect predicate `existsNoRetry == 1` for object "Log a Substance" NavigationBar`
+    t =    73.77s             Checking existence of `"Log a Substance" NavigationBar`
+MARK 1792547006.523 REPRO pill all 1 shown=true
+    t =    73.96s     Find the Target Application 'com.medjars.app'
+    t =    74.35s     Added attachment named 'pill all 1'
+    t =    74.35s     Checking existence of `"Cancel" Button`
+    t =    74.46s     Find the "Cancel" Button
+    t =    74.73s     Tap "Cancel" Button
+    t =    74.73s         Wait for com.medjars.app to idle
+    t =    74.83s         Find the "Cancel" Button
+    t =    75.17s         Check for interrupting elements affecting "Cancel" Button
+    t =    75.38s         Synthesize event
+    t =    75.72s         Wait for com.medjars.app to idle
+    t =    77.25s Find the Target Application 'com.medjars.app'
+    t =    77.81s Added attachment named '003 All with the whole pill tappable, attempt 1'
+MARK 1792547010.378 STEP END 003 9807ms OK :: All with the whole pill tappable, attempt 1
+MARK 1792547010.378 STEP BEGIN 004 All with the whole pill tappable, attempt 2
+    t =    77.82s Checking existence of `"Allow" Button`
+    t =    77.92s Checking existence of `"Allow While Using App" Button`
+    t =    77.99s Checking existence of `"OK" Button`
+    t =    78.04s Checking existence of `"Don’t Allow" Button`
+    t =    78.10s 004 All with the whole pill tappable, attempt 2
+    t =    78.10s     Get all elements bound by index for: Elements matching predicate 'label != "Log Next"'
+    t =    78.31s     Checking existence of `Button (Element at index 0)`
+    t =    78.54s     Find the Button (Element at index 0)
+    t =    78.80s     Find the "Log or Schedule" Button
+    t =    79.04s     Find the "Log or Schedule" Button
+    t =    79.53s     Checking existence of `"Log or Schedule" Button`
+    t =    79.60s     Find the "Log or Schedule" Button
+    t =    79.71s     Tap "Log or Schedule" Button
+    t =    79.71s         Wait for com.medjars.app to idle
+    t =    79.72s         Find the "Log or Schedule" Button
+    t =    79.77s         Check for interrupting elements affecting "Log or Schedule" Button
+    t =    79.95s         Synthesize event
+    t =    80.61s         Wait for com.medjars.app to idle
+    t =    80.65s     Get all elements bound by index for: Elements matching predicate 'label == "Log"'
+    t =    81.25s     Checking existence of `Button (Element at index 0)`
+    t =    81.66s     Find the Button (Element at index 0)
+    t =    82.08s     Checking existence of `Button (Element at index 1)`
+    t =    82.35s     Find the Button (Element at index 1)
+    t =    82.70s     Tap "Log" Button
+    t =    82.70s         Wait for com.medjars.app to idle
+    t =    82.72s         Find the "Log" Button
+    t =    83.01s         Check for interrupting elements affecting "Log" Button
+    t =    83.20s         Synthesize event
+    t =    83.52s         Wait for com.medjars.app to idle
+    t =    83.53s     Waiting 3.0s for "All" Button to exist
+    t =    84.54s         Checking `Expect predicate `existsNoRetry == 1` for object "All" Button`
+    t =    84.54s             Checking existence of `"All" Button`
+    t =    84.57s     Tap "All" Button
+    t =    84.57s         Wait for com.medjars.app to idle
+    t =    84.57s         Find the "All" Button
+    t =    84.61s         Check for interrupting elements affecting "All" Button
+    t =    84.76s         Synthesize event
+    t =    85.08s         Wait for com.medjars.app to idle
+    t =    85.42s     Waiting 5.0s for "Log a Substance" NavigationBar to exist
+    t =    86.44s         Checking `Expect predicate `existsNoRetry == 1` for object "Log a Substance" NavigationBar`
+    t =    86.44s             Checking existence of `"Log a Substance" NavigationBar`
+MARK 1792547019.135 REPRO pill all 2 shown=true
+    t =    86.58s     Find the Target Application 'com.medjars.app'
+    t =    87.00s     Added attachment named 'pill all 2'
+    t =    87.00s     Checking existence of `"Cancel" Button`
+    t =    87.11s     Find the "Cancel" Button
+    t =    87.28s     Tap "Cancel" Button
+    t =    87.28s         Wait for com.medjars.app to idle
+    t =    87.29s         Find the "Cancel" Button
+    t =    87.44s         Check for interrupting elements affecting "Cancel" Button
+    t =    87.63s         Synthesize event
+    t =    88.29s         Wait for com.medjars.app to idle
+    t =    89.55s Find the Target Application 'com.medjars.app'
+    t =    89.83s Added attachment named '004 All with the whole pill tappable, attempt 2'
+MARK 1792547022.395 STEP END 004 11456ms OK :: All with the whole pill tappable, attempt 2
+MARK 1792547022.395 STEP BEGIN 005 All with the whole pill tappable, attempt 3
+    t =    89.84s Checking existence of `"Allow" Button`
+    t =    89.98s Checking existence of `"Allow While Using App" Button`
+    t =    90.01s Checking existence of `"OK" Button`
+    t =    90.08s Checking existence of `"Don’t Allow" Button`
+    t =    90.13s 005 All with the whole pill tappable, attempt 3
+    t =    90.13s     Get all elements bound by index for: Elements matching predicate 'label != "Log Next"'
+    t =    90.28s     Checking existence of `Button (Element at index 0)`
+    t =    90.42s     Find the Button (Element at index 0)
+    t =    90.59s     Find the "Log or Schedule" Button
+    t =    90.74s     Find the "Log or Schedule" Button
+    t =    90.88s     Checking existence of `"Log or Schedule" Button`
+    t =    90.91s     Find the "Log or Schedule" Button
+    t =    90.95s     Tap "Log or Schedule" Button
+    t =    90.95s         Wait for com.medjars.app to idle
+    t =    90.95s         Find the "Log or Schedule" Button
+    t =    90.98s         Check for interrupting elements affecting "Log or Schedule" Button
+    t =    91.12s         Synthesize event
+    t =    91.46s         Wait for com.medjars.app to idle
+    t =    91.47s     Get all elements bound by index for: Elements matching predicate 'label == "Log"'
+    t =    91.81s     Checking existence of `Button (Element at index 0)`
+    t =    92.09s     Find the Button (Element at index 0)
+    t =    92.26s     Checking existence of `Button (Element at index 1)`
+    t =    92.39s     Find the Button (Element at index 1)
+    t =    92.55s     Tap "Log" Button
+    t =    92.55s         Wait for com.medjars.app to idle
+    t =    92.56s         Find the "Log" Button
+    t =    92.70s         Check for interrupting elements affecting "Log" Button
+    t =    92.84s         Synthesize event
+    t =    93.14s         Wait for com.medjars.app to idle
+    t =    93.16s     Waiting 3.0s for "All" Button to exist
+    t =    94.18s         Checking `Expect predicate `existsNoRetry == 1` for object "All" Button`
+    t =    94.18s             Checking existence of `"All" Button`
+    t =    94.24s     Tap "All" Button
+    t =    94.24s         Wait for com.medjars.app to idle
+    t =    94.24s         Find the "All" Button
+    t =    94.35s         Check for interrupting elements affecting "All" Button
+    t =    94.50s         Synthesize event
+    t =    94.82s         Wait for com.medjars.app to idle
+    t =    95.27s     Waiting 5.0s for "Log a Substance" NavigationBar to exist
+    t =    96.33s         Checking `Expect predicate `existsNoRetry == 1` for object "Log a Substance" NavigationBar`
+    t =    96.33s             Checking existence of `"Log a Substance" NavigationBar`
+MARK 1792547028.967 REPRO pill all 3 shown=true
+    t =    96.41s     Find the Target Application 'com.medjars.app'
+    t =    97.08s     Added attachment named 'pill all 3'
+    t =    97.09s     Checking existence of `"Cancel" Button`
+    t =    97.16s     Find the "Cancel" Button
+    t =    97.25s     Tap "Cancel" Button
+    t =    97.25s         Wait for com.medjars.app to idle
+    t =    97.25s         Find the "Cancel" Button
+    t =    97.33s         Check for interrupting elements affecting "Cancel" Button
+    t =    97.51s         Synthesize event
+    t =    97.82s         Wait for com.medjars.app to idle
+    t =    99.39s Find the Target Application 'com.medjars.app'
+    t =    99.63s Added attachment named '005 All with the whole pill tappable, attempt 3'
+MARK 1792547032.193 STEP END 005 9261ms OK :: All with the whole pill tappable, attempt 3
+    t =    99.64s Tear Down
+Test Case '-[MedJarsFullUITests.B2_ReproTests test09_AllTapTargets]' passed (100.144 seconds).
+Test Suite 'B2_ReproTests' passed at 2026-10-20 20:43:52.705.
+	 Executed 1 test, with 0 failures (0 unexpected) in 100.144 (100.145) seconds
+Test Suite 'MedJarsFullUITests.xctest' passed at 2026-10-20 20:43:52.706.
+	 Executed 1 test, with 0 failures (0 unexpected) in 100.144 (100.146) seconds
+Test Suite 'Selected tests' passed at 2026-10-20 20:43:52.706.
+	 Executed 1 test, with 0 failures (0 unexpected) in 100.144 (100.147) seconds
+2026-10-20 20:43:55.618 xcodebuild[34732:99894] [MT] IDETestOperationsObserverDebug: 124.651 elapsed -- Testing started completed.
+2026-10-20 20:43:55.625 xcodebuild[34732:99894] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-10-20 20:43:55.626 xcodebuild[34732:99894] [MT] IDETestOperationsObserverDebug: 124.651 sec, +124.651 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/runner/work/med-jars/med-jars/out/result.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

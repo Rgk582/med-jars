@@ -1,0 +1,4 @@
+Test Case '-[MedJarsFullUITests.B2_ReproTests test09_AllTapTargets]' passed (100.144 seconds).
+	 Executed 1 test, with 0 failures (0 unexpected) in 100.144 (100.145) seconds
+	 Executed 1 test, with 0 failures (0 unexpected) in 100.144 (100.146) seconds
+	 Executed 1 test, with 0 failures (0 unexpected) in 100.144 (100.147) seconds

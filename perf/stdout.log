@@ -1,0 +1,180 @@
+RootView: @self, @identity, _store, _router, _scenePhase, _authInFlight changed.
+PlusLayer: @self, @identity, _store, _router, _open, _logMenu, _showAll, _allItem, _planning, _unknownTag, _editing, _message changed.
+RootView: _scenePhase changed.
+RootView: \AppStore.settings changed.
+PlusLayer: \AppStore.settings changed.
+HomeView: @self, @identity, _store, _router, _editing, _addingCaffeine, _sheet changed.
+HomeCardView: @self, @identity, _store, _router changed.
+UpNextCard: @self, @identity, _store, _router changed.
+HomeCardView: @self, @identity, _store, _router changed.
+HomeCardView: @self, @identity, _store, _router changed.
+HomeCardView: @self, @identity, _store, _router changed.
+HomeCardView: @self, @identity, _store, _router changed.
+HomeCardView: @self, @identity, _store, _router changed.
+HomeCardView: @self, @identity, _store, _router changed.
+HomeCardView: @self, @identity, _store, _router changed.
+HomeCardView: @self, @identity, _store, _router changed.
+HomeCardView: @self, @identity, _store, _router changed.
+HomeCardView: @self, @identity, _store, _router changed.
+MissedCard: @self, @identity, _store changed.
+TodayCard: @self, @identity, _store changed.
+WorkingNowCard: @self, @identity, _store changed.
+StacksCard: @self, @identity, _store, _router changed.
+ComingUpCard: @self, @identity, _store changed.
+ThisWeekCard: @self, @identity, _store changed.
+RunningLowCard: @self, @identity, _store changed.
+RecentCard: @self, @identity, _store, _router changed.
+CaffeineCard: @self, @identity, _store, _router changed.
+HomeView: @self changed.
+HomeCardView: @self changed.
+UpNextCard: @self changed.
+HomeCardView: @self changed.
+TodayCard: @self changed.
+HomeCardView: @self changed.
+MissedCard: @self changed.
+HomeCardView: @self changed.
+HomeCardView: @self changed.
+StacksCard: @self changed.
+HomeCardView: @self changed.
+ComingUpCard: @self changed.
+HomeCardView: @self changed.
+RunningLowCard: @self changed.
+HomeCardView: @self changed.
+ThisWeekCard: @self changed.
+HomeCardView: @self changed.
+RecentCard: @self changed.
+HomeCardView: @self changed.
+CaffeineCard: @self changed.
+HomeCardView: @self changed.
+RootView: _scenePhase changed.
+RootView: \AppStore.settings changed.
+PlusLayer: \AppStore.settings changed.
+HomeCardView: @self changed.
+UpNextCard: \AppStore.settings, @self changed.
+HomeCardView: @self changed.
+TodayCard: @self changed.
+HomeCardView: @self changed.
+MissedCard: @self changed.
+HomeCardView: @self changed.
+HomeCardView: @self changed.
+StacksCard: @self changed.
+HomeCardView: @self changed.
+ComingUpCard: @self changed.
+HomeCardView: @self changed.
+RunningLowCard: @self changed.
+HomeCardView: @self changed.
+ThisWeekCard: @self changed.
+HomeCardView: @self changed.
+RecentCard: @self changed.
+HomeCardView: @self changed.
+CaffeineCard: @self changed.
+HomeCardView: \AppStore.settings, @self changed.
+PlusLayer: _open changed.
+PlusLayer: _logMenu changed.
+PlusLayer: _open, _logMenu changed.
+PlusLayer: _open changed.
+PlusLayer: _logMenu changed.
+PlusLayer: _open, _logMenu changed.
+HomeCardView: @self changed.
+UpNextCard: @self changed.
+HomeCardView: @self changed.
+TodayCard: @self changed.
+HomeCardView: @self changed.
+MissedCard: @self changed.
+HomeCardView: @self changed.
+HomeCardView: @self changed.
+StacksCard: @self changed.
+HomeCardView: @self changed.
+ComingUpCard: @self changed.
+HomeCardView: @self changed.
+RunningLowCard: @self changed.
+HomeCardView: @self changed.
+ThisWeekCard: @self changed.
+HomeCardView: @self changed.
+RecentCard: @self changed.
+HomeCardView: @self changed.
+CaffeineCard: @self changed.
+HomeCardView: @self changed.
+RootView: @self, @identity, _store, _router, _scenePhase, _authInFlight changed.
+PlusLayer: @self, @identity, _store, _router, _open, _logMenu, _showAll, _allItem, _planning, _unknownTag, _editing, _message changed.
+RootView: _scenePhase changed.
+RootView: \AppStore.settings changed.
+PlusLayer: \AppStore.settings changed.
+HomeView: @self, @identity, _store, _router, _editing, _addingCaffeine, _sheet changed.
+HomeCardView: @self, @identity, _store, _router changed.
+UpNextCard: @self, @identity, _store, _router changed.
+HomeCardView: @self, @identity, _store, _router changed.
+HomeCardView: @self, @identity, _store, _router changed.
+HomeCardView: @self, @identity, _store, _router changed.
+HomeCardView: @self, @identity, _store, _router changed.
+HomeCardView: @self, @identity, _store, _router changed.
+HomeCardView: @self, @identity, _store, _router changed.
+HomeCardView: @self, @identity, _store, _router changed.
+HomeCardView: @self, @identity, _store, _router changed.
+HomeCardView: @self, @identity, _store, _router changed.
+HomeCardView: @self, @identity, _store, _router changed.
+MissedCard: @self, @identity, _store changed.
+TodayCard: @self, @identity, _store changed.
+WorkingNowCard: @self, @identity, _store changed.
+StacksCard: @self, @identity, _store, _router changed.
+ComingUpCard: @self, @identity, _store changed.
+ThisWeekCard: @self, @identity, _store changed.
+RunningLowCard: @self, @identity, _store changed.
+RecentCard: @self, @identity, _store, _router changed.
+CaffeineCard: @self, @identity, _store, _router changed.
+HomeView: @self changed.
+HomeCardView: @self changed.
+UpNextCard: @self changed.
+HomeCardView: @self changed.
+TodayCard: @self changed.
+HomeCardView: @self changed.
+MissedCard: @self changed.
+HomeCardView: @self changed.
+HomeCardView: @self changed.
+StacksCard: @self changed.
+HomeCardView: @self changed.
+ComingUpCard: @self changed.
+HomeCardView: @self changed.
+RunningLowCard: @self changed.
+HomeCardView: @self changed.
+ThisWeekCard: @self changed.
+HomeCardView: @self changed.
+RecentCard: @self changed.
+HomeCardView: @self changed.
+CaffeineCard: @self changed.
+HomeCardView: @self changed.
+RootView: _scenePhase changed.
+RootView: \AppStore.settings changed.
+PlusLayer: \AppStore.settings changed.
+HomeCardView: @self changed.
+UpNextCard: \AppStore.settings, @self changed.
+HomeCardView: @self changed.
+TodayCard: @self changed.
+HomeCardView: @self changed.
+MissedCard: @self changed.
+HomeCardView: @self changed.
+HomeCardView: @self changed.
+StacksCard: @self changed.
+HomeCardView: @self changed.
+ComingUpCard: @self changed.
+HomeCardView: @self changed.
+RunningLowCard: @self changed.
+HomeCardView: @self changed.
+ThisWeekCard: @self changed.
+HomeCardView: @self changed.
+RecentCard: @self changed.
+HomeCardView: @self changed.
+CaffeineCard: @self changed.
+HomeCardView: \AppStore.settings, @self changed.
+PlusLayer: _open changed.
+PlusLayer: _logMenu changed.
+PlusLayer: _open, _logMenu, _showAll changed.
+PlusLayer: _showAll changed.
+PlusLayer: _open changed.
+PlusLayer: _logMenu changed.
+PlusLayer: _open, _logMenu, _showAll changed.
+PlusLayer: _showAll changed.
+PlusLayer: _open changed.
+PlusLayer: _logMenu changed.
+PlusLayer: _open, _logMenu, _showAll changed.
+PlusLayer: _showAll changed.

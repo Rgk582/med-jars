@@ -1,0 +1,1121 @@
+Command line invocation:
+    /Applications/Xcode_26.3.app/Contents/Developer/usr/bin/xcodebuild build-for-testing -project MedJars.xcodeproj -scheme MedJars -configuration Debug -destination "platform=iOS Simulator,id=517BAAA1-7BAB-4B50-8B25-04EF0238019B" -derivedDataPath build CODE_SIGNING_ALLOWED=NO
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS Simulator, arch:arm64, id:517BAAA1-7BAB-4B50-8B25-04EF0238019B, OS:26.0.1, name:iPhone 17 Pro }
+{ platform:iOS Simulator, arch:x86_64, id:517BAAA1-7BAB-4B50-8B25-04EF0238019B, OS:26.0.1, name:iPhone 17 Pro }
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (3 targets)
+    Target 'MedJarsFullUITests' in project 'MedJars'
+        ➜ Explicit dependency on target 'MedJars' in project 'MedJars'
+    Target 'MedJars' in project 'MedJars'
+        ➜ Explicit dependency on target 'MedJarsWidget' in project 'MedJars'
+    Target 'MedJarsWidget' in project 'MedJars' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode_26.3.app/Contents/Developer/usr/bin/actool --print-asset-tag-combinations --output-format xml1 /Users/runner/work/med-jars/med-jars/MedJars/Assets.xcassets
+
+ExecuteExternalTool /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+ExecuteExternalTool /Applications/Xcode_26.3.app/Contents/Developer/usr/bin/actool --version --output-format xml1
+
+Build description signature: cbb63b8e706207c728fad5c349874a4a
+Build description path: /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/XCBuildData/cbb63b8e706207c728fad5c349874a4a.xcbuilddata
+ClangStatCache /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk /Users/runner/work/med-jars/med-jars/build/SDKStatCaches.noindex/iphonesimulator26.2-23C57-dc75598d0054f22ec865fa860f139d72e244bd9a5feaf902f95f61bf06266e52.sdkstatcache
+    cd /Users/runner/work/med-jars/med-jars/MedJars.xcodeproj
+    /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -o /Users/runner/work/med-jars/med-jars/build/SDKStatCaches.noindex/iphonesimulator26.2-23C57-dc75598d0054f22ec865fa860f139d72e244bd9a5feaf902f95f61bf06266e52.sdkstatcache
+
+CreateBuildDirectory /Users/runner/work/med-jars/med-jars/build/Build/Products
+    cd /Users/runner/work/med-jars/med-jars/MedJars.xcodeproj
+    builtin-create-build-directory /Users/runner/work/med-jars/med-jars/build/Build/Products
+
+CreateBuildDirectory /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex
+    cd /Users/runner/work/med-jars/med-jars/MedJars.xcodeproj
+    builtin-create-build-directory /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars-c07efa856f802deaa07dd1bfffe1cb72-VFS-iphonesimulator/all-product-headers.yaml
+    cd /Users/runner/work/med-jars/med-jars/MedJars.xcodeproj
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars-c07efa856f802deaa07dd1bfffe1cb72-VFS-iphonesimulator/all-product-headers.yaml
+
+CreateBuildDirectory /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator
+    cd /Users/runner/work/med-jars/med-jars/MedJars.xcodeproj
+    builtin-create-build-directory /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator
+
+CreateBuildDirectory /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules
+    cd /Users/runner/work/med-jars/med-jars/MedJars.xcodeproj
+    builtin-create-build-directory /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules
+
+CreateBuildDirectory /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/ExplicitPrecompiledModules
+    cd /Users/runner/work/med-jars/med-jars/MedJars.xcodeproj
+    builtin-create-build-directory /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/ExplicitPrecompiledModules
+
+CreateBuildDirectory /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator
+    cd /Users/runner/work/med-jars/med-jars/MedJars.xcodeproj
+    builtin-create-build-directory /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/empty-MedJarsFullUITests.plist (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/empty-MedJarsFullUITests.plist
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget_const_extract_protocols.json (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget_const_extract_protocols.json
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget.SwiftFileList (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget.SwiftFileList
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget.SwiftConstValuesFileList (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget.LinkFileList (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget.LinkFileList
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget-OutputFileMap.json (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget-OutputFileMap.json
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget.hmap (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget.hmap
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget.DependencyStaticMetadataFileList (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget.DependencyStaticMetadataFileList
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget.DependencyMetadataFileList (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget.DependencyMetadataFileList
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget-project-headers.hmap (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget-project-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget-own-target-headers.hmap (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget-own-target-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget-generated-files.hmap (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget-generated-files.hmap
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget-all-target-headers.hmap (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget-all-target-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget-all-non-framework-target-headers.hmap (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget-all-non-framework-target-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget-DebugEntryPoint-normal-arm64.txt (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget-DebugEntryPoint-normal-arm64.txt
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget-DebugDylibPath-normal-arm64.txt (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget-DebugDylibPath-normal-arm64.txt
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget-DebugDylibInstallName-normal-arm64.txt (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget-DebugDylibInstallName-normal-arm64.txt
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/ProductTypeInfoPlistAdditions.plist (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/ProductTypeInfoPlistAdditions.plist
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests_const_extract_protocols.json (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests_const_extract_protocols.json
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests.SwiftFileList (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests.SwiftFileList
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests.SwiftConstValuesFileList (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests.LinkFileList (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests.LinkFileList
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests-OutputFileMap.json (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests-OutputFileMap.json
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/MedJarsFullUITests.hmap (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/MedJarsFullUITests.hmap
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/MedJarsFullUITests.DependencyStaticMetadataFileList (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/MedJarsFullUITests.DependencyStaticMetadataFileList
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/MedJarsFullUITests.DependencyMetadataFileList (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/MedJarsFullUITests.DependencyMetadataFileList
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/MedJarsFullUITests-project-headers.hmap (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/MedJarsFullUITests-project-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/MedJarsFullUITests-own-target-headers.hmap (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/MedJarsFullUITests-own-target-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/MedJarsFullUITests-generated-files.hmap (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/MedJarsFullUITests-generated-files.hmap
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/MedJarsFullUITests-all-target-headers.hmap (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/MedJarsFullUITests-all-target-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/MedJarsFullUITests-all-non-framework-target-headers.hmap (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/MedJarsFullUITests-all-non-framework-target-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars_const_extract_protocols.json (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars_const_extract_protocols.json
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars.SwiftFileList (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars.SwiftFileList
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars.SwiftConstValuesFileList (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars.LinkFileList (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars.LinkFileList
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars-OutputFileMap.json (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars-OutputFileMap.json
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars.hmap (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars.hmap
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars.DependencyStaticMetadataFileList (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars.DependencyStaticMetadataFileList
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars.DependencyMetadataFileList (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars.DependencyMetadataFileList
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars-project-headers.hmap (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars-project-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars-own-target-headers.hmap (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars-own-target-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars-generated-files.hmap (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars-generated-files.hmap
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars-all-target-headers.hmap (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars-all-target-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars-all-non-framework-target-headers.hmap (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars-all-non-framework-target-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars-DebugDylibPath-normal-arm64.txt (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars-DebugDylibPath-normal-arm64.txt
+
+WriteAuxiliaryFile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars-DebugDylibInstallName-normal-arm64.txt (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    write-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars-DebugDylibInstallName-normal-arm64.txt
+
+MkDir /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsWidget.appex (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    /bin/mkdir -p /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsWidget.appex
+
+MkDir /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/PlugIns/MedJarsFullUITests.xctest (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    /bin/mkdir -p /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/PlugIns/MedJarsFullUITests.xctest
+
+MkDir /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/PlugIns (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    /bin/mkdir -p /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/PlugIns
+
+MkDir /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    /bin/mkdir -p /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app
+
+Ld /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsWidget.appex/__preview.dylib normal (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios18.0-simulator -dynamiclib -isysroot /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -O0 -L/Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator -F/Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator -install_name @rpath/MedJarsWidget.debug.dylib -dead_strip -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget_dependency_info.dat -o /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsWidget.appex/__preview.dylib
+
+ProcessInfoPlistFile /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsWidget.appex/Info.plist /Users/runner/work/med-jars/med-jars/Widget/Info.plist (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-infoPlistUtility /Users/runner/work/med-jars/med-jars/Widget/Info.plist -producttype com.apple.product-type.app-extension -expandbuildsettings -format binary -platform iphonesimulator -o /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsWidget.appex/Info.plist
+
+SwiftDriver MedJarsWidget normal arm64 com.apple.xcode.tools.swift.compiler (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-SwiftDriver -- /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name MedJarsWidget -Onone -enforce-exclusivity\=checked @/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -target arm64-apple-ios18.0-simulator -g -module-cache-path /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex -Xfrontend -serialize-debugging-options -application-extension -enable-testing -index-store-path /Users/runner/work/med-jars/med-jars/build/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator -F /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/med-jars/med-jars/build/SDKStatCaches.noindex/iphonesimulator26.2-23C57-dc75598d0054f22ec865fa860f139d72e244bd9a5feaf902f95f61bf06266e52.sdkstatcache -output-file-map /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex -sdk-module-cache-path /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget-generated-files.hmap -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget-own-target-headers.hmap -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget-project-headers.hmap -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget-Swift.h -working-directory /Users/runner/work/med-jars/med-jars -experimental-emit-module-separately -disable-cmo
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/_AvailabilityInternal-CVA18CDB5QFSZJPYYFBIOENQ5.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/DeveloperToolsSupport-D2FG03HS0WH0T3MJC01B2E56D.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/_Builtin_stdarg-8LY6E4720PLZA4VLUO5ZR3YGK.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/_Builtin_float-9ZIYKFI4OX0PHQLAFAJYH8UUV.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/ptrcheck-BGGHITF3V0X5UOEQY1WLOEURG.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/_Builtin_stddef-8EHKDBPPS71KUO1F2HADS0XUR.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/SwiftShims-680523LQOO24HEP5U46XR5L37.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/_DarwinFoundation1-C5FGEB8H86SG16SY3H5JWREYR.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/ptrauth-4H2UM1MJL7N9U92KU78JLTVE2.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/ActivityKit-A10W810D9P1MKGJSWYJ0UC2GI.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/_SwiftConcurrencyShims-EBNKLBP9P7LH22M6K9KUTUSRY.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/_Builtin_stdbool-AYXX26JSVGEUZZH6RQU269MAY.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/_Builtin_limits-JCEQVYFZ51EAWTC6EGUYT5NO.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/ExtensionFoundation-A225M8C00PVYYUZ2GBFCPH763.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/_DarwinFoundation2-AVJI1ZOTARKPDNL4XBVY7BS9C.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/_Builtin_tgmath-1EEUAPLW4OCAYGAIM6K9POXHW.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/_Builtin_stdint-42P53AZ54D7ELQDBF1RJMDL44.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/sys_types-A5U50WOTQXJ34QDLSXTGRDPJ0.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/_DarwinFoundation3-7JUY7CIXX0IGCNUWO0J487XNR.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/_Builtin_stdatomic-C5KG984RLK6H7SHB718Z6VCAL.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/_Builtin_intrinsics-AF12BIDYZ16OYYJ4YMUV4HYPM.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/_Builtin_inttypes-5QZ1JAR3CWAMF7URSVLR8ZJU3.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/Darwin-3L07XM8YBAHZR3MI08F9UT2OY.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/simd-CFBXA3KBG5GM7LDU60SGL8WQ9.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/ObjectiveC-4HDM7SOTKDECFFZLDFTG9OCNB.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/MachO-BQHX6DH5TU3MQT7YL4W0F5H7X.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/os_object-9OQZL5LQN0NJ1XDJT7EK3370V.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/os_workgroup-A0Q81B62123BF1TVPFNYOGQMN.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/Dispatch-89RDFH4MU3X9UTU4DKMQTA2ZT.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/Spatial-BOGOKY64M5M8U7CNXPH3AJ89P.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/dnssd-96MKWTW5B29HACGSJMFBUCK40.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/CoreFoundation-4LF0L7KC36U0RGDZ8ZM2ZC0LY.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/XPC-C2QXUO46VK9WIF9JNWTMYH213.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/CoreGraphics-2V3EMBJ2EQYSG3EN0L1K0ZL4D.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/Security-DL6ZUJ77IXAXROV0G88DAA5U2.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/os-47ULD7C49RO35K9JFU9SR7DJS.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/CFNetwork-B1WV0ASSX1231S1QWCT9C6VS5.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/ImageIO-9TEQYNYAZECISSSQGL6RZEGSS.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/CoreText-1ITJOSFR50BZ6ZX9EXARD9ZW3.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/Foundation-5X4GM157DGM1NDHJJ8U4Z5Y59.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/UniformTypeIdentifiers-CTW1SR1J54F1KNEAGHNGGBDZY.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/CoreData-877NWRLCSV4DTID57ZUUZ16R3.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/DataDetection-5FNNUBDDOUEY1NNJN2MP0DW4Q.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/OSLog-BY0L3PIASJN8P7AHEFV5VPUM1.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/UserNotifications-ZIUGWM8Y6JS2ZFDX1C1I470V.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/CoreTransferable-60B966KNESPWQHIMTH8URCW4M.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/CoreSpotlight-18AISLOJVGJAW44DH3EFW2T2G.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/AppIntents-E6MAWFLWFL0TVIQBQKMVIURML.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/Network-57G17IQFDGSENLJCNL8Z7M05Y.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/Accessibility-60HD2RWU1YKTYRHSI3U7H3G7K.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/FileProvider-3TSQHC6HMXQTEF699D11HGN2N.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/IOSurface-91HPJ8BF267H2BDNENPNZLAOM.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/UIUtilities-CMRP1B1RNEKRPT7TI4C9LG3UN.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/Symbols-DEL0UFWMFETMDFZCBSN07032P.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/_LocationEssentials-BVQ580SGIW2DHMFU767PDS4RP.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/RelevanceKit-2QMIHT1L0F75PO7GN7KBXSMP6.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/Metal-6IJVSZTJKFJ3MV90N2AIBRI01.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/WidgetKit-2SVHMCY3BDDYECZARN088MUDF.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/OpenGLES-D69XS0P66HTDT26E4HEOD3RMB.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/CoreLocation-7ECFZ66Y6YTE1DW2LBV0X4AP3.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/Intents-D2FYCR3QF6QW4ZT6PSVCULO68.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/CoreVideo-3GLG3N0VT39GUJKSUMDAIGNN0.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/CoreImage-BKU4EV73RAMVK7AVBBA5NCEZZ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/QuartzCore-BDX97T3U4T6QHUGPQ8RSYOD71.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/SwiftUICore-DX9FHIIXVKTSNJ54EOQAUE8MR.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/UIKit-3FDZJ7F9TG06UFF63NDBTR6II.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/SwiftUI-JZC33EXH5121TKG15ZVY7FE6.pcm
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ MedJarsWidget (in target 'MedJarsWidget' from project 'MedJars')
+
+EmitSwiftModule normal arm64 (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 Compiling\ Stacks.swift,\ StoreIO.swift,\ Theme.swift /Users/runner/work/med-jars/med-jars/Shared/Stacks.swift /Users/runner/work/med-jars/med-jars/Shared/StoreIO.swift /Users/runner/work/med-jars/med-jars/Shared/Theme.swift (in target 'MedJarsWidget' from project 'MedJars')
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/Shared/Stacks.swift (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/Shared/StoreIO.swift (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/Shared/Theme.swift (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 Compiling\ ControlIntents.swift,\ DoseLogic.swift,\ LiveDose.swift /Users/runner/work/med-jars/med-jars/Shared/ControlIntents.swift /Users/runner/work/med-jars/med-jars/Shared/DoseLogic.swift /Users/runner/work/med-jars/med-jars/Shared/LiveDose.swift (in target 'MedJarsWidget' from project 'MedJars')
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/Shared/ControlIntents.swift (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/Shared/DoseLogic.swift (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/Shared/LiveDose.swift (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 Compiling\ Models.swift,\ NextDoseWidget.swift,\ Notify.swift /Users/runner/work/med-jars/med-jars/Shared/Models.swift /Users/runner/work/med-jars/med-jars/Widget/NextDoseWidget.swift /Users/runner/work/med-jars/med-jars/Shared/Notify.swift (in target 'MedJarsWidget' from project 'MedJars')
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/Shared/Models.swift (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/Widget/NextDoseWidget.swift (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/Shared/Notify.swift (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for MedJarsWidget (in target 'MedJarsWidget' from project 'MedJars')
+
+SwiftDriver\ Compilation\ Requirements MedJarsWidget normal arm64 com.apple.xcode.tools.swift.compiler (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name MedJarsWidget -Onone -enforce-exclusivity\=checked @/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -target arm64-apple-ios18.0-simulator -g -module-cache-path /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex -Xfrontend -serialize-debugging-options -application-extension -enable-testing -index-store-path /Users/runner/work/med-jars/med-jars/build/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator -F /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/med-jars/med-jars/build/SDKStatCaches.noindex/iphonesimulator26.2-23C57-dc75598d0054f22ec865fa860f139d72e244bd9a5feaf902f95f61bf06266e52.sdkstatcache -output-file-map /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex -sdk-module-cache-path /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget-generated-files.hmap -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget-own-target-headers.hmap -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget-project-headers.hmap -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget-Swift.h -working-directory /Users/runner/work/med-jars/med-jars -experimental-emit-module-separately -disable-cmo
+
+SwiftDriverJobDiscovery normal arm64 Compiling Stacks.swift, StoreIO.swift, Theme.swift (in target 'MedJarsWidget' from project 'MedJars')
+
+SwiftMergeGeneratedHeaders /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/DerivedSources/MedJarsWidget-Swift.h /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget-Swift.h (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-swiftHeaderTool -arch arm64 /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget-Swift.h -o /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/DerivedSources/MedJarsWidget-Swift.h
+
+Copy /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsWidget.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget.swiftmodule (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget.swiftmodule /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsWidget.swiftmodule/arm64-apple-ios-simulator.swiftmodule
+
+Copy /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsWidget.swiftmodule/arm64-apple-ios-simulator.swiftdoc /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget.swiftdoc (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget.swiftdoc /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsWidget.swiftmodule/arm64-apple-ios-simulator.swiftdoc
+
+Copy /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsWidget.swiftmodule/arm64-apple-ios-simulator.abi.json /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget.abi.json (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget.abi.json /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsWidget.swiftmodule/arm64-apple-ios-simulator.abi.json
+
+Copy /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsWidget.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget.swiftsourceinfo (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget.swiftsourceinfo /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsWidget.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
+
+SwiftDriverJobDiscovery normal arm64 Compiling ControlIntents.swift, DoseLogic.swift, LiveDose.swift (in target 'MedJarsWidget' from project 'MedJars')
+
+MkDir /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/assetcatalog_output/unthinned (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    /bin/mkdir -p /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/assetcatalog_output/unthinned
+
+MkDir /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/assetcatalog_output/thinned (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    /bin/mkdir -p /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/assetcatalog_output/thinned
+
+GenerateAssetSymbols /Users/runner/work/med-jars/med-jars/MedJars/Assets.xcassets (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    /Applications/Xcode_26.3.app/Contents/Developer/usr/bin/actool /Users/runner/work/med-jars/med-jars/MedJars/Assets.xcassets --compile /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app --output-format human-readable-text --notices --warnings --export-dependency-info /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/assetcatalog_dependencies --output-partial-info-plist /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/assetcatalog_generated_info.plist --app-icon AppIcon --include-all-app-icons --alternate-app-icon AppIconDiscreet --accent-color AccentColor --compress-pngs --enable-on-demand-resources YES --development-region en --target-device iphone --target-device ipad --minimum-deployment-target 18.0 --platform iphonesimulator --bundle-identifier com.medjars.app --generate-swift-asset-symbol-extensions NO --generate-swift-asset-symbols /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/DerivedSources/GeneratedAssetSymbols.swift --generate-objc-asset-symbols /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/DerivedSources/GeneratedAssetSymbols.h --generate-asset-symbol-index /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/DerivedSources/GeneratedAssetSymbols-Index.plist
+/* com.apple.actool.compilation-results */
+/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/DerivedSources/GeneratedAssetSymbols-Index.plist
+/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/DerivedSources/GeneratedAssetSymbols.h
+/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/DerivedSources/GeneratedAssetSymbols.swift
+
+
+CompileAssetCatalogVariant thinned /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app /Users/runner/work/med-jars/med-jars/MedJars/Assets.xcassets (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    /Applications/Xcode_26.3.app/Contents/Developer/usr/bin/actool /Users/runner/work/med-jars/med-jars/MedJars/Assets.xcassets --compile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/assetcatalog_output/thinned --output-format human-readable-text --notices --warnings --export-dependency-info /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/assetcatalog_dependencies_thinned --output-partial-info-plist /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/assetcatalog_generated_info.plist_thinned --app-icon AppIcon --include-all-app-icons --alternate-app-icon AppIconDiscreet --accent-color AccentColor --compress-pngs --enable-on-demand-resources YES --filter-for-thinning-device-configuration iPhone18,1 --filter-for-device-os-version 26.0.1 --development-region en --target-device iphone --target-device ipad --minimum-deployment-target 18.0 --platform iphonesimulator
+/* com.apple.actool.compilation-results */
+/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/assetcatalog_generated_info.plist_thinned
+/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/assetcatalog_output/thinned/AppIcon60x60@2x.png
+/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/assetcatalog_output/thinned/AppIcon76x76@2x~ipad.png
+/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/assetcatalog_output/thinned/Assets.car
+
+
+SwiftDriver MedJars normal arm64 com.apple.xcode.tools.swift.compiler (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-SwiftDriver -- /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name MedJars -Onone -enforce-exclusivity\=checked @/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -target arm64-apple-ios18.0-simulator -g -module-cache-path /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/runner/work/med-jars/med-jars/build/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator -F /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/med-jars/med-jars/build/SDKStatCaches.noindex/iphonesimulator26.2-23C57-dc75598d0054f22ec865fa860f139d72e244bd9a5feaf902f95f61bf06266e52.sdkstatcache -output-file-map /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex -sdk-module-cache-path /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars-generated-files.hmap -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars-own-target-headers.hmap -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars-project-headers.hmap -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars-Swift.h -working-directory /Users/runner/work/med-jars/med-jars -experimental-emit-module-separately -disable-cmo
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/ptrcheck-5370M8BKERPC5RMKMVWGH0W8Z.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/SwiftShims-3M1LMUDHBT2PJB93YAXHP17LJ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/ptrauth-AIPYZ39E8LHMMF42JWZAPBQXH.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/_SwiftConcurrencyShims-6YB709V6O9S9O4QFQA38SYUAO.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/_Builtin_stddef-Q0W0B5UO182XIMLVL5VVCE78.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/_Builtin_stdbool-E48H3JCEJZJDS61GQCXKWRO7R.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/ActivityKit-2XSBNMDY8055R1VA57RPCWTFW.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/_Builtin_stdarg-90S6Y9B7MKXX2K9ZGW0HSOWT7.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/_Builtin_float-AJCPW1R16J2FY4TRX0O6C2NZO.pcm
+
+SwiftDriverJobDiscovery normal arm64 Compiling Models.swift, NextDoseWidget.swift, Notify.swift (in target 'MedJarsWidget' from project 'MedJars')
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/DeveloperToolsSupport-BVUQMXC6W7D7OAMTKK9G1M1E3.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/_AvailabilityInternal-6WW52R50OM5UW54GHIGMTVPON.pcm
+
+SwiftDriver\ Compilation MedJarsWidget normal arm64 com.apple.xcode.tools.swift.compiler (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-Swift-Compilation -- /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name MedJarsWidget -Onone -enforce-exclusivity\=checked @/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -target arm64-apple-ios18.0-simulator -g -module-cache-path /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex -Xfrontend -serialize-debugging-options -application-extension -enable-testing -index-store-path /Users/runner/work/med-jars/med-jars/build/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator -F /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/med-jars/med-jars/build/SDKStatCaches.noindex/iphonesimulator26.2-23C57-dc75598d0054f22ec865fa860f139d72e244bd9a5feaf902f95f61bf06266e52.sdkstatcache -output-file-map /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex -sdk-module-cache-path /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget-generated-files.hmap -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget-own-target-headers.hmap -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget-project-headers.hmap -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget-Swift.h -working-directory /Users/runner/work/med-jars/med-jars -experimental-emit-module-separately -disable-cmo
+
+Ld /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsWidget.appex/MedJarsWidget.debug.dylib normal (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios18.0-simulator -dynamiclib -isysroot /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -O0 -L/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator -F/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator -filelist /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget.LinkFileList -install_name @rpath/MedJarsWidget.debug.dylib -Xlinker -rpath -Xlinker /usr/lib/swift -Xlinker -rpath -Xlinker @executable_path/Frameworks -Xlinker -rpath -Xlinker @executable_path/../../Frameworks -dead_strip -Xlinker -object_path_lto -Xlinker /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget_dependency_info.dat -fapplication-extension -fobjc-link-runtime -L/Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget.swiftmodule @/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget-linker-args.resp -Xlinker -alias -Xlinker _NSExtensionMain -Xlinker ___debug_main_executable_dylib_entry_point -o /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsWidget.appex/MedJarsWidget.debug.dylib
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/_DarwinFoundation1-ATRDQ71VUG8I68XI2IBZ2ZRUV.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/ExtensionFoundation-6JJIK1N5VG0O5MM1V1509AM9S.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/_Builtin_limits-9FL31BM8S333CSDX4ZIC1EQAZ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/_DarwinFoundation2-257KP9Q8JBX4QF4QYQAF3LCPC.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/sys_types-2RRBZ8KAPI3BMWIBZJBV1BZKE.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/_Builtin_stdint-8SDS2RK51K9QKWBRXKJM70DYG.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/_Builtin_tgmath-EN2OD7BS2PC352R2HNPUVQ7C1.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/_DarwinFoundation3-I2YN4KOB62UFJOWA3XIJG8X8.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/_Builtin_intrinsics-69GXWZ7JU6WL54E4BJSEI52HF.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/_Builtin_inttypes-B0OJ7847LP9SYZNYGXHNUV5BA.pcm
+
+ConstructStubExecutorLinkFileList /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget-ExecutorLinkFileList-normal-arm64.txt (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    construct-stub-executor-link-file-list /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsWidget.appex/MedJarsWidget.debug.dylib /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor_no_swift_entry_point.a /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor.a --output /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget-ExecutorLinkFileList-normal-arm64.txt
+note: Using stub executor library with Swift entry point. (in target 'MedJarsWidget' from project 'MedJars')
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/Darwin-9AD7JDJ3RWQNYVR0PK0NN8059.pcm
+
+Ld /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsWidget.appex/MedJarsWidget normal (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios18.0-simulator -isysroot /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -O0 -L/Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator -F/Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator -Xlinker -rpath -Xlinker @executable_path -Xlinker -rpath -Xlinker @executable_path/Frameworks -Xlinker -rpath -Xlinker @executable_path/../../Frameworks -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -e ___debug_blank_executor_main -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_dylib -Xlinker /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget-DebugDylibPath-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_entry -Xlinker /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget-DebugEntryPoint-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_instlnm -Xlinker /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget-DebugDylibInstallName-normal-arm64.txt -Xlinker -filelist -Xlinker /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget-ExecutorLinkFileList-normal-arm64.txt /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsWidget.appex/MedJarsWidget.debug.dylib -o /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsWidget.appex/MedJarsWidget
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/simd-35JM9EQGX4M73MRQ8AD21ZMJW.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/_Builtin_stdatomic-31C8XWKECGH3JXCWIRVIONTIY.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/ObjectiveC-DX0HOQGMSKSI07GGY2T7KDK3R.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/MachO-18HACW6N8PEMYRD6CLJS40Q55.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/os_object-AU78FD8DYN4EGALK33UPSBN1Z.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/os_workgroup-ASPB2XXEKWA3J5AKPBF7A82P3.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/Dispatch-EVJKOE6Q1YTJNF6X9K9RUQRA2.pcm
+
+ExtractAppIntentsMetadata (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.3.7003.10.4iLRCx/Metal.xctoolchain --module-name MedJarsWidget --sdk-root /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk --xcode-version 17C529 --platform-family iOS --deployment-target 18.0 --bundle-identifier com.medjars.app.widget --output /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsWidget.appex --target-triple arm64-apple-ios18.0-simulator --binary-file /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsWidget.appex/MedJarsWidget --dependency-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget_dependency_info.dat --stringsdata-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget.SwiftFileList --metadata-file-list /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget.DependencyMetadataFileList --static-metadata-file-list /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget.DependencyStaticMetadataFileList --swift-const-vals-list /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/Objects-normal/arm64/MedJarsWidget.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-10-20 20:31:53.137 appintentsmetadataprocessor[15947:50706] Starting appintentsmetadataprocessor export
+2026-10-20 20:31:53.439 appintentsmetadataprocessor[15947:50706] Writing Metadata.appintents
+2026-10-20 20:31:53.439 appintentsmetadataprocessor[15947:50706] Metadata root: /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsWidget.appex/Metadata.appintents
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/dnssd-A5VKUPKDMA7MK5AH3WLYJDHRX.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/XPC-BTGYJ8D70BWOR4AJ7GZ5Y3FJW.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/Spatial-7Q78BL1DLRHH6Y3IACNBM2T4A.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/CoreFoundation-ERGSFP6AFCQYJBLSSI59MUULL.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/os-LY6M5TTIHJY5J7FGW01X1N84.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/CFNetwork-6D9PM0XINNFRQ7MACBF9F0NZI.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/Security-B4SFYY6AGSXG7ZLXD95V8ACBT.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/CoreGraphics-2Y32B6EQI2DVT14O0NBRGG5ZF.pcm
+
+AppIntentsSSUTraining (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsWidget.appex/Info.plist --temp-dir-path /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/ssu --bundle-id com.medjars.app.widget --product-path /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsWidget.appex --extracted-metadata-path /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsWidget.appex/Metadata.appintents --metadata-file-list /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsWidget.build/MedJarsWidget.DependencyMetadataFileList --archive-ssu-assets
+2026-10-20 20:31:54.054 appintentsnltrainingprocessor[15960:50768] Parsing options for appintentsnltrainingprocessor
+2026-10-20 20:31:54.059 appintentsnltrainingprocessor[15960:50768] Starting AppIntents SSU YAML Generation
+2026-10-20 20:31:54.078 appintentsnltrainingprocessor[15960:50768] No AppShortcuts found - Skipping.
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/Foundation-B4G533MQ1ZO3N7JPSKEJNDME1.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/CoreText-BT63U91A0MOIN374P0FUEK6KG.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/ImageIO-EQ4LK8OTM9R26QNA6N6D6QL10.pcm
+
+RegisterExecutionPolicyException /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsWidget.appex (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-RegisterExecutionPolicyException /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsWidget.appex
+
+Touch /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsWidget.appex (in target 'MedJarsWidget' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    /usr/bin/touch -c /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsWidget.appex
+
+Ld /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/__preview.dylib normal (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios18.0-simulator -dynamiclib -isysroot /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -O0 -L/Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator -F/Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator -install_name @rpath/MedJars.debug.dylib -dead_strip -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars_dependency_info.dat -o /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/__preview.dylib
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/_LocationEssentials-5RQ4KDVHSZTKA64T2XUD77PKU.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/UserNotifications-1H6TUXWM6JPG0ALHP2107350X.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/UIUtilities-8QBTHOV0O1B6V2QHZDJ93FXUH.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/LocalAuthentication-D30SXXQ80ZFPWDAQO9LYMKKD4.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/CoreTransferable-ETFY3H2YQ79DXSWTITH8T54C8.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/BackgroundTasks-DXG41R6WZWDWX6CHFNGAXRRHA.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/RelevanceKit-CKPO4PD0DCKARCXKKHC7QCW7F.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/Network-EYM9RDXP45GM3NBT7O66WOIH2.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/Accessibility-BSKGV6G0Z2OVMC73WSOGQTTYR.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/UniformTypeIdentifiers-2QXB7OH3RNZOSMJ68E47WKU0T.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/Symbols-58VTD0TJD9UN07T8O8JVN9592.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/WidgetKit-28RYBEZXAX6OYYHYL1XFS94RT.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/CoreLocation-DAWP10CIFRC0FT0G2DOQSBXLH.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/CoreSpotlight-GPROJVPTDMKLO74O94L474ZC.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/CoreNFC-ES3KYVY7N37TP6ONKF97JKOLA.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/Intents-7NF2EWDHCUP4ZVAO3OB9Q5XA0.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/FileProvider-CJMRYLKU65J2CI72MVYICTB6M.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/OSLog-BU2RC0OQB398YJEN6MKRA2LU5.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/CoreData-ESZ4ULRD3N57WLXHRHV6PK9OP.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/HealthKit-CGZGX8TVY3NLP3X0TA0L9QXM.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/OpenGLES-99A2PLWRCU4THLXF1126H379R.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/DataDetection-1G3CP2FYMGREPADFVLKNWIXF3.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/IOSurface-439HHPR0KI8O51KRKNJA85GZN.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/AppIntents-69ARWHINME7BLQ7SED8JAQOHA.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/Metal-8E3LILWK5E7L5BY0HJMFO4IA.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/CoreVideo-BO1C79OFYIL63BZDSVYPYKCSK.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/QuartzCore-BHDY63KU1PC8198F02MAH701P.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/CoreImage-9V68L9H1D27WNLFUGZ2PODYLJ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/SwiftUICore-70QFTKRSL6JPG7ND2DZLYJD0.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/UIKit-2HEC7NWZ77WKBKHS45BMB4IJK.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/SwiftUI-5FC0FS9YWWDCPN575M3KN7QI7.pcm
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ MedJars (in target 'MedJars' from project 'MedJars')
+EmitSwiftModule normal arm64 (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 Compiling\ AppIntents.swift,\ AppStore.swift,\ CabinetView.swift,\ CaffeineView.swift,\ CheckInSheet.swift,\ Components.swift,\ ControlIntents.swift,\ DebugHarness.swift,\ DoseLogic.swift,\ GroupLogSheet.swift,\ HealthImport.swift,\ HistoryView.swift,\ HomeView.swift /Users/runner/work/med-jars/med-jars/MedJars/AppIntents.swift /Users/runner/work/med-jars/med-jars/MedJars/AppStore.swift /Users/runner/work/med-jars/med-jars/MedJars/Views/CabinetView.swift /Users/runner/work/med-jars/med-jars/MedJars/Views/CaffeineView.swift /Users/runner/work/med-jars/med-jars/MedJars/Views/CheckInSheet.swift /Users/runner/work/med-jars/med-jars/MedJars/Views/Components.swift /Users/runner/work/med-jars/med-jars/Shared/ControlIntents.swift /Users/runner/work/med-jars/med-jars/MedJars/DebugHarness.swift /Users/runner/work/med-jars/med-jars/Shared/DoseLogic.swift /Users/runner/work/med-jars/med-jars/MedJars/Views/GroupLogSheet.swift /Users/runner/work/med-jars/med-jars/MedJars/HealthImport.swift /Users/runner/work/med-jars/med-jars/MedJars/Views/HistoryView.swift /Users/runner/work/med-jars/med-jars/MedJars/Views/HomeView.swift (in target 'MedJars' from project 'MedJars')
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/MedJars/AppIntents.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/MedJars/AppStore.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/MedJars/Views/CabinetView.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/MedJars/Views/CaffeineView.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/MedJars/Views/CheckInSheet.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/MedJars/Views/Components.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/Shared/ControlIntents.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/MedJars/DebugHarness.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/Shared/DoseLogic.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/MedJars/Views/GroupLogSheet.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/MedJars/HealthImport.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/MedJars/Views/HistoryView.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/MedJars/Views/HomeView.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 Compiling\ JarDetailView.swift,\ JarEditorView.swift,\ KeyboardBar.swift,\ LiveDose.swift,\ LiveDoses.swift,\ LogDoseSheet.swift,\ MedJarsApp.swift,\ Models.swift,\ Notify.swift,\ PlanDoseSheet.swift,\ PlusButton.swift,\ Reminders.swift /Users/runner/work/med-jars/med-jars/MedJars/Views/JarDetailView.swift /Users/runner/work/med-jars/med-jars/MedJars/Views/JarEditorView.swift /Users/runner/work/med-jars/med-jars/MedJars/KeyboardBar.swift /Users/runner/work/med-jars/med-jars/Shared/LiveDose.swift /Users/runner/work/med-jars/med-jars/MedJars/LiveDoses.swift /Users/runner/work/med-jars/med-jars/MedJars/Views/LogDoseSheet.swift /Users/runner/work/med-jars/med-jars/MedJars/MedJarsApp.swift /Users/runner/work/med-jars/med-jars/Shared/Models.swift /Users/runner/work/med-jars/med-jars/Shared/Notify.swift /Users/runner/work/med-jars/med-jars/MedJars/Views/PlanDoseSheet.swift /Users/runner/work/med-jars/med-jars/MedJars/Views/PlusButton.swift /Users/runner/work/med-jars/med-jars/MedJars/Reminders.swift (in target 'MedJars' from project 'MedJars')
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/MedJars/Views/JarDetailView.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/MedJars/Views/JarEditorView.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/MedJars/KeyboardBar.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/Shared/LiveDose.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/MedJars/LiveDoses.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/MedJars/Views/LogDoseSheet.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/MedJars/MedJarsApp.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/Shared/Models.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/Shared/Notify.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/MedJars/Views/PlanDoseSheet.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/MedJars/Views/PlusButton.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/MedJars/Reminders.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+LinkAssetCatalog /Users/runner/work/med-jars/med-jars/MedJars/Assets.xcassets (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-linkAssetCatalog --thinned /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/assetcatalog_output/thinned --thinned-dependencies /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/assetcatalog_dependencies_thinned --thinned-info-plist-content /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/assetcatalog_generated_info.plist_thinned --unthinned /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/assetcatalog_output/unthinned --unthinned-dependencies /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/assetcatalog_dependencies_unthinned --unthinned-info-plist-content /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/assetcatalog_generated_info.plist_unthinned --output /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app --plist-output /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/assetcatalog_generated_info.plist
+note: Emplaced /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/AppIcon76x76@2x~ipad.png (in target 'MedJars' from project 'MedJars')
+note: Emplaced /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/Assets.car (in target 'MedJars' from project 'MedJars')
+note: Emplaced /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/AppIcon60x60@2x.png (in target 'MedJars' from project 'MedJars')
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for MedJars (in target 'MedJars' from project 'MedJars')
+
+SwiftDriver\ Compilation\ Requirements MedJars normal arm64 com.apple.xcode.tools.swift.compiler (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name MedJars -Onone -enforce-exclusivity\=checked @/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -target arm64-apple-ios18.0-simulator -g -module-cache-path /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/runner/work/med-jars/med-jars/build/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator -F /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/med-jars/med-jars/build/SDKStatCaches.noindex/iphonesimulator26.2-23C57-dc75598d0054f22ec865fa860f139d72e244bd9a5feaf902f95f61bf06266e52.sdkstatcache -output-file-map /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex -sdk-module-cache-path /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars-generated-files.hmap -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars-own-target-headers.hmap -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars-project-headers.hmap -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars-Swift.h -working-directory /Users/runner/work/med-jars/med-jars -experimental-emit-module-separately -disable-cmo
+
+SwiftCompile normal arm64 Compiling\ ScheduleRuleEditor.swift,\ ScheduleView.swift,\ SettingsView.swift,\ StackEditorView.swift,\ Stacks.swift,\ StacksView.swift,\ StoreIO.swift,\ TagScanner.swift,\ Theme.swift,\ ThemeView.swift,\ WakeDetector.swift,\ GeneratedAssetSymbols.swift /Users/runner/work/med-jars/med-jars/MedJars/Views/ScheduleRuleEditor.swift /Users/runner/work/med-jars/med-jars/MedJars/Views/ScheduleView.swift /Users/runner/work/med-jars/med-jars/MedJars/Views/SettingsView.swift /Users/runner/work/med-jars/med-jars/MedJars/Views/StackEditorView.swift /Users/runner/work/med-jars/med-jars/Shared/Stacks.swift /Users/runner/work/med-jars/med-jars/MedJars/Views/StacksView.swift /Users/runner/work/med-jars/med-jars/Shared/StoreIO.swift /Users/runner/work/med-jars/med-jars/MedJars/TagScanner.swift /Users/runner/work/med-jars/med-jars/Shared/Theme.swift /Users/runner/work/med-jars/med-jars/MedJars/Views/ThemeView.swift /Users/runner/work/med-jars/med-jars/MedJars/WakeDetector.swift /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'MedJars' from project 'MedJars')
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/MedJars/Views/ScheduleRuleEditor.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/MedJars/Views/ScheduleView.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/MedJars/Views/SettingsView.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/MedJars/Views/StackEditorView.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/Shared/Stacks.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/MedJars/Views/StacksView.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/Shared/StoreIO.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/MedJars/TagScanner.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/Shared/Theme.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/MedJars/Views/ThemeView.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/MedJars/WakeDetector.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftMergeGeneratedHeaders /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/DerivedSources/MedJars-Swift.h /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars-Swift.h (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-swiftHeaderTool -arch arm64 /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars-Swift.h -o /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/DerivedSources/MedJars-Swift.h
+
+SwiftDriverJobDiscovery normal arm64 Compiling ScheduleRuleEditor.swift, ScheduleView.swift, SettingsView.swift, StackEditorView.swift, Stacks.swift, StacksView.swift, StoreIO.swift, TagScanner.swift, Theme.swift, ThemeView.swift, WakeDetector.swift, GeneratedAssetSymbols.swift (in target 'MedJars' from project 'MedJars')
+
+Copy /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars.swiftmodule (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars.swiftmodule /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.swiftmodule/arm64-apple-ios-simulator.swiftmodule
+
+Copy /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.swiftmodule/arm64-apple-ios-simulator.swiftdoc /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars.swiftdoc (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars.swiftdoc /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.swiftmodule/arm64-apple-ios-simulator.swiftdoc
+
+Copy /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.swiftmodule/arm64-apple-ios-simulator.abi.json /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars.abi.json (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars.abi.json /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.swiftmodule/arm64-apple-ios-simulator.abi.json
+
+Copy /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars.swiftsourceinfo (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars.swiftsourceinfo /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
+
+SwiftDriver MedJarsFullUITests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-SwiftDriver -- /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name MedJarsFullUITests -Onone -enforce-exclusivity\=checked @/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests.SwiftFileList -DDEBUG -module-alias Testing\=_Testing_Unavailable -plugin-path /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -target arm64-apple-ios18.0-simulator -g -module-cache-path /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/runner/work/med-jars/med-jars/build/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator -F /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk/Developer/Library/Frameworks -parse-as-library -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/med-jars/med-jars/build/SDKStatCaches.noindex/iphonesimulator26.2-23C57-dc75598d0054f22ec865fa860f139d72e244bd9a5feaf902f95f61bf06266e52.sdkstatcache -output-file-map /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex -sdk-module-cache-path /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/MedJarsFullUITests-generated-files.hmap -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/MedJarsFullUITests-own-target-headers.hmap -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/MedJarsFullUITests-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/MedJarsFullUITests-project-headers.hmap -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests-Swift.h -working-directory /Users/runner/work/med-jars/med-jars -experimental-emit-module-separately -disable-cmo
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/XCUIAutomation-37K3UAN6BPEWD08E9KUMKGVQ5.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/XCTest-CB2DRFJBFM02FOKRN8AG806S8.pcm
+
+SwiftExplicitDependencyCompileModuleFromInterface arm64 /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/XCUIAutomation-23FD2RC9R0RVP.swiftmodule
+
+SwiftExplicitDependencyCompileModuleFromInterface arm64 /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/XCTest-U8Q28CEN3DP1.swiftmodule
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ MedJarsFullUITests (in target 'MedJarsFullUITests' from project 'MedJars')
+
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/ci/FullUITests/FullAppTests.swift (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftCompile normal arm64 Compiling\ FullAppTests.swift /Users/runner/work/med-jars/med-jars/ci/FullUITests/FullAppTests.swift (in target 'MedJarsFullUITests' from project 'MedJars')
+SwiftCompile normal arm64 /Users/runner/work/med-jars/med-jars/ci/FullUITests/FullAppTests.swift (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for MedJarsFullUITests (in target 'MedJarsFullUITests' from project 'MedJars')
+
+SwiftDriver\ Compilation\ Requirements MedJarsFullUITests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name MedJarsFullUITests -Onone -enforce-exclusivity\=checked @/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests.SwiftFileList -DDEBUG -module-alias Testing\=_Testing_Unavailable -plugin-path /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -target arm64-apple-ios18.0-simulator -g -module-cache-path /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/runner/work/med-jars/med-jars/build/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator -F /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk/Developer/Library/Frameworks -parse-as-library -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/med-jars/med-jars/build/SDKStatCaches.noindex/iphonesimulator26.2-23C57-dc75598d0054f22ec865fa860f139d72e244bd9a5feaf902f95f61bf06266e52.sdkstatcache -output-file-map /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex -sdk-module-cache-path /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/MedJarsFullUITests-generated-files.hmap -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/MedJarsFullUITests-own-target-headers.hmap -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/MedJarsFullUITests-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/MedJarsFullUITests-project-headers.hmap -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests-Swift.h -working-directory /Users/runner/work/med-jars/med-jars -experimental-emit-module-separately -disable-cmo
+
+SwiftDriverJobDiscovery normal arm64 Compiling AppIntents.swift, AppStore.swift, CabinetView.swift, CaffeineView.swift, CheckInSheet.swift, Components.swift, ControlIntents.swift, DebugHarness.swift, DoseLogic.swift, GroupLogSheet.swift, HealthImport.swift, HistoryView.swift, HomeView.swift (in target 'MedJars' from project 'MedJars')
+
+SwiftDriverJobDiscovery normal arm64 Compiling JarDetailView.swift, JarEditorView.swift, KeyboardBar.swift, LiveDose.swift, LiveDoses.swift, LogDoseSheet.swift, MedJarsApp.swift, Models.swift, Notify.swift, PlanDoseSheet.swift, PlusButton.swift, Reminders.swift (in target 'MedJars' from project 'MedJars')
+
+SwiftMergeGeneratedHeaders /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/DerivedSources/MedJarsFullUITests-Swift.h /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests-Swift.h (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-swiftHeaderTool -arch arm64 /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests-Swift.h -o /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/DerivedSources/MedJarsFullUITests-Swift.h
+
+Copy /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests.swiftmodule (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests.swiftmodule /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests.swiftmodule/arm64-apple-ios-simulator.swiftmodule
+
+Copy /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests.swiftmodule/arm64-apple-ios-simulator.swiftdoc /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests.swiftdoc (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests.swiftdoc /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests.swiftmodule/arm64-apple-ios-simulator.swiftdoc
+
+Copy /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests.swiftmodule/arm64-apple-ios-simulator.abi.json /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests.abi.json (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests.abi.json /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests.swiftmodule/arm64-apple-ios-simulator.abi.json
+
+Copy /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests.swiftsourceinfo (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests.swiftsourceinfo /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
+
+SwiftDriver\ Compilation MedJars normal arm64 com.apple.xcode.tools.swift.compiler (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-Swift-Compilation -- /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name MedJars -Onone -enforce-exclusivity\=checked @/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -target arm64-apple-ios18.0-simulator -g -module-cache-path /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/runner/work/med-jars/med-jars/build/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator -F /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/med-jars/med-jars/build/SDKStatCaches.noindex/iphonesimulator26.2-23C57-dc75598d0054f22ec865fa860f139d72e244bd9a5feaf902f95f61bf06266e52.sdkstatcache -output-file-map /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex -sdk-module-cache-path /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars-generated-files.hmap -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars-own-target-headers.hmap -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars-project-headers.hmap -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars-Swift.h -working-directory /Users/runner/work/med-jars/med-jars -experimental-emit-module-separately -disable-cmo
+
+Ld /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/MedJars.debug.dylib normal (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios18.0-simulator -dynamiclib -isysroot /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -O0 -L/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator -F/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator -filelist /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars.LinkFileList -install_name @rpath/MedJars.debug.dylib -Xlinker -rpath -Xlinker /usr/lib/swift -Xlinker -rpath -Xlinker @executable_path/Frameworks -dead_strip -Xlinker -object_path_lto -Xlinker /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars.swiftmodule @/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars-linker-args.resp -Xlinker -alias -Xlinker _main -Xlinker ___debug_main_executable_dylib_entry_point -o /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/MedJars.debug.dylib
+
+SwiftDriverJobDiscovery normal arm64 Compiling FullAppTests.swift (in target 'MedJarsFullUITests' from project 'MedJars')
+
+ConstructStubExecutorLinkFileList /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars-ExecutorLinkFileList-normal-arm64.txt (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    construct-stub-executor-link-file-list /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/MedJars.debug.dylib /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor_no_swift_entry_point.a /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor.a --output /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars-ExecutorLinkFileList-normal-arm64.txt
+note: Using stub executor library with Swift entry point. (in target 'MedJars' from project 'MedJars')
+
+SwiftDriver\ Compilation MedJarsFullUITests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-Swift-Compilation -- /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name MedJarsFullUITests -Onone -enforce-exclusivity\=checked @/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests.SwiftFileList -DDEBUG -module-alias Testing\=_Testing_Unavailable -plugin-path /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -target arm64-apple-ios18.0-simulator -g -module-cache-path /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/runner/work/med-jars/med-jars/build/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator -F /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk/Developer/Library/Frameworks -parse-as-library -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/med-jars/med-jars/build/SDKStatCaches.noindex/iphonesimulator26.2-23C57-dc75598d0054f22ec865fa860f139d72e244bd9a5feaf902f95f61bf06266e52.sdkstatcache -output-file-map /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex -sdk-module-cache-path /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/med-jars/med-jars/build/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/MedJarsFullUITests-generated-files.hmap -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/MedJarsFullUITests-own-target-headers.hmap -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/MedJarsFullUITests-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/MedJarsFullUITests-project-headers.hmap -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests-Swift.h -working-directory /Users/runner/work/med-jars/med-jars -experimental-emit-module-separately -disable-cmo
+
+Ld /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/MedJars normal (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios18.0-simulator -isysroot /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -O0 -L/Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator -F/Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator -Xlinker -rpath -Xlinker @executable_path -Xlinker -rpath -Xlinker @executable_path/Frameworks -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -e ___debug_blank_executor_main -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_dylib -Xlinker /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars-DebugDylibPath-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_instlnm -Xlinker /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars-DebugDylibInstallName-normal-arm64.txt -Xlinker -filelist -Xlinker /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars-ExecutorLinkFileList-normal-arm64.txt /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/MedJars.debug.dylib -o /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/MedJars
+
+Copy /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/PlugIns/MedJarsWidget.appex /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsWidget.appex (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks -remove-static-executable /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsWidget.appex /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/PlugIns
+
+ProcessInfoPlistFile /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/Info.plist /Users/runner/work/med-jars/med-jars/MedJars/Info.plist (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-infoPlistUtility /Users/runner/work/med-jars/med-jars/MedJars/Info.plist -producttype com.apple.product-type.application -genpkginfo /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/PkgInfo -expandbuildsettings -format binary -platform iphonesimulator -additionalcontentfile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/assetcatalog_generated_info.plist -scanforprivacyfile /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/PlugIns/MedJarsWidget.appex -o /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/Info.plist
+
+CopySwiftLibs /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-swiftStdLibTool --copy --verbose --scan-executable /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/MedJars.debug.dylib --scan-folder /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/Frameworks --scan-folder /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/PlugIns --scan-folder /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/SystemExtensions --scan-folder /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/Extensions --platform iphonesimulator --toolchain /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.3.7003.10.4iLRCx/Metal.xctoolchain --toolchain /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+Ignoring --strip-bitcode because --sign was not passed
+
+ExtractAppIntentsMetadata (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.3.7003.10.4iLRCx/Metal.xctoolchain --module-name MedJars --sdk-root /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk --xcode-version 17C529 --platform-family iOS --deployment-target 18.0 --bundle-identifier com.medjars.app --output /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app --target-triple arm64-apple-ios18.0-simulator --binary-file /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/MedJars --dependency-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars_dependency_info.dat --stringsdata-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars.SwiftFileList --metadata-file-list /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars.DependencyMetadataFileList --static-metadata-file-list /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars.DependencyStaticMetadataFileList --swift-const-vals-list /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/Objects-normal/arm64/MedJars.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-10-20 20:32:24.887 appintentsmetadataprocessor[17070:53522] Starting appintentsmetadataprocessor export
+2026-10-20 20:32:25.078 appintentsmetadataprocessor[17070:53522] Writing Metadata.appintents
+2026-10-20 20:32:25.078 appintentsmetadataprocessor[17070:53522] Metadata root: /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/Metadata.appintents
+
+ValidateEmbeddedBinary /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/PlugIns/MedJarsWidget.appex (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    /Applications/Xcode_26.3.app/Contents/Developer/usr/bin/embeddedBinaryValidationUtility /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/PlugIns/MedJarsWidget.appex -info-plist-path /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/Info.plist
+
+AppIntentsSSUTraining (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/Info.plist --temp-dir-path /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/ssu --bundle-id com.medjars.app --product-path /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app --extracted-metadata-path /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/Metadata.appintents --metadata-file-list /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/MedJars.DependencyMetadataFileList --archive-ssu-assets
+2026-10-20 20:32:25.114 appintentsnltrainingprocessor[17088:53662] Parsing options for appintentsnltrainingprocessor
+2026-10-20 20:32:25.116 appintentsnltrainingprocessor[17088:53662] Starting AppIntents SSU YAML Generation
+2026-10-20 20:32:25.132 appintentsnltrainingprocessor[17088:53662] Training 'Did I take my ${JarEntity} in ${+applicationName}|Did I take ${JarEntity} in ${+applicationName}|Did I take my ${JarEntity} today in ${+applicationName}|Check ${JarEntity} in ${+applicationName}|Did I take my meds in ${+applicationName}' for en
+2026-10-20 20:32:25.132 appintentsnltrainingprocessor[17088:53662] Training 'What's left today in ${+applicationName}|What doses are left in ${+applicationName}|What do I still need to take in ${+applicationName}' for en
+2026-10-20 20:32:25.132 appintentsnltrainingprocessor[17088:53662] Training 'Open a jar in ${+applicationName}' for en
+2026-10-20 20:32:25.132 appintentsnltrainingprocessor[17088:53662] Training 'Log a dose in ${+applicationName}' for en
+2026-10-20 20:32:25.132 appintentsnltrainingprocessor[17088:53662] Training 'Set ${+applicationName} discreet mode to ${DiscreetChoice}|Discreet mode ${DiscreetChoice} in ${+applicationName}' for en
+2026-10-20 20:32:25.132 appintentsnltrainingprocessor[17088:53662] Training Negative Phrases '' for en
+2026-10-20 20:32:25.132 appintentsnltrainingprocessor[17088:53662] Application name 'Med Jars' for en
+2026-10-20 20:32:25.151 appintentsnltrainingprocessor[17088:53662] Generated AppIntents SSU YAML files in file:///Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJars.build/ssu/
+2026-10-20 20:32:25.152 appintentsnltrainingprocessor[17088:53662] Copied AppIntents SSU YAML files to file:///Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/Metadata.appintents/
+Archiving all locales.
+[------------------------------------------------------------] 0% archiving en[🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢] 100% archived en[🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢] 100% archived 1 locales/Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/Metadata.appintents/nlu
+/Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app/Metadata.appintents/nlu/6158fcbc6b12a127de81df7d1bbb8aca.version
+
+
+RegisterExecutionPolicyException /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-RegisterExecutionPolicyException /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app
+
+Validate /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-validationUtility /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app -shallow-bundle -infoplist-subpath Info.plist
+
+Touch /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app (in target 'MedJars' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    /usr/bin/touch -c /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJars.app
+
+ProcessInfoPlistFile /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/PlugIns/MedJarsFullUITests.xctest/Info.plist /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/empty-MedJarsFullUITests.plist (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-infoPlistUtility /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/empty-MedJarsFullUITests.plist -producttype com.apple.product-type.bundle.ui-testing -expandbuildsettings -format binary -platform iphonesimulator -additionalcontentfile /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/ProductTypeInfoPlistAdditions.plist -o /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/PlugIns/MedJarsFullUITests.xctest/Info.plist
+
+Ld /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/PlugIns/MedJarsFullUITests.xctest/MedJarsFullUITests normal (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios18.0-simulator -bundle -isysroot /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -O0 -L/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator -L/Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator -iframework /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -iframework /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk/Developer/Library/Frameworks -filelist /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests.LinkFileList -Xlinker -rpath -Xlinker /usr/lib/swift -Xlinker -rpath -Xlinker @loader_path/Frameworks -Xlinker -rpath -Xlinker @executable_path/Frameworks -dead_strip -Xlinker -object_path_lto -Xlinker /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests.swiftmodule @/Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests-linker-args.resp -Xlinker -needed_framework -Xlinker XCTest -framework XCTest -Xlinker -needed-lXCTestSwiftSupport -lXCTestSwiftSupport -o /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/PlugIns/MedJarsFullUITests.xctest/MedJarsFullUITests
+
+ExtractAppIntentsMetadata (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.3.7003.10.4iLRCx/Metal.xctoolchain --module-name MedJarsFullUITests --sdk-root /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk --xcode-version 17C529 --platform-family iOS --deployment-target 18.0 --bundle-identifier com.medjars.app.fulluitests --output /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/PlugIns/MedJarsFullUITests.xctest --target-triple arm64-apple-ios18.0-simulator --binary-file /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/PlugIns/MedJarsFullUITests.xctest/MedJarsFullUITests --dependency-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests_dependency_info.dat --stringsdata-file /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests.SwiftFileList --metadata-file-list /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/MedJarsFullUITests.DependencyMetadataFileList --static-metadata-file-list /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/MedJarsFullUITests.DependencyStaticMetadataFileList --swift-const-vals-list /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/Objects-normal/arm64/MedJarsFullUITests.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-10-20 20:32:26.923 appintentsmetadataprocessor[17099:53741] Starting appintentsmetadataprocessor export
+2026-10-20 20:32:26.928 appintentsmetadataprocessor[17099:53741] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+
+CopySwiftLibs /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/PlugIns/MedJarsFullUITests.xctest (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-swiftStdLibTool --copy --verbose --scan-executable /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/PlugIns/MedJarsFullUITests.xctest/MedJarsFullUITests --scan-folder /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/PlugIns/MedJarsFullUITests.xctest/Frameworks --scan-folder /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/PlugIns/MedJarsFullUITests.xctest/PlugIns --scan-folder /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/PlugIns/MedJarsFullUITests.xctest/SystemExtensions --scan-folder /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/PlugIns/MedJarsFullUITests.xctest/Extensions --platform iphonesimulator --toolchain /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.3.7003.10.4iLRCx/Metal.xctoolchain --toolchain /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/PlugIns/MedJarsFullUITests.xctest/Frameworks --strip-bitcode --scan-executable /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libXCTestSwiftSupport.dylib --strip-bitcode-tool /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+Ignoring --strip-bitcode because --sign was not passed
+
+AppIntentsSSUTraining (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/PlugIns/MedJarsFullUITests.xctest/Info.plist --temp-dir-path /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/ssu --bundle-id com.medjars.app.fulluitests --product-path /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/PlugIns/MedJarsFullUITests.xctest --extracted-metadata-path /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/PlugIns/MedJarsFullUITests.xctest/Metadata.appintents --metadata-file-list /Users/runner/work/med-jars/med-jars/build/Build/Intermediates.noindex/MedJars.build/Debug-iphonesimulator/MedJarsFullUITests.build/MedJarsFullUITests.DependencyMetadataFileList --archive-ssu-assets
+2026-10-20 20:32:26.956 appintentsnltrainingprocessor[17103:53748] Parsing options for appintentsnltrainingprocessor
+2026-10-20 20:32:26.957 appintentsnltrainingprocessor[17103:53748] No AppShortcuts found - Skipping.
+
+MkDir /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    /bin/mkdir -p /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app
+
+CopyAndPreserveArchs /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/MedJarsFullUITests-Runner (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/lipo /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Xcode/Agents/XCTRunner.app/XCTRunner -output /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/MedJarsFullUITests-Runner -extract arm64
+
+CopyPlistFile /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/Info.plist /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Xcode/Agents/XCTRunner.app/Info.plist (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-copyPlist --validate --convert xml1 --macro-expansion WRAPPEDPRODUCTNAME MedJarsFullUITests-Runner --macro-expansion WRAPPEDPRODUCTBUNDLEIDENTIFIER com.medjars.app.fulluitests.xctrunner --macro-expansion TESTPRODUCTNAME MedJarsFullUITests --macro-expansion TESTPRODUCTBUNDLEIDENTIFIER com.medjars.app.fulluitests --copy-value UIDeviceFamily /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/PlugIns/MedJarsFullUITests.xctest/Info.plist --outdir /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app -- /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Xcode/Agents/XCTRunner.app/Info.plist
+
+Copy /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/PkgInfo /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Xcode/Agents/XCTRunner.app/PkgInfo (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Xcode/Agents/XCTRunner.app/PkgInfo /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app
+
+Copy /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/Frameworks/libXCTestSwiftSupport.dylib /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libXCTestSwiftSupport.dylib (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libXCTestSwiftSupport.dylib /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/Frameworks
+
+Copy /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/Frameworks/XCUnit.framework /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCUnit.framework (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCUnit.framework /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/Frameworks
+
+Copy /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/Frameworks/XCUIAutomation.framework /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/XCUIAutomation.framework (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/XCUIAutomation.framework /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/Frameworks
+
+Copy /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/Frameworks/XCTestSupport.framework /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTestSupport.framework (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTestSupport.framework /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/Frameworks
+
+Copy /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/Frameworks/XCTestCore.framework /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTestCore.framework (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTestCore.framework /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/Frameworks
+
+Copy /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/Frameworks/XCTest.framework /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/XCTest.framework (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/XCTest.framework /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/Frameworks
+
+Copy /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/Frameworks/XCTAutomationSupport.framework /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTAutomationSupport.framework (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTAutomationSupport.framework /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/Frameworks
+
+Copy /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/Frameworks/Testing.framework /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/Testing.framework (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/Testing.framework /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/Frameworks
+
+RegisterExecutionPolicyException /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/PlugIns/MedJarsFullUITests.xctest (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    builtin-RegisterExecutionPolicyException /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/PlugIns/MedJarsFullUITests.xctest
+
+Touch /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/PlugIns/MedJarsFullUITests.xctest (in target 'MedJarsFullUITests' from project 'MedJars')
+    cd /Users/runner/work/med-jars/med-jars
+    /usr/bin/touch -c /Users/runner/work/med-jars/med-jars/build/Build/Products/Debug-iphonesimulator/MedJarsFullUITests-Runner.app/PlugIns/MedJarsFullUITests.xctest
+
+** TEST BUILD SUCCEEDED **
+
