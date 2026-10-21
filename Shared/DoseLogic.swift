@@ -135,9 +135,13 @@ enum DoseLogic {
     static let dayStartHour = 4
 
     static func doseDayStart(for date: Date) -> Date {
+        if let hit = DoseDayCache.shared.start(containing: date) { return hit }
         let cal = Calendar.current
         let today = cal.date(bySettingHour: dayStartHour, minute: 0, second: 0, of: date) ?? cal.startOfDay(for: date)
-        return date >= today ? today : (cal.date(byAdding: .day, value: -1, to: today) ?? today)
+        let start = date >= today ? today : (cal.date(byAdding: .day, value: -1, to: today) ?? today)
+        let end = cal.date(byAdding: .day, value: 1, to: start) ?? start.addingTimeInterval(86400)
+        DoseDayCache.shared.remember(start: start, end: end)
+        return start
     }
 
     static func doseDayEnd(for date: Date) -> Date {
@@ -451,5 +455,41 @@ enum DoseLogic {
             upcoming.formUnion([p.at.addingTimeInterval(-45 * 60), p.at, p.at.addingTimeInterval(60 * 60 + 1)])
         }
         return [today] + upcoming.filter { $0 > now }.sorted()
+    }
+}
+
+/// The last few dose days worked out, since schedules ask for the same few days thousands of times. Cleared when
+/// the time zone changes.
+final class DoseDayCache: @unchecked Sendable {
+    static let shared = DoseDayCache()
+
+    private let lock = NSLock()
+    private var ranges: [(start: Date, end: Date)] = []
+    private var observer: NSObjectProtocol?
+
+    private init() {
+        observer = NotificationCenter.default.addObserver(forName: .NSSystemTimeZoneDidChange, object: nil, queue: nil) { [weak self] _ in
+            self?.clear()
+        }
+    }
+
+    func start(containing date: Date) -> Date? {
+        lock.lock()
+        defer { lock.unlock() }
+        for r in ranges where date >= r.start && date < r.end { return r.start }
+        return nil
+    }
+
+    func remember(start: Date, end: Date) {
+        lock.lock()
+        defer { lock.unlock() }
+        ranges.insert((start, end), at: 0)
+        if ranges.count > 12 { ranges.removeLast() }
+    }
+
+    func clear() {
+        lock.lock()
+        ranges.removeAll()
+        lock.unlock()
     }
 }
