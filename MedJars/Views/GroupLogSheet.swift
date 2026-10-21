@@ -167,8 +167,10 @@ struct GroupLogSheet: View {
 
     private func subtitle(_ d: GroupDose, jar: Jar) -> String {
         var parts: [String] = []
-        if let slot = d.slot, slot.minutes != nil { parts.append(slot.displayLabel) }
-        if let at = d.scheduled { parts.append(Format.time12(at)) }
+        let time = d.scheduled.map { Format.time12($0) }
+        // The dose's name, unless it's only its time, which follows anyway.
+        if let slot = d.slot, slot.minutes != nil, slot.displayLabel != (time ?? "") { parts.append(slot.displayLabel) }
+        if let time { parts.append(time) }
         if let id = d.slot?.stackId, let s = store.stack(id) { parts.append(s.displayName) }
         return parts.isEmpty ? (jar.asNeeded ? "As needed" : "Extra dose") : parts.joined(separator: " \u{00B7} ")
     }

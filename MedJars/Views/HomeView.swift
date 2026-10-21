@@ -378,19 +378,22 @@ private struct UpNextCard: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
                     Spacer(minLength: 4)
-                    Button {
-                        if group.count == 1 {
-                            router.logRequest = LogTarget(jarId: first.jar.id, slotId: first.slot.id, slot: first.slot)
-                        } else {
-                            router.groupRequest = GroupLogTarget(title: "Log Doses", doses: group.map { GroupDose(jarId: $0.jar.id, slot: $0.slot, scheduled: $0.time) })
+                    // Only today's doses: tomorrow's logged tonight would count as extra doses today.
+                    if DoseLogic.sameDoseDay(first.time, now) {
+                        Button {
+                            if group.count == 1 {
+                                router.logRequest = LogTarget(jarId: first.jar.id, slotId: first.slot.id, slot: first.slot)
+                            } else {
+                                router.groupRequest = GroupLogTarget(title: "Log Doses", doses: group.map { GroupDose(jarId: $0.jar.id, slot: $0.slot, scheduled: $0.time) })
+                            }
+                        } label: {
+                            Text(group.count == 1 ? "Log" : "Log All").font(.subheadline.weight(.semibold))
                         }
-                    } label: {
-                        Text(group.count == 1 ? "Log" : "Log All").font(.subheadline.weight(.semibold))
+                        .buttonStyle(.borderedProminent)
+                        .buttonBorderShape(.capsule)
+                        .controlSize(.small)
+                        .tint(store.accentColor)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .buttonBorderShape(.capsule)
-                    .controlSize(.small)
-                    .tint(store.accentColor)
                 }
                 FillRows(count: min(rowCount, usedRows), spacing: 6) { r, h in
                     HStack(spacing: 10) {
@@ -849,7 +852,9 @@ struct PillBottleArt: View {
                     }
                     .frame(width: w * 0.8, height: capH)
             }
-            .frame(width: w, height: h)
+            // Top aligned: the body is pushed down below the cap, so a centered stack hung off the bottom and ran
+            // into the name under it.
+            .frame(width: w, height: h, alignment: .top)
             .position(x: geo.size.width / 2, y: geo.size.height / 2)
         }
         .accessibilityHidden(true)
@@ -1028,6 +1033,11 @@ struct ComingUpItem: Identifiable {
         let midnight = Calendar.current.startOfDay(for: date)
         let isStartOfDay = date == midnight || date == DoseLogic.doseDayStart(for: date)
         if DoseLogic.sameDoseDay(date, now) { return isStartOfDay ? "Today" : Format.time12(date) }
+        // The next dose day reads "Tomorrow", like Up Next.
+        if let next = Calendar.current.date(byAdding: .day, value: 1, to: DoseLogic.doseDayStart(for: now)),
+           DoseLogic.sameDoseDay(date, next) {
+            return isStartOfDay ? "Tomorrow" : "Tomorrow \(Format.time12(date))"
+        }
         let day = date.formatted(.dateTime.weekday(.abbreviated))
         return isStartOfDay ? day : "\(day) \(Format.time12(date))"
     }

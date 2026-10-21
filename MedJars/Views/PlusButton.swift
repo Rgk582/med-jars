@@ -153,6 +153,14 @@ struct PlusLayer: View {
             message = ScanAlert(message: "Nothing is scheduled. Use All to log any substance.")
             return
         }
+        // Logging tomorrow's doses tonight would count them as extra doses today, and tomorrow's would still be open.
+        let now = store.now
+        if !DoseLogic.sameDoseDay(first.time, now) {
+            let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: DoseLogic.doseDayStart(for: now)) ?? now
+            let day = DoseLogic.sameDoseDay(first.time, tomorrow) ? "tomorrow" : first.time.formatted(.dateTime.weekday(.wide))
+            message = ScanAlert(message: "Nothing else is due today. Next up is \(day) at \(Format.time12(first.time)). To log something now, use All.")
+            return
+        }
         if group.count == 1 {
             router.logRequest = LogTarget(jarId: first.jar.id, slotId: first.slot.id, slot: first.slot)
         } else {

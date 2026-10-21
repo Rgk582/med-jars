@@ -1990,7 +1990,7 @@ enum Format {
         if m < 1 { return "just now" }
         if m < 60 { return "\(Int(m.rounded())) min ago" }
         let h = m / 60
-        if h < 24 { return h < 10 ? String(format: "%.1f hr ago", h).replacingOccurrences(of: ".0 ", with: " ") : "\(Int(h.rounded())) hr ago" }
+        if h < 24 { return h < 10 ? duration(Int(m)) + " ago" : "\(Int(h.rounded())) hr ago" }
         let d = Int((h / 24).rounded())
         return d == 1 ? "1 day ago" : "\(d) days ago"
     }
