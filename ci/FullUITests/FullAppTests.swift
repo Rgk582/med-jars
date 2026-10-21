@@ -182,9 +182,11 @@ class MedJarsUITestCase: XCTestCase {
                 let settled = app.buttons.matching(label(title)).allElementsBoundByIndex
                     .filter { $0.exists && $0.frame != first && !$0.frame.isEmpty }.last
                 settled?.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
-                sleep(1)
-                // Done when the row went away with the sheet.
-                if !row.exists || !row.isHittable { return true }
+                // Done when the row went away with the sheet. (Asking a disappearing row if it's hittable throws.)
+                for _ in 0..<4 {
+                    sleep(1)
+                    if !row.exists { return true }
+                }
                 break
             }
         }
