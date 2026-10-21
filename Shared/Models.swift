@@ -701,10 +701,10 @@ struct ScheduleRule: Codable, Hashable {
 
     /// Days from `start` to a dose day (negative before it).
     func daysFromStart(_ dayStart: Date) -> Int {
-        let cal = Calendar.current
-        let a = cal.startOfDay(for: DoseLogic.doseDayStart(for: start))
-        let b = cal.startOfDay(for: DoseLogic.doseDayStart(for: dayStart))
-        return cal.dateComponents([.day], from: a, to: b).day ?? 0
+        // Dose days start at the same hour, so they're whole days apart give or take a daylight saving hour.
+        let a = DoseLogic.doseDayStart(for: start)
+        let b = DoseLogic.doseDayStart(for: dayStart)
+        return Int((b.timeIntervalSince(a) / 86400).rounded())
     }
 
     /// The plan on a dose day. `index` is the day's count from the start (a stack passes its own count, which

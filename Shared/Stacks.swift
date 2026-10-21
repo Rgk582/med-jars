@@ -160,10 +160,11 @@ enum StackLogic {
 
     static func dayStart(_ d: Date) -> Date { DoseLogic.doseDayStart(for: d) }
 
-    /// Calendar days from one dose day to another.
+    /// Calendar days from one dose day to another. Both dose days start at the same hour, so they're whole days
+    /// apart give or take a daylight saving hour, which rounding takes out. Far cheaper than asking the calendar,
+    /// and schedules ask this thousands of times.
     static func days(from a: Date, to b: Date) -> Int {
-        let cal = Calendar.current
-        return cal.dateComponents([.day], from: cal.startOfDay(for: dayStart(a)), to: cal.startOfDay(for: dayStart(b))).day ?? 0
+        Int((dayStart(b).timeIntervalSince(dayStart(a)) / 86400).rounded())
     }
 
     /// Days the stack was off between its start and `day` (not counting `day`).
