@@ -105,7 +105,13 @@ class MedJarsUITestCase: XCTestCase {
 
     func tab(_ name: String) {
         let b = app.tabBars.buttons[name]
-        if waitFor(b, 5, "tab \(name) exists") { b.tap() }
+        guard waitFor(b, 5, "tab \(name) exists") else { return }
+        // A tap during a stall can get lost; make sure the tab actually switched.
+        for _ in 0..<3 {
+            b.tap()
+            usleep(600_000)
+            if b.isSelected { return }
+        }
     }
 
     func tapIf(_ e: XCUIElement, _ timeout: Double = 3) -> Bool {
@@ -162,20 +168,27 @@ class MedJarsUITestCase: XCTestCase {
     func tapAndConfirm(_ title: String) -> Bool {
         let row = button(title)
         scrollTo(row)
-        guard tapIf(row) else { return false }
         let first = row.frame
-        // The question pops up over the row with the same choice in it; wait for it.
-        for _ in 0..<10 {
-            // The popover's button can report itself not hittable while it settles, so tap where it is.
-            let confirm = app.buttons.matching(label(title)).allElementsBoundByIndex
-                .filter { $0.exists && $0.frame != first && !$0.frame.isEmpty }.last
-            if let confirm {
-                confirm.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
-                return true
+        for _ in 0..<2 {
+            guard tapIf(row) else { return false }
+            // The question pops up over the row with the same choice in it; let it settle, then tap where it is
+            // (while it animates in it can report itself not hittable).
+            for _ in 0..<10 {
+                usleep(500_000)
+                let confirm = app.buttons.matching(label(title)).allElementsBoundByIndex
+                    .filter { $0.exists && $0.frame != first && !$0.frame.isEmpty }.last
+                guard confirm != nil else { continue }
+                usleep(800_000)
+                let settled = app.buttons.matching(label(title)).allElementsBoundByIndex
+                    .filter { $0.exists && $0.frame != first && !$0.frame.isEmpty }.last
+                settled?.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+                sleep(1)
+                // Done when the row went away with the sheet.
+                if !row.exists || !row.isHittable { return true }
+                break
             }
-            usleep(500_000)
         }
-        return false
+        return !row.exists
     }
 
     func scrollToTop() {
