@@ -22,7 +22,7 @@ class MedJarsUITestCase: XCTestCase {
 
     func launch(seed: Bool = true, extra: [String] = []) {
         let env = ProcessInfo.processInfo.environment
-        var args = ["-perfHarness", "-captureStdout", "-askedForNotifications", "YES"]
+        var args = ["-perfHarness", "-captureStdout", "-askedForNotifications", "YES", "-longToasts"]
         if seed { args.append("-seedFullTest") }
         app.launchArguments = args + extra
         if let s = env["SEED_PATH"] { app.launchEnvironment["SEED_PATH"] = s }
@@ -155,6 +155,20 @@ class MedJarsUITestCase: XCTestCase {
             if tapDone { done.firstMatch.tap(); usleep(400_000) }
         }
         return ok
+    }
+
+    /// Taps a destructive row, then the same choice in the confirmation that pops up over it.
+    @discardableResult
+    func tapAndConfirm(_ title: String) -> Bool {
+        let row = button(title)
+        scrollTo(row)
+        guard tapIf(row) else { return false }
+        let first = row.frame
+        sleep(1)
+        let confirm = app.buttons.matching(label(title)).allElementsBoundByIndex
+            .filter { $0.exists && $0.isHittable && $0.frame != first }.last
+        if let confirm { confirm.tap(); return true }
+        return false
     }
 
     func scrollToTop() {
@@ -627,9 +641,10 @@ final class C_LoggingTests: MedJarsUITestCase {
             }
         }
         step("Skip a dose and undo the skip") {
-            let open = listLog.firstMatch
+            // A dose still to come today: any open dose can be skipped.
+            let open = app.collectionViews.staticTexts["Later"].firstMatch
             scrollTo(open)
-            if waitFor(open, 4, "an open dose") {
+            if waitFor(open, 4, "a dose still to come") {
                 open.swipeLeft()
                 if tapIf(button("Skip")) {
                     let skip = button("Skip Dose")
@@ -773,9 +788,13 @@ final class D_ScheduleTests: MedJarsUITestCase {
                     wheel.adjust(toPickerWheelValue: current.hasPrefix("10") ? "9" : "10")
                     changed = true
                 }
-                app.navigationBars.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+                // Close the wheel by tapping the sheet's note below it.
+                let note = app.staticTexts.matching(labelBegins("Doses set to a time before bed")).firstMatch
+                if note.exists { note.tap() } else { app.navigationBars["Bedtime"].coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap() }
+                usleep(600_000)
             }
-            _ = tapIf(button("Save"))
+            let save = app.navigationBars["Bedtime"].buttons["Save"]
+            if save.waitForExistence(timeout: 3) && save.isHittable { save.tap() } else { check(false, "bedtime Save") }
             sleep(1)
             if changed {
                 check(app.staticTexts["Changed for this day"].waitForExistence(timeout: 3), "bedtime shows changed")
@@ -923,7 +942,9 @@ final class E_CabinetTests: MedJarsUITestCase {
 final class F_EditorTests: MedJarsUITestCase {
     func openNew() {
         tab("Cabinet")
-        button("Add Substance").tap()
+        let add = button("Add Substance")
+        if !add.waitForExistence(timeout: 8) { goBack(); _ = add.waitForExistence(timeout: 5) }
+        add.tap()
         waitFor(app.textFields["Medication or Supplement"], 5, "editor open")
     }
 
@@ -965,12 +986,7 @@ final class F_EditorTests: MedJarsUITestCase {
         }
         step("Delete it from the editor") {
             button("Edit").tap()
-            let del = button("Delete Substance")
-            scrollTo(del)
-            if tapIf(del) {
-                let confirm = app.buttons.matching(label("Delete Substance")).allElementsBoundByIndex.last
-                confirm?.tap()
-            }
+            check(tapAndConfirm("Delete Substance"), "Delete Substance and confirm")
             sleep(1)
             check(!app.cells.staticTexts["Test Vitamin C"].exists, "deleted from Cabinet")
         }
@@ -1109,7 +1125,14 @@ final class G_StackTests: MedJarsUITestCase {
         }
         step("Focus length menu") {
             let len = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Until' OR label CONTAINS 'Runs' OR label CONTAINS 'Ends' OR label CONTAINS 'Length'")).firstMatch
-            if len.exists { len.tap(); snap("length menu"); app.tap() }
+            if len.exists {
+                len.tap()
+                snap("length menu")
+                // Close the menu by tapping above it, not on one of its choices.
+                app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.06)).tap()
+                usleep(600_000)
+                if navBar("End Date").exists { closeSheet() }
+            }
         }
         goBack()
         step("Turn on Sleep") {
@@ -1137,10 +1160,7 @@ final class G_StackTests: MedJarsUITestCase {
         step("Delete the new stack") {
             app.staticTexts["Test Stack"].firstMatch.tap()
             if tapIf(button("Edit")) {
-                let del = button("Delete Stack")
-                scrollTo(del)
-                if tapIf(del) { app.buttons.matching(label("Delete Stack")).allElementsBoundByIndex.last?.tap() }
-                else { check(false, "Delete Stack reachable") }
+                check(tapAndConfirm("Delete Stack"), "Delete Stack and confirm")
                 sleep(1)
                 check(!app.staticTexts["Test Stack"].exists, "Test Stack deleted")
             }

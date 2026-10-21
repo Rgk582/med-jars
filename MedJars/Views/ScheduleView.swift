@@ -53,7 +53,7 @@ struct ScheduleView: View {
                 // Clear of the plus button below it.
                 .padding(.bottom, 74)
                 .task(id: toast.id) {
-                    try? await Task.sleep(nanoseconds: 6_000_000_000)
+                    try? await Task.sleep(nanoseconds: UndoToast.lifetime)
                     withAnimation { if self.toast?.id == toast.id { self.toast = nil } }
                 }
             }

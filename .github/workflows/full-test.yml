@@ -23,8 +23,8 @@ jobs:
 
       - name: Time zone and Xcode
         run: |
-          # A time zone where it's mid-morning now, so every run sees the same kind of day (doses taken, missed and
-          # still to come) whatever time the run starts.
+          # A time zone where it's mid-afternoon now, so every run sees the same kind of day whatever time it starts:
+          # morning doses taken, the noon magnesium missed, evening doses still to come.
           TZNAME=$(python3 - <<'PY'
           from datetime import datetime
           from zoneinfo import ZoneInfo
@@ -35,7 +35,7 @@ jobs:
                    "Pacific/Noumea", "Pacific/Auckland", "Pacific/Tongatapu", "Pacific/Kiritimati"]
           def score(z):
               t = datetime.now(ZoneInfo(z))
-              return abs(t.hour * 60 + t.minute - 10 * 60)
+              return abs(t.hour * 60 + t.minute - 15 * 60)
           print(min(zones, key=score))
           PY
           )

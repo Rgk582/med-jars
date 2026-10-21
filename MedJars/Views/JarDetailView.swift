@@ -417,7 +417,7 @@ struct JarDetailView: View {
                     }
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                     .task(id: toast.id) {
-                        try? await Task.sleep(nanoseconds: 6_000_000_000)
+                        try? await Task.sleep(nanoseconds: UndoToast.lifetime)
                         withAnimation { if self.toast?.id == toast.id { self.toast = nil } }
                     }
                 }
@@ -955,7 +955,8 @@ struct LogBar: View {
                         .font(.footnote).foregroundStyle(Palette.secondary).monospacedDigit()
                     Text(jar.amountText(for: s).ifEmpty("Dose")).font(.headline)
                 } else if rows.isEmpty {
-                    Text("No dose times").font(.footnote).foregroundStyle(Palette.secondary)
+                    Text(jar.timedSlots.isEmpty && !jar.usesRule ? "No dose times" : "None scheduled today")
+                        .font(.footnote).foregroundStyle(Palette.secondary)
                     Text("Log what you took").font(.headline)
                 } else {
                     Text("All doses handled").font(.footnote).foregroundStyle(Palette.secondary)

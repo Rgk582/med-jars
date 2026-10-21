@@ -262,7 +262,7 @@ struct RootView: View {
                 .padding(.bottom, router.onJarPage ? 150 : (router.plusHidden ? 64 : Router.plusBottom + 70))
                 .transition(.move(edge: .bottom).combined(with: .opacity))
                 .task(id: removed.id) {
-                    try? await Task.sleep(nanoseconds: 6_000_000_000)
+                    try? await Task.sleep(nanoseconds: UndoToast.lifetime)
                     withAnimation { if store.lastDeleted?.id == removed.id { store.lastDeleted = nil } }
                 }
             }

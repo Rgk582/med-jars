@@ -21,6 +21,15 @@ struct UndoToast: View {
     var deleted = false
     let onUndo: () -> Void
 
+    /// How long a toast stays up, in nanoseconds. UI tests launch with -longToasts: reading the screen for a test
+    /// stalls the app for seconds at a time, so a toast could come and go before the test sees it.
+    static var lifetime: UInt64 {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-longToasts") { return 20_000_000_000 }
+        #endif
+        return 6_000_000_000
+    }
+
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: deleted ? "trash.circle.fill" : "checkmark.circle.fill")
