@@ -174,6 +174,7 @@ struct LogDoseSheet: View {
             .navigationTitle(isEdit ? (editing?.skipped == true ? "Skipped Dose" : "Edit Dose") : "Log Dose")
             .navigationBarTitleDisplayMode(.inline)
             .tint(store.accentColor)
+            .keyboardBar()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
             }

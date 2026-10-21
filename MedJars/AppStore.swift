@@ -341,8 +341,17 @@ final class AppStore {
         persist()
     }
 
-    /// Bedtime on one dose day.
-    func bedtime(on day: Date) -> Int { Bedtime.minutes(onDayStarting: DoseLogic.doseDayStart(for: day)) }
+    /// Bedtime on one dose day. Reading it makes a screen redraw when bedtimes change.
+    func bedtime(on day: Date) -> Int {
+        _ = revision
+        return Bedtime.minutes(onDayStarting: DoseLogic.doseDayStart(for: day))
+    }
+
+    /// Whether bedtime was changed for this one day.
+    func bedtimeChanged(on day: Date) -> Bool {
+        _ = revision
+        return Bedtime.isChanged(onDayStarting: day)
+    }
 
     /// Changes bedtime for one dose day only. Nil goes back to the regular bedtime.
     func setBedtime(on day: Date, minutes: Int?) {

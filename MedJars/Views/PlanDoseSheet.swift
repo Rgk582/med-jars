@@ -122,6 +122,7 @@ struct PlanDoseSheet: View {
             .navigationTitle(isEdit ? "Edit Planned Dose" : "Plan a Dose")
             .navigationBarTitleDisplayMode(.inline)
             .tint(store.accentColor)
+            .keyboardBar()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {

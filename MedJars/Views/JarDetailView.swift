@@ -758,6 +758,7 @@ struct RefillSheet: View {
             .navigationTitle(jar.bottles.count > 1 ? "Refill \(b.title)" : "Refill \(jar.name)")
             .tint(store.accentColor)
             .navigationBarTitleDisplayMode(.inline)
+            .keyboardBar()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
@@ -806,6 +807,7 @@ struct SkipSheet: View {
             .navigationTitle("Skip \(jar.name)")
             .navigationBarTitleDisplayMode(.inline)
             .tint(store.accentColor)
+            .keyboardBar()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
@@ -853,6 +855,7 @@ struct BreakSheet: View {
             .navigationTitle("Take a Break")
             .navigationBarTitleDisplayMode(.inline)
             .tint(store.accentColor)
+            .keyboardBar()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {

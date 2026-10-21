@@ -58,7 +58,8 @@ struct HomeView: View {
                     .padding(.bottom, 100)
                 }
             }
-            .navigationTitle(now.formatted(.dateTime.weekday(.wide).month(.wide).day()))
+            // The dose day, like Schedule: up past midnight it's still yesterday until 4 AM.
+            .navigationTitle(DoseLogic.doseDayStart(for: now).formatted(.dateTime.weekday(.wide).month(.wide).day()))
         }
         .background(Palette.background)
         .toolbar {
@@ -1154,7 +1155,7 @@ private struct MissedCard: View {
                             Group {
                                 if i < shown.count {
                                     let item = shown[i]
-                                    CardSubstance(jar: item.jar, detail: item.row.at.map { (DoseLogic.sameDoseDay($0, now) ? "" : "Yesterday ") + Format.time12($0) } ?? "",
+                                    CardSubstance(jar: item.jar, detail: item.row.at.map { DoseLogic.sameDoseDay($0, now) ? Format.time12($0) : "Yesterday " + Format.shortTime($0) } ?? "",
                                                   rowHeight: h, detailColor: Palette.missed)
                                 } else if i == shown.count && extra > 0 {
                                     MoreCell(count: extra, rowHeight: h)

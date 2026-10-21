@@ -144,6 +144,19 @@ class MedJarsUITestCase: XCTestCase {
         confirmIfAsked()
     }
 
+    /// The Cancel and Done bar above the keyboard: it must be there exactly once. Taps Done when asked.
+    @discardableResult
+    func keyboardBar(_ whereText: String, tapDone: Bool = true) -> Bool {
+        let done = app.buttons.matching(identifier: "keyboard-done")
+        let ok = done.firstMatch.waitForExistence(timeout: 3)
+        check(ok, "keyboard Done bar \(whereText)")
+        if ok {
+            check(done.count == 1, "one keyboard bar \(whereText), not \(done.count)")
+            if tapDone { done.firstMatch.tap(); usleep(400_000) }
+        }
+        return ok
+    }
+
     func scrollToTop() {
         for _ in 0..<6 { app.swipeDown(velocity: .fast) }
     }
@@ -655,7 +668,7 @@ final class C_LoggingTests: MedJarsUITestCase {
             waitFor(button("Edit"), 5, "Adderall page")
         }
         step("Adderall log sheet shows each jar") {
-            button("Log Adderall").tap()
+            pageLogButton()?.tap()
             waitFor(navBar("Log Dose"), 4, "Adderall log sheet")
             check(app.staticTexts.matching(labelContains("10 mg")).count > 0, "10 mg jar row in log sheet")
             check(text("Total").exists, "Total row")
@@ -892,7 +905,7 @@ final class E_CabinetTests: MedJarsUITestCase {
             scrollTo(refill)
             if tapIf(refill) {
                 let field = app.textFields.firstMatch
-                if field.waitForExistence(timeout: 3) { field.tap(); field.typeText("10") }
+                if field.waitForExistence(timeout: 3) { field.tap(); field.typeText("10"); keyboardBar("in the refill sheet") }
                 _ = tapIf(button("Save"))
             }
         }
@@ -918,6 +931,7 @@ final class F_EditorTests: MedJarsUITestCase {
         scrollTo(field)
         field.tap()
         field.typeText(s)
+        keyboardBar("after typing \(s)")
     }
 
     func save() {
@@ -929,12 +943,18 @@ final class F_EditorTests: MedJarsUITestCase {
         launch()
         step("New simple substance") {
             openNew()
-            typeIn("Test Vitamin C", app.textFields["Medication or Supplement"])
-            typeIn("500", app.textFields["e.g. 30"].firstMatch)
-            let done = app.toolbars.buttons["Done"].firstMatch
-            check(done.waitForExistence(timeout: 3), "keyboard Done bar on a number field")
+            let name = app.textFields["Medication or Supplement"]
+            typeIn("Test Vitamin C", name)
+            // Cancel puts back what the box held before the keyboard came up.
+            scrollTo(name)
+            name.tap()
+            name.typeText(" XYZ")
             snap("keyboard bar")
-            if done.exists { done.tap() }
+            let cancel = app.buttons.matching(identifier: "keyboard-cancel").firstMatch
+            if waitFor(cancel, 3, "keyboard Cancel") { cancel.tap() }
+            sleep(1)
+            check((name.value as? String) == "Test Vitamin C", "Cancel put the name back, got \((name.value as? String) ?? "nil")")
+            typeIn("500", app.textFields["e.g. 30"].firstMatch)
             save()
             check(app.cells.staticTexts["Test Vitamin C"].waitForExistence(timeout: 4), "Test Vitamin C in Cabinet")
         }
@@ -1003,8 +1023,10 @@ final class F_EditorTests: MedJarsUITestCase {
             scrollTo(add)
             if tapIf(add) {
                 let f = app.textFields["e.g. 30"].firstMatch
-                if f.waitForExistence(timeout: 3) { f.tap(); f.typeText("20") }
+                if f.waitForExistence(timeout: 3) { f.tap(); f.typeText("20"); keyboardBar("on the pushed jar page", tapDone: false) }
                 snap("second jar editor")
+                let done = app.buttons.matching(identifier: "keyboard-done").firstMatch
+                if done.exists { done.tap() }
                 goBack()
             }
             snap("two jars editor")
@@ -1032,7 +1054,7 @@ final class F_EditorTests: MedJarsUITestCase {
             typeIn("15", app.textFields["e.g. 30"].firstMatch)
             let imprint = app.textFields["e.g. dp 10"].firstMatch
             scrollTo(imprint)
-            if imprint.exists { imprint.tap(); imprint.typeText("AB 12") }
+            if imprint.exists { imprint.tap(); imprint.typeText("AB 12"); keyboardBar("on the imprint box") }
             let split = button("Split")
             check(split.waitForExistence(timeout: 3), "Imprint Side picker shows for a capsule")
             if split.exists { split.tap() }
@@ -1102,7 +1124,7 @@ final class G_StackTests: MedJarsUITestCase {
         step("New stack") {
             button("New Stack").tap()
             let name = app.textFields["Name, e.g. Focus"].firstMatch
-            if waitFor(name, 4, "stack name field") { name.tap(); name.typeText("Test Stack") }
+            if waitFor(name, 4, "stack name field") { name.tap(); name.typeText("Test Stack"); keyboardBar("in the stack editor") }
             let add = button("Add a Substance")
             scrollTo(add)
             if tapIf(add) { _ = tapIf(button("Zinc")) }
@@ -1116,6 +1138,9 @@ final class G_StackTests: MedJarsUITestCase {
                 let del = button("Delete Stack")
                 scrollTo(del)
                 if tapIf(del) { app.buttons.matching(label("Delete Stack")).allElementsBoundByIndex.last?.tap() }
+                else { check(false, "Delete Stack reachable") }
+                sleep(1)
+                check(!app.staticTexts["Test Stack"].exists, "Test Stack deleted")
             }
         }
     }
@@ -1136,6 +1161,17 @@ final class H_SettingsTests: MedJarsUITestCase {
                 _ = tapIf(button("Blue"))
                 snap("theme blue")
                 _ = tapIf(button("Orange"))
+                // A text box on a page pushed from Settings, itself pushed from Home: one keyboard bar, not two.
+                let hex = app.textFields["FF9500"].firstMatch
+                scrollTo(hex)
+                if hex.exists {
+                    hex.tap()
+                    hex.typeText("12")
+                    keyboardBar("on the Theme page", tapDone: false)
+                    snap("theme keyboard")
+                    let cancel = app.buttons.matching(identifier: "keyboard-cancel").firstMatch
+                    if cancel.exists { cancel.tap() }
+                }
                 goBack()
             }
         }
@@ -1171,8 +1207,7 @@ final class H_SettingsTests: MedJarsUITestCase {
             if target.exists {
                 target.tap()
                 target.typeText(#"{"id":"test-import","name":"Test Import","kind":"supplement","bottles":[{"id":"test-import","form":"tablet","strength":5,"unit":"mg"}],"defaultBottleId":"test-import","plans":[{"days":[1,2,3,4,5,6,7],"dailyPills":1,"doses":[{"time":"09:00","pills":1,"share":1}]}]}"#)
-                let doneKey = app.toolbars.buttons["Done"].firstMatch
-                if doneKey.exists { doneKey.tap() }
+                keyboardBar("in Settings")
                 let imp = button("Import")
                 scrollTo(imp)
                 _ = tapIf(imp)
@@ -1204,7 +1239,7 @@ final class H_SettingsTests: MedJarsUITestCase {
             if tapIf(add) {
                 if tapIf(button("Custom Amount")) {
                     let f = app.textFields["e.g. 150"].firstMatch
-                    if f.waitForExistence(timeout: 3) { f.tap(); f.typeText("120") }
+                    if f.waitForExistence(timeout: 3) { f.tap(); f.typeText("120"); keyboardBar("in the caffeine sheet") }
                     _ = tapIf(button("Add"))
                 }
             }

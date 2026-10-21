@@ -66,6 +66,7 @@ struct CheckInSheet: View {
             .navigationTitle("How Are You Feeling?")
             .tint(store.accentColor)
             .navigationBarTitleDisplayMode(.inline)
+            .keyboardBar()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {

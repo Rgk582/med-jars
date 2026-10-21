@@ -1898,6 +1898,14 @@ enum Format {
         return time12(String(format: "%02d:%02d", c.hour ?? 0, c.minute ?? 0))
     }
 
+    /// "6 PM" on the hour, "6:30 PM" otherwise, for tight spaces.
+    static func shortTime(_ date: Date) -> String {
+        let c = Calendar.current.dateComponents([.hour, .minute], from: date)
+        let h = c.hour ?? 0, m = c.minute ?? 0
+        let suffix = h >= 12 ? "PM" : "AM"
+        return m == 0 ? "\(((h + 11) % 12) + 1) \(suffix)" : time12(date)
+    }
+
     static func hhmm(_ date: Date) -> String {
         let c = Calendar.current.dateComponents([.hour, .minute], from: date)
         return String(format: "%02d:%02d", c.hour ?? 0, c.minute ?? 0)

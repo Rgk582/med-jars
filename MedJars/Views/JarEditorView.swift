@@ -128,6 +128,7 @@ struct JarEditorView: View {
                 formPart9
                 formPart10
             }
+            .keyboardBar()
             .navigationTitle(isNew ? "New Substance" : "Edit Substance")
             .navigationDestination(item: $editingPlanId) { id in
                 PlanEditorView(plans: $draft.plans, planId: id, mode: mode)
@@ -1130,6 +1131,7 @@ struct PlanEditorView: View {
                 PlanFields(plan: plan, mode: mode)
             }
         }
+        .keyboardBar()
         .navigationTitle(current.isDate ? "Specific Date" : (current.days.isEmpty ? "Day Plan" : current.title))
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {

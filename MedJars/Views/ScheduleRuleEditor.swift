@@ -287,6 +287,7 @@ struct BottleEditorView: View {
                 Text("The default jar's picture stands for the substance in the Cabinet.")
             }
         }
+        .keyboardBar()
         .navigationTitle(b.title)
         .navigationBarTitleDisplayMode(.inline)
         .confirmationDialog("Delete this jar?", isPresented: $confirmDelete, titleVisibility: .visible) {

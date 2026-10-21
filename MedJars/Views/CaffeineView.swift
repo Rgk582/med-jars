@@ -63,6 +63,7 @@ struct CaffeineAddSheet: View {
             .navigationTitle("Add Caffeine")
             .navigationBarTitleDisplayMode(.inline)
             .tint(store.accentColor)
+            .keyboardBar()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {

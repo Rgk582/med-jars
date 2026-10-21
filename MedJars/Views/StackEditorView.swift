@@ -142,6 +142,7 @@ struct StackEditorView: View {
                 MemberEditorView(stack: $draft, memberId: id) { editingMemberId = nil }
             }
             .tint(store.accentColor)
+            .keyboardBar()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {

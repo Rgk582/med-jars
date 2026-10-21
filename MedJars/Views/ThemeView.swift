@@ -115,6 +115,7 @@ struct ThemeView: View {
                 }
             }
         }
+        .keyboardBar()
         .navigationTitle("Theme")
         .onAppear {
             guard !didSetup else { return }

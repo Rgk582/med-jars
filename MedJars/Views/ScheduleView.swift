@@ -245,7 +245,7 @@ private struct BedtimeRow: View {
 
     var body: some View {
         let minutes = store.bedtime(on: day)
-        let changed = Bedtime.isChanged(onDayStarting: day)
+        let changed = store.bedtimeChanged(on: day)
         HStack(spacing: 12) {
             Image(systemName: "moon.zzz.fill")
                 .font(.title3)
@@ -291,7 +291,7 @@ struct BedtimeDaySheet: View {
                 } footer: {
                     Text("Doses set to a time before bed move with it. A bedtime after midnight counts as the night before.")
                 }
-                if Bedtime.isChanged(onDayStarting: day) {
+                if store.bedtimeChanged(on: day) {
                     Section {
                         Button("Go Back to the Regular Bedtime") {
                             store.setBedtime(on: day, minutes: nil)

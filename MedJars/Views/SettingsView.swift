@@ -312,6 +312,7 @@ struct SettingsView: View {
                 }
             }
         }
+        .keyboardBar()
         .navigationTitle("Settings")
         .task { await refreshNotificationStatus() }
         .task { await checkSleepQuietly() }

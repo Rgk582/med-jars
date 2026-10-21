@@ -23,7 +23,25 @@ jobs:
 
       - name: Time zone and Xcode
         run: |
-          sudo systemsetup -settimezone America/Chicago || true
+          # A time zone where it's mid-morning now, so every run sees the same kind of day (doses taken, missed and
+          # still to come) whatever time the run starts.
+          TZNAME=$(python3 - <<'PY'
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+          zones = ["Pacific/Pago_Pago", "Pacific/Honolulu", "America/Anchorage", "America/Los_Angeles", "America/Denver",
+                   "America/Chicago", "America/New_York", "America/Halifax", "America/Sao_Paulo", "America/Noronha",
+                   "Atlantic/Cape_Verde", "Europe/London", "Europe/Paris", "Europe/Athens", "Europe/Moscow", "Asia/Dubai",
+                   "Asia/Karachi", "Asia/Dhaka", "Asia/Bangkok", "Asia/Shanghai", "Asia/Tokyo", "Australia/Brisbane",
+                   "Pacific/Noumea", "Pacific/Auckland", "Pacific/Tongatapu", "Pacific/Kiritimati"]
+          def score(z):
+              t = datetime.now(ZoneInfo(z))
+              return abs(t.hour * 60 + t.minute - 10 * 60)
+          print(min(zones, key=score))
+          PY
+          )
+          echo "Time zone $TZNAME"
+          echo "TZNAME=$TZNAME" >> $GITHUB_ENV
+          sudo systemsetup -settimezone "$TZNAME" || sudo ln -sf "/usr/share/zoneinfo/$TZNAME" /etc/localtime
           date
           XCODE=$(ls -d /Applications/Xcode_*.app | grep -v beta | sort -V | tail -1)
           sudo xcode-select -s "$XCODE"
@@ -74,7 +92,7 @@ jobs:
           fi
           xcrun simctl ui "$UDID" appearance dark
           xcrun simctl status_bar "$UDID" override --time 9:41 --batteryState charged --batteryLevel 100 || true
-          TZ=America/Chicago python3 ci/seed_full.py "$PWD/out/seed.json"
+          TZ="$TZNAME" python3 ci/seed_full.py "$PWD/out/seed.json"
           cp out/seed.json /tmp/medjars-seed.json
           # Also put the seed inside the app's own folder, in case the simulator can't read /tmp.
           xcrun simctl install "$UDID" build/Build/Products/Debug-iphonesimulator/MedJars.app
