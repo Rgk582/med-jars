@@ -1224,7 +1224,8 @@ struct Jar: Codable, Identifiable, Hashable {
 
     /// How much a logged dose was: the strength saved with it (or worked out from the jars it came from, for doses
     /// saved without one) and the pill count. "30 mg · 1 tablet".
-    func amountText(of e: DoseEntry) -> String {
+    /// The strength of a logged dose: what was typed with it, or worked out from the jars it came from.
+    func loggedStrength(_ e: DoseEntry) -> String {
         var amount = e.amount.trimmingCharacters(in: .whitespaces)
         if amount.isEmpty, bottles.count > 1 || usesStrength {
             let total = StoreFile.parts(of: e, jar: self).reduce(0.0) { sum, p in
@@ -1232,6 +1233,11 @@ struct Jar: Codable, Identifiable, Hashable {
             }
             if total > 0 { amount = "\(Format.trimmed(total)) \(unit.label)" }
         }
+        return amount
+    }
+
+    func amountText(of e: DoseEntry) -> String {
+        let amount = loggedStrength(e)
         let line = [amount, Format.pills(e.pills, e.form)].filter { !$0.isEmpty }.joined(separator: " \u{00B7} ")
         return line.isEmpty ? "Dose" : line
     }

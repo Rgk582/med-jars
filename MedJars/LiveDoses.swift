@@ -19,7 +19,7 @@ enum LiveDoses {
         for e in entries where !e.skipped && now.timeIntervalSince(e.takenAt) < 48 * 3600 && e.takenAt <= now {
             guard let jar = jars.first(where: { $0.id == e.jarId }), !jar.paused,
                   let effect = jar.effect, !liveActivityOnly || effect.liveActivity else { continue }
-            let dose = effect.activeDose(id: e.id, jar: jar, amount: e.amount, start: e.takenAt)
+            let dose = effect.activeDose(id: e.id, jar: jar, amount: jar.loggedStrength(e), start: e.takenAt)
             if dose.end > now { out.append(dose) }
         }
         return Array(out.sorted { $0.start > $1.start }.prefix(4))
