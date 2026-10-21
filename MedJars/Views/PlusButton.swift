@@ -25,7 +25,12 @@ struct PlusLayer: View {
             if open {
                 Color.black.opacity(0.4)
                     .ignoresSafeArea()
-                    .onTapGesture { close() }
+                    .onTapGesture(coordinateSpace: .global) { p in
+                        #if DEBUG
+                        DebugHarness.log("DIM TAP at \(p)")
+                        #endif
+                        close()
+                    }
                     .transition(.opacity)
                     .accessibilityLabel("Close menu")
                     .accessibilityAddTraits(.isButton)
@@ -109,7 +114,12 @@ struct PlusLayer: View {
     }
 
     private func menuButton(_ title: String, symbol: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+        Button(action: {
+            #if DEBUG
+            DebugHarness.log("MENU TAP \(title)")
+            #endif
+            action()
+        }) {
             Label(title, systemImage: symbol)
                 .font(.headline)
                 .foregroundStyle(Palette.label)
@@ -118,6 +128,9 @@ struct PlusLayer: View {
                 .glassPanel(cornerRadius: 23)
         }
         .buttonStyle(.plain)
+        #if DEBUG
+        .onGeometryChange(for: CGRect.self, of: { $0.frame(in: .global) }) { DebugHarness.log("FRAME \(title) \($0)") }
+        #endif
         .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 

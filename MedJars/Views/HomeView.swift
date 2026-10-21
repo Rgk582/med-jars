@@ -587,6 +587,7 @@ private struct CaffeineCard: View {
 
     /// How full the cup is: what's still in you out of what you've had in the last day.
     private func level(_ inSystem: Double) -> Double {
+        let now = max(self.now, Date())
         let had = store.caffeine.filter { $0.at <= now && now.timeIntervalSince($0.at) < 86400 }.reduce(0) { $0 + $1.mg }
         guard had > 0 else { return 0 }
         return min(1, inSystem / had)
@@ -597,6 +598,8 @@ private struct CaffeineCard: View {
         let _ = DebugHarness.body("CaffeineCard")
         let _ = Self._printChanges()
         #endif
+        // The parent's clock tick can be up to a minute old; a coffee added since then must count.
+        let now = max(self.now, Date())
         let inSystem = store.caffeineInSystem(at: now)
         let today = store.caffeineToday(at: now)
         Menu {

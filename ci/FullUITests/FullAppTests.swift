@@ -473,6 +473,46 @@ final class B2_ReproTests: MedJarsUITestCase {
         }
     }
 
+    func test06_AllSheetDiagnostics() {
+        launch()
+        step("All button frames, then a coordinate tap") {
+            tapPlus()
+            _ = plusMenuLog()
+            sleep(2)
+            snap("log submenu open")
+            let all = button("All"), next = button("Log Next"), dim = app.descendants(matching: .any)["Close menu"].firstMatch
+            mark("REPRO frames all=\(all.frame) hittable=\(all.isHittable) next=\(next.frame) dim=\(dim.frame)")
+            let c = app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: all.frame.midX, dy: all.frame.midY))
+            c.tap()
+            let ok = navBar("Log a Substance").waitForExistence(timeout: 5)
+            mark("REPRO all coordinate tap shown=\(ok)")
+            snap("after coordinate tap")
+            if ok { closeSheet() }
+        }
+        step("Tap the All label text") {
+            tapPlus()
+            _ = plusMenuLog()
+            sleep(2)
+            let t = app.staticTexts["All"].firstMatch
+            mark("REPRO all text exists=\(t.exists) frame=\(t.frame)")
+            if t.exists { t.tap() }
+            let ok = navBar("Log a Substance").waitForExistence(timeout: 5)
+            mark("REPRO all text tap shown=\(ok)")
+            if ok { closeSheet() }
+        }
+        step("Log Next for comparison") {
+            tapPlus()
+            _ = plusMenuLog()
+            sleep(2)
+            let n = button("Log Next")
+            mark("REPRO lognext frame=\(n.frame)")
+            n.tap()
+            sleep(2)
+            snap("after Log Next")
+            closeSheet()
+        }
+    }
+
     func test05_CoffeeShowsRightAway() {
         launch()
         step("Coffee from the Caffeine tile shows right away") {
