@@ -166,9 +166,13 @@ class MedJarsUITestCase: XCTestCase {
         let first = row.frame
         // The question pops up over the row with the same choice in it; wait for it.
         for _ in 0..<10 {
+            // The popover's button can report itself not hittable while it settles, so tap where it is.
             let confirm = app.buttons.matching(label(title)).allElementsBoundByIndex
-                .filter { $0.exists && $0.isHittable && $0.frame != first }.last
-            if let confirm { confirm.tap(); return true }
+                .filter { $0.exists && $0.frame != first && !$0.frame.isEmpty }.last
+            if let confirm {
+                confirm.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+                return true
+            }
             usleep(500_000)
         }
         return false
