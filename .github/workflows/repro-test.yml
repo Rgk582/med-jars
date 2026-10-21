@@ -57,9 +57,21 @@ jobs:
           exit $STATUS
 
       - name: Boot and seed
+        timeout-minutes: 20
         run: |
-          xcrun simctl boot "$UDID"
-          xcrun simctl bootstatus "$UDID" -b
+          boot() { xcrun simctl boot "$1" 2>/dev/null; perl -e 'alarm shift; exec @ARGV' 300 xcrun simctl bootstatus "$1" -b; }
+          if ! boot "$UDID"; then
+            echo "Boot stalled; erasing and trying again"
+            xcrun simctl shutdown "$UDID" 2>/dev/null || true
+            xcrun simctl erase "$UDID" || true
+            if ! boot "$UDID"; then
+              echo "Still stalled; making a fresh simulator"
+              RT=$(xcrun simctl list runtimes -j | python3 -c "import json,sys; r=[x for x in json.load(sys.stdin)['runtimes'] if x['platform']=='iOS' and x['isAvailable']]; print(r[-1]['identifier'])")
+              UDID=$(xcrun simctl create "MJ Fresh" "com.apple.CoreSimulator.SimDeviceType.iPhone-16-Pro" "$RT")
+              echo "UDID=$UDID" >> $GITHUB_ENV
+              boot "$UDID"
+            fi
+          fi
           xcrun simctl ui "$UDID" appearance dark
           xcrun simctl status_bar "$UDID" override --time 9:41 --batteryState charged --batteryLevel 100 || true
           TZ=America/Chicago python3 ci/seed_full.py "$PWD/out/seed.json"
