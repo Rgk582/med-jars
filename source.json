@@ -10,16 +10,16 @@
       "localizedDescription": "NFC med jars with dose cards, reminders and a dose log",
       "iconURL": "https://raw.githubusercontent.com/Rgk582/med-jars/main/MedJars/Assets.xcassets/AppIcon.appiconset/AppIcon.png",
       "tintColor": "#3b82f6",
-      "version": "1.0.16",
-      "versionDate": "2026-10-17T06:58:00Z",
-      "downloadURL": "https://github.com/Rgk582/med-jars/releases/download/v1.0.16/MedJars.ipa",
-      "size": 3590478,
+      "version": "1.0.17",
+      "versionDate": "2026-10-21T16:37:17Z",
+      "downloadURL": "https://github.com/Rgk582/med-jars/releases/download/v1.0.17/MedJars.ipa",
+      "size": 3709005,
       "versions": [
         {
-          "version": "1.0.16",
-          "date": "2026-10-17T06:58:00Z",
-          "size": 3590478,
-          "downloadURL": "https://github.com/Rgk582/med-jars/releases/download/v1.0.16/MedJars.ipa",
+          "version": "1.0.17",
+          "date": "2026-10-21T16:37:17Z",
+          "size": 3709005,
+          "downloadURL": "https://github.com/Rgk582/med-jars/releases/download/v1.0.17/MedJars.ipa",
           "localizedDescription": "Unsigned app file. Sign and install it with your certificate in Feather, ESign or Sideloadly.",
           "minOSVersion": "18.0"
         }
