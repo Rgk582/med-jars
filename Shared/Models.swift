@@ -2009,6 +2009,19 @@ enum Format {
     }
 
     /// "45 min", "2 hr", "2 hr 30 min".
+    /// Time left until a moment, rounded up to the minute: "1 hr 5 min".
+    static func countdown(to date: Date, from now: Date) -> String {
+        let seconds = date.timeIntervalSince(now)
+        guard seconds > 0 else { return "0 min" }
+        return duration(max(1, Int((seconds / 60).rounded(.up))))
+    }
+
+    /// Time since a moment, rounded down to the minute: "1 hr 5 min", or "under a minute".
+    static func elapsed(since date: Date, to now: Date) -> String {
+        let minutes = Int(max(0, now.timeIntervalSince(date)) / 60)
+        return minutes < 1 ? "under a minute" : duration(minutes)
+    }
+
     static func duration(_ minutes: Int) -> String {
         let h = minutes / 60, m = minutes % 60
         if h == 0 { return "\(m) min" }

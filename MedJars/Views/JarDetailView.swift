@@ -20,10 +20,10 @@ struct JarDetailView: View {
         #if DEBUG
         let _ = DebugHarness.body("JarDetailView")
         #endif
-        Group {
-            if PageFlags.noTimeline { page } else { TimelineView(.everyMinute) { _ in page } }
-        }
-        .background(Palette.background)
+        // Redraws once a minute. Countdowns here step by the minute too: a timer ticking every second inside the
+        // list kept the whole page busy redrawing.
+        TimelineView(.everyMinute) { _ in page }
+            .background(Palette.background)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
@@ -483,7 +483,7 @@ struct JarDetailView: View {
 }
 
 /// A dose's effect curve: the part already behind you filled in, a line at now, and the hours along the bottom.
-/// Drawn as plain shapes, which costs far less to redraw than a chart.
+/// Drawn in one Canvas, a single view with nothing inside to lay out, so it costs next to nothing to redraw.
 struct EffectCurveChart: View {
     let profile: EffectProfile
     let start: Date
@@ -512,59 +512,37 @@ struct EffectCurveChart: View {
     }
 
     var body: some View {
-        let marks = hourMarks
-        VStack(spacing: 4) {
-            GeometryReader { geo in
-                let w = geo.size.width, h = geo.size.height
-                let nowX = x(now, width: w)
-                ZStack(alignment: .topLeading) {
-                    ForEach(marks, id: \.self) { m in
-                        Rectangle().fill(Palette.separator).frame(width: 0.5, height: h).offset(x: x(m, width: w))
-                    }
-                    EffectCurveShape(profile: profile)
-                        .fill(color.opacity(0.14))
-                    EffectCurveShape(profile: profile)
-                        .fill(LinearGradient(colors: [color.opacity(0.55), color.opacity(0.12)], startPoint: .top, endPoint: .bottom))
-                        .mask(alignment: .leading) { Rectangle().frame(width: nowX) }
-                    EffectCurveShape(profile: profile, filled: false)
-                        .stroke(color, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-                    Path { path in
-                        path.move(to: CGPoint(x: nowX, y: 0))
-                        path.addLine(to: CGPoint(x: nowX, y: h))
-                    }
-                    .stroke(Palette.label.opacity(0.7), style: StrokeStyle(lineWidth: 1.5, dash: [3, 3]))
-                }
+        let marks = hourMarks.map { ($0, $0.formatted(.dateTime.hour())) }
+        Canvas { ctx, size in
+            let labelHeight: CGFloat = 18
+            let w = size.width
+            let plot = CGRect(x: 0, y: 0, width: w, height: max(0, size.height - labelHeight))
+            for (m, _) in marks {
+                let mx = x(m, width: w)
+                ctx.stroke(Path { $0.move(to: CGPoint(x: mx, y: 0)); $0.addLine(to: CGPoint(x: mx, y: plot.maxY)) },
+                           with: .color(Palette.separator), lineWidth: 0.5)
             }
-            GeometryReader { geo in
-                ZStack(alignment: .topLeading) {
-                    ForEach(marks, id: \.self) { m in
-                        Text(m.formatted(.dateTime.hour()))
-                            .font(.caption2).foregroundStyle(Palette.secondary).monospacedDigit()
-                            .fixedSize()
-                            .position(x: min(max(x(m, width: geo.size.width), 14), geo.size.width - 14), y: 7)
-                    }
-                }
+            let area = EffectCurveShape(profile: profile).path(in: plot)
+            let line = EffectCurveShape(profile: profile, filled: false).path(in: plot)
+            let nowX = x(now, width: w)
+            ctx.fill(area, with: .color(color.opacity(0.14)))
+            ctx.drawLayer { past in
+                past.clip(to: Path(CGRect(x: 0, y: 0, width: nowX, height: plot.maxY)))
+                past.fill(area, with: .linearGradient(Gradient(colors: [color.opacity(0.55), color.opacity(0.12)]),
+                                                      startPoint: CGPoint(x: 0, y: 0), endPoint: CGPoint(x: 0, y: plot.maxY)))
             }
-            .frame(height: 14)
+            ctx.stroke(line, with: .color(color), style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+            ctx.stroke(Path { $0.move(to: CGPoint(x: nowX, y: 0)); $0.addLine(to: CGPoint(x: nowX, y: plot.maxY)) },
+                       with: .color(Palette.label.opacity(0.7)), style: StrokeStyle(lineWidth: 1.5, dash: [3, 3]))
+            for (m, label) in marks {
+                let text = ctx.resolve(Text(label).font(.caption2).monospacedDigit().foregroundStyle(Palette.secondary))
+                let tx = min(max(x(m, width: w), 14), w - 14)
+                ctx.draw(text, at: CGPoint(x: tx, y: size.height - labelHeight / 2), anchor: .center)
+            }
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Effect curve")
     }
-}
-
-/// Test-only switches for timing experiments on this page. Always off in a release build.
-enum PageFlags {
-    #if DEBUG
-    static let noTimeline = DebugHarness.flag("pageNoTimeline")
-    static let noTimers = DebugHarness.flag("pageNoTimers")
-    static let simpleChart = DebugHarness.flag("pageSimpleChart")
-    static let noChart = DebugHarness.flag("pageNoChart")
-    #else
-    static let noTimeline = false
-    static let noTimers = false
-    static let simpleChart = false
-    static let noChart = false
-    #endif
 }
 
 struct InteractionItem: Identifiable {
@@ -594,7 +572,8 @@ private struct AsNeededStatus: View {
                     HStack {
                         Label("Last dose", systemImage: "clock.arrow.circlepath")
                         Spacer()
-                        (Text(last.takenAt, style: .relative) + Text(" ago")).monospacedDigit().foregroundStyle(Palette.secondary)
+                        Text(now.timeIntervalSince(last.takenAt) < 60 ? "Just now" : Format.elapsed(since: last.takenAt, to: now) + " ago")
+                            .monospacedDigit().foregroundStyle(Palette.secondary)
                     }
                     if jar.minGapMinutes > 0 {
                         let next = last.takenAt.addingTimeInterval(Double(jar.minGapMinutes) * 60)
@@ -603,7 +582,7 @@ private struct AsNeededStatus: View {
                                 .foregroundStyle(next > now ? Palette.due : Palette.taken)
                             Spacer()
                             if next > now {
-                                Text("\(Format.time12(next)) (in \(Text(timerInterval: now...next, countsDown: true)))")
+                                Text("\(Format.time12(next)) (in \(Format.countdown(to: next, from: now)))")
                                     .monospacedDigit().foregroundStyle(Palette.secondary)
                             }
                         }
@@ -640,47 +619,21 @@ struct EffectTimelineView: View {
                     HStack(alignment: .firstTextBaseline) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(now < peak ? "Peaks in" : "Wears off in").font(.subheadline).foregroundStyle(Palette.secondary)
-                            Group {
-                                if PageFlags.noTimers {
-                                    Text(Format.duration(max(0, Int((now < peak ? peak : max(now, end)).timeIntervalSince(now) / 60))))
-                                } else {
-                                    Text(timerInterval: now...(now < peak ? peak : max(now, end)), countsDown: true)
-                                }
-                            }
+                            Text(Format.countdown(to: now < peak ? peak : end, from: now))
                                 .font(.title.weight(.semibold)).monospacedDigit()
                                 .foregroundStyle(jar.lid.color)
+                                .lineLimit(1).minimumScaleFactor(0.7)
                         }
-                        Spacer()
+                        Spacer(minLength: 12)
                         VStack(alignment: .trailing, spacing: 2) {
                             Text("Since dose").font(.subheadline).foregroundStyle(Palette.secondary)
-                            Group {
-                                if PageFlags.noTimers {
-                                    Text(Format.duration(max(0, Int(now.timeIntervalSince(start) / 60))))
-                                } else {
-                                    Text(start, style: .timer)
-                                }
-                            }
-                            .font(.title3.weight(.semibold)).monospacedDigit()
+                            Text(Format.elapsed(since: start, to: now))
+                                .font(.title3.weight(.semibold)).monospacedDigit()
+                                .lineLimit(1).minimumScaleFactor(0.7)
                         }
                     }
-                    if PageFlags.noChart {
-                        Color.clear.frame(height: 150)
-                    } else if PageFlags.simpleChart {
-                        GeometryReader { geo in
-                            let span = Double(p.durationMinutes) * 60 * 1.12
-                            let x = geo.size.width * CGFloat(min(1, max(0, now.timeIntervalSince(start) / max(span, 1))))
-                            ZStack(alignment: .leading) {
-                                EffectCurveShape(profile: p)
-                                    .fill(LinearGradient(colors: [jar.lid.color.opacity(0.45), jar.lid.color.opacity(0.05)], startPoint: .top, endPoint: .bottom))
-                                EffectCurveShape(profile: p, filled: false).stroke(jar.lid.color, lineWidth: 2)
-                                Rectangle().fill(Palette.label.opacity(0.6)).frame(width: 1.5).offset(x: x)
-                            }
-                        }
-                        .frame(height: 150)
-                    } else {
-                        EffectCurveChart(profile: p, start: start, now: now, color: jar.lid.color)
-                            .frame(height: 150)
-                    }
+                    EffectCurveChart(profile: p, start: start, now: now, color: jar.lid.color)
+                        .frame(height: 168)
                     HStack {
                         milestone("Kicks in", onset, done: now >= onset)
                         Spacer()
