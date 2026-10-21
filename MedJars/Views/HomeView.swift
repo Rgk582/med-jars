@@ -1029,6 +1029,12 @@ struct ComingUpItem: Identifiable {
         return out.sorted { $0.date < $1.date }
     }
 
+    /// Just the time, for lists already grouped by day. Empty for something that happens at the start of a day.
+    var timeText: String {
+        let isStartOfDay = date == Calendar.current.startOfDay(for: date) || date == DoseLogic.doseDayStart(for: date)
+        return isStartOfDay ? "" : Format.time12(date)
+    }
+
     func whenText(now: Date) -> String {
         let midnight = Calendar.current.startOfDay(for: date)
         let isStartOfDay = date == midnight || date == DoseLogic.doseDayStart(for: date)
@@ -1358,7 +1364,8 @@ struct ComingUpSheet: View {
                                         Image(systemName: item.symbol).foregroundStyle(.tint).frame(width: 28)
                                         VStack(alignment: .leading, spacing: 1) {
                                             Text(item.title).font(.headline).foregroundStyle(Palette.label)
-                                            Text(item.whenText(now: now) + (item.detail.isEmpty ? "" : " \u{00B7} \(item.detail)"))
+                                            // The section already says the day.
+                                            Text([item.timeText, item.detail].filter { !$0.isEmpty }.joined(separator: " \u{00B7} "))
                                                 .font(.subheadline).foregroundStyle(Palette.secondary)
                                         }
                                         Spacer(minLength: 0)
