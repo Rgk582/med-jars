@@ -20,19 +20,8 @@ struct JarDetailView: View {
         #if DEBUG
         let _ = DebugHarness.body("JarDetailView")
         #endif
-        TimelineView(.everyMinute) { _ in
-            if let jar = store.jar(jarId) {
-                content(jar: jar, now: store.now)
-            } else {
-                ContentUnavailableView {
-                    Label("No Jar Uses This Link", systemImage: "questionmark.circle")
-                } description: {
-                    Text("\u{201C}\(jarId)\u{201D} isn't in your cabinet. Set it up and this link will open it from now on.")
-                } actions: {
-                    Button("Set Up This Jar") { editing = EditorTarget(jar: nil, presetId: jarId) }
-                        .prominentButton()
-                }
-            }
+        Group {
+            if PageFlags.noTimeline { page } else { TimelineView(.everyMinute) { _ in page } }
         }
         .background(Palette.background)
         .navigationBarTitleDisplayMode(.inline)
@@ -89,6 +78,22 @@ struct JarDetailView: View {
         .alert("Can't Scan", isPresented: Binding(get: { scanAlert != nil }, set: { if !$0 { scanAlert = nil } })) {
             Button("OK", role: .cancel) {}
         } message: { Text(scanAlert?.message ?? "") }
+    }
+
+    @ViewBuilder
+    private var page: some View {
+        if let jar = store.jar(jarId) {
+            content(jar: jar, now: store.now)
+        } else {
+            ContentUnavailableView {
+                Label("No Jar Uses This Link", systemImage: "questionmark.circle")
+            } description: {
+                Text("\u{201C}\(jarId)\u{201D} isn't in your cabinet. Set it up and this link will open it from now on.")
+            } actions: {
+                Button("Set Up This Jar") { editing = EditorTarget(jar: nil, presetId: jarId) }
+                    .prominentButton()
+            }
+        }
     }
 
     @ViewBuilder
@@ -547,6 +552,21 @@ struct EffectCurveChart: View {
     }
 }
 
+/// Test-only switches for timing experiments on this page. Always off in a release build.
+enum PageFlags {
+    #if DEBUG
+    static let noTimeline = DebugHarness.flag("pageNoTimeline")
+    static let noTimers = DebugHarness.flag("pageNoTimers")
+    static let simpleChart = DebugHarness.flag("pageSimpleChart")
+    static let noChart = DebugHarness.flag("pageNoChart")
+    #else
+    static let noTimeline = false
+    static let noTimers = false
+    static let simpleChart = false
+    static let noChart = false
+    #endif
+}
+
 struct InteractionItem: Identifiable {
     let jar: Jar
     let level: InteractionLevel
@@ -620,18 +640,47 @@ struct EffectTimelineView: View {
                     HStack(alignment: .firstTextBaseline) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(now < peak ? "Peaks in" : "Wears off in").font(.subheadline).foregroundStyle(Palette.secondary)
-                            Text(timerInterval: now...(now < peak ? peak : max(now, end)), countsDown: true)
+                            Group {
+                                if PageFlags.noTimers {
+                                    Text(Format.duration(max(0, Int((now < peak ? peak : max(now, end)).timeIntervalSince(now) / 60))))
+                                } else {
+                                    Text(timerInterval: now...(now < peak ? peak : max(now, end)), countsDown: true)
+                                }
+                            }
                                 .font(.title.weight(.semibold)).monospacedDigit()
                                 .foregroundStyle(jar.lid.color)
                         }
                         Spacer()
                         VStack(alignment: .trailing, spacing: 2) {
                             Text("Since dose").font(.subheadline).foregroundStyle(Palette.secondary)
-                            Text(start, style: .timer).font(.title3.weight(.semibold)).monospacedDigit()
+                            Group {
+                                if PageFlags.noTimers {
+                                    Text(Format.duration(max(0, Int(now.timeIntervalSince(start) / 60))))
+                                } else {
+                                    Text(start, style: .timer)
+                                }
+                            }
+                            .font(.title3.weight(.semibold)).monospacedDigit()
                         }
                     }
-                    EffectCurveChart(profile: p, start: start, now: now, color: jar.lid.color)
+                    if PageFlags.noChart {
+                        Color.clear.frame(height: 150)
+                    } else if PageFlags.simpleChart {
+                        GeometryReader { geo in
+                            let span = Double(p.durationMinutes) * 60 * 1.12
+                            let x = geo.size.width * CGFloat(min(1, max(0, now.timeIntervalSince(start) / max(span, 1))))
+                            ZStack(alignment: .leading) {
+                                EffectCurveShape(profile: p)
+                                    .fill(LinearGradient(colors: [jar.lid.color.opacity(0.45), jar.lid.color.opacity(0.05)], startPoint: .top, endPoint: .bottom))
+                                EffectCurveShape(profile: p, filled: false).stroke(jar.lid.color, lineWidth: 2)
+                                Rectangle().fill(Palette.label.opacity(0.6)).frame(width: 1.5).offset(x: x)
+                            }
+                        }
                         .frame(height: 150)
+                    } else {
+                        EffectCurveChart(profile: p, start: start, now: now, color: jar.lid.color)
+                            .frame(height: 150)
+                    }
                     HStack {
                         milestone("Kicks in", onset, done: now >= onset)
                         Spacer()

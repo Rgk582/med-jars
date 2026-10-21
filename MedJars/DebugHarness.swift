@@ -335,6 +335,15 @@ enum Autopilot {
             await pause(15)
         case "still":
             await pause(12)
+        case "control-timer":
+            // A plain list with one second-by-second timer, sitting still: the simulator's cost of a live timer.
+            let vc = UIHostingController(rootView: ControlTimer())
+            vc.modalPresentationStyle = .fullScreen
+            var top = keyWindow()?.rootViewController
+            while let p = top?.presentedViewController { top = p }
+            top?.present(vc, animated: false)
+            await pause(12)
+            vc.dismiss(animated: false)
         case "control-list", "control-cards":
             let root: AnyView = kind == "control-list" ? AnyView(ControlList()) : AnyView(ControlCards())
             let vc = UIHostingController(rootView: root)
@@ -370,6 +379,30 @@ struct ControlList: View {
                     }
                     Spacer()
                     Text("8:00 AM").font(.subheadline).monospacedDigit()
+                }
+            }
+            .navigationTitle("Control")
+        }
+    }
+}
+
+struct ControlTimer: View {
+    private let start = Date()
+    var body: some View {
+        NavigationStack {
+            List(0..<80, id: \.self) { i in
+                HStack(spacing: 12) {
+                    Image(systemName: "pills.fill").font(.title2).foregroundStyle(.orange).frame(width: 40)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Control row \(i)").font(.headline)
+                        Text("Detail text for row \(i)").font(.footnote).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    if i == 2 {
+                        Text(start, style: .timer).font(.title3.weight(.semibold)).monospacedDigit()
+                    } else {
+                        Text("8:00 AM").font(.subheadline).monospacedDigit()
+                    }
                 }
             }
             .navigationTitle("Control")
