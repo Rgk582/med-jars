@@ -712,8 +712,9 @@ struct EffectTimelineView: View {
 private struct SupplyRow: View {
     let jar: Jar
     let bottle: Bottle
+    @Environment(AppStore.self) private var store
     var body: some View {
-        let low = jar.isLow(bottle)
+        let low = store.isLow(jar, bottle)
         HStack(spacing: 14) {
             Image(systemName: low ? "exclamationmark.triangle.fill" : "shippingbox.fill")
                 .font(.title2)
@@ -722,7 +723,7 @@ private struct SupplyRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(Format.pills(bottle.pillsLeft, bottle.form).ifEmpty("No \(bottle.form.plural)") + " left")
                     .font(.headline)
-                if let d = jar.daysLeft(bottle) {
+                if let d = store.daysLeft(jar, bottle) {
                     Text(d == 0 ? "Less than a day of doses" : "About \(d) day\(d == 1 ? "" : "s") of doses")
                         .font(.subheadline).foregroundStyle(low ? Palette.due : Palette.secondary)
                 } else {
@@ -741,9 +742,10 @@ private struct BottleRow: View {
     let bottle: Bottle
     let onRefill: () -> Void
     let onPair: () -> Void
+    @Environment(AppStore.self) private var store
 
     var body: some View {
-        let low = jar.isLow(bottle)
+        let low = store.isLow(jar, bottle)
         HStack(spacing: 12) {
             BottleIcon(bottle: bottle, size: 44)
             VStack(alignment: .leading, spacing: 2) {
@@ -754,7 +756,7 @@ private struct BottleRow: View {
                     }
                 }
                 if let left = bottle.pillsLeft {
-                    Text("\(Format.pills(left, bottle.form).ifEmpty("None")) left" + (jar.daysLeft(bottle).map { ", about \($0) day\($0 == 1 ? "" : "s")" } ?? ""))
+                    Text("\(Format.pills(left, bottle.form).ifEmpty("None")) left" + (store.daysLeft(jar, bottle).map { ", about \($0) day\($0 == 1 ? "" : "s")" } ?? ""))
                         .font(.footnote).foregroundStyle(low ? Palette.due : Palette.secondary)
                 }
                 Label(bottle.tagIds.isEmpty ? "No tag" : "Tag paired", systemImage: bottle.tagIds.isEmpty ? "wave.3.right" : "checkmark.circle.fill")

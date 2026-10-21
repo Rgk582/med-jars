@@ -738,7 +738,7 @@ struct LowJar: Identifiable {
     @MainActor
     static func all(_ store: AppStore, now: Date) -> [LowJar] {
         store.jars.filter { $0.isActive(on: now) }.flatMap { jar in
-            jar.lowBottles.map { LowJar(jar: jar, bottle: $0, days: jar.daysLeft($0)) }
+            store.lowBottles(jar).map { LowJar(jar: jar, bottle: $0, days: store.daysLeft(jar, $0)) }
         }
         .sorted { ($0.days ?? -1) < ($1.days ?? -1) }
     }
@@ -1392,7 +1392,7 @@ struct SupplySheet: View {
     private var tracked: [Tracked] {
         store.jars.flatMap { jar in
             jar.bottles.filter { $0.pillsLeft != nil }.map { b in
-                Tracked(item: LowJar(jar: jar, bottle: b, days: jar.daysLeft(b)), low: jar.isLow(b))
+                Tracked(item: LowJar(jar: jar, bottle: b, days: store.daysLeft(jar, b)), low: store.isLow(jar, b))
             }
         }
         .sorted { ($0.item.days ?? Int.max) < ($1.item.days ?? Int.max) }

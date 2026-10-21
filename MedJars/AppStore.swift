@@ -87,6 +87,7 @@ final class AppStore {
     @ObservationIgnored private var nextGroupCache: [NextDose]?
     @ObservationIgnored private var missedCache: [DayItem]?
     @ObservationIgnored private var progressCache: TodayProgress?
+    @ObservationIgnored private var perDayCache: [String: Double?] = [:]
 
     /// The moment cached schedules are worked out for. Reading it makes a screen redraw when the data changes.
     var now: Date {
@@ -106,8 +107,31 @@ final class AppStore {
             nextGroupCache = nil
             missedCache = nil
             progressCache = nil
+            perDayCache.removeAll(keepingCapacity: true)
         }
     }
+
+    // MARK: Cached supply
+
+    /// Pills a day a substance takes from one of its jars, worked out once per change. Only for saved substances.
+    func pillsPerDay(_ jar: Jar, bottleId: String) -> Double? {
+        prepareCaches()
+        let key = jar.id + "|" + bottleId
+        if let hit = perDayCache[key] { return hit }
+        let v = jar.pillsPerDay(bottleId: bottleId, from: cacheNow)
+        perDayCache[key] = .some(v)
+        return v
+    }
+
+    func daysLeft(_ jar: Jar, _ b: Bottle) -> Int? {
+        guard b.pillsLeft != nil else { return nil }
+        return jar.daysLeft(b, perDay: pillsPerDay(jar, bottleId: b.id))
+    }
+
+    func isLow(_ jar: Jar, _ b: Bottle) -> Bool { jar.isLow(b) { pillsPerDay(jar, bottleId: b.id) } }
+
+    /// A substance's jars that are running low.
+    func lowBottles(_ jar: Jar) -> [Bottle] { jar.bottles.filter { isLow(jar, $0) } }
 
     /// The log and planned doses grouped by substance, rebuilt only when they change.
     var doseIndex: DoseIndex {

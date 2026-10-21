@@ -114,9 +114,9 @@ private struct JarRow: View {
                     Label("On break until \(until.formatted(.dateTime.month(.abbreviated).day()))", systemImage: "calendar.badge.minus")
                         .font(.footnote.weight(.semibold)).foregroundStyle(Palette.secondary)
                 }
-                if let low = jar.lowBottles.first, jar.isActive(on: now) {
+                if jar.isActive(on: now), let low = store.lowBottles(jar).first {
                     let which = jar.bottles.count > 1 ? "\(low.title): " : ""
-                    Label(which + (jar.daysLeft(low).map { "Refill soon, \($0) day\($0 == 1 ? "" : "s") left" } ?? "Refill soon"),
+                    Label(which + (store.daysLeft(jar, low).map { "Refill soon, \($0) day\($0 == 1 ? "" : "s") left" } ?? "Refill soon"),
                           systemImage: "exclamationmark.triangle.fill")
                         .font(.footnote.weight(.semibold))
                         .foregroundStyle(Palette.due)

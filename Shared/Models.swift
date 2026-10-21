@@ -1405,15 +1405,21 @@ struct Jar: Codable, Identifiable, Hashable {
     }
 
     /// Whole days of supply left in one jar, when it can be worked out.
-    func daysLeft(_ b: Bottle) -> Int? {
-        guard let left = b.pillsLeft, let perDay = pillsPerDay(bottleId: b.id) else { return nil }
+    func daysLeft(_ b: Bottle) -> Int? { daysLeft(b, perDay: b.pillsLeft == nil ? nil : pillsPerDay(bottleId: b.id)) }
+
+    /// Days left from an already worked out daily use.
+    func daysLeft(_ b: Bottle, perDay: Double?) -> Int? {
+        guard let left = b.pillsLeft, let perDay, perDay > 0 else { return nil }
         return Int((left / perDay).rounded(.down))
     }
 
-    func isLow(_ b: Bottle) -> Bool {
+    func isLow(_ b: Bottle) -> Bool { isLow(b) { pillsPerDay(bottleId: b.id) } }
+
+    /// Low or not, working out the daily use only when the count alone doesn't say.
+    func isLow(_ b: Bottle, perDay: () -> Double?) -> Bool {
         guard let left = b.pillsLeft else { return false }
         if left <= 0 { return true }
-        guard let d = daysLeft(b) else { return false }
+        guard let d = daysLeft(b, perDay: perDay()) else { return false }
         return d <= b.refillWarnDays
     }
 
