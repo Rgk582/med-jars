@@ -9,6 +9,8 @@ struct PlusLayer: View {
     @State private var open = false
     @State private var logMenu = false
     @State private var showAll = false
+    @State private var allItem: AllTarget?
+    struct AllTarget: Identifiable { let id = UUID() }
     @State private var planning: PlanTarget?
     @State private var unknownTag: UnknownTag?
     @State private var editing: EditorTarget?
@@ -32,7 +34,14 @@ struct PlusLayer: View {
                 if open {
                     if logMenu {
                         menuButton("Log Next", symbol: "clock.badge.checkmark") { logNext() }
-                        menuButton("All", symbol: "list.bullet") { close(); showAll = true }
+                        menuButton("All", symbol: "list.bullet") {
+                            close()
+                            #if DEBUG
+                            DebugHarness.log("TAP All allViaItem=\(DebugFlags.allViaItem)")
+                            if DebugFlags.allViaItem { allItem = AllTarget(); return }
+                            #endif
+                            showAll = true
+                        }
                     } else {
                         menuButton("Log", symbol: "checkmark.circle.fill") { withAnimation(.snappy) { logMenu = true } }
                         menuButton("Schedule", symbol: "calendar.badge.plus") {
@@ -58,6 +67,10 @@ struct PlusLayer: View {
         .alert(message?.message ?? "", isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })) {
             Button("OK", role: .cancel) {}
         }
+        .sheet(item: $allItem) { _ in AllSubstancesSheet() }
+        #if DEBUG
+        .onChange(of: showAll) { _, v in DebugHarness.log("showAll -> \(v)") }
+        #endif
     }
 
     private var plus: some View {

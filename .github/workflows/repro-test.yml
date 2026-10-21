@@ -1,0 +1,159 @@
+name: Repro test
+
+# Runs every UI test on a simulator with a three-month seed, samples CPU, memory and the main thread,
+# and saves screenshots and logs to the ci-fulltest branch. Never builds a release.
+on:
+  push:
+    branches: [reprotest]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: reprotest
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: macos-15
+    timeout-minutes: 170
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Time zone and Xcode
+        run: |
+          sudo systemsetup -settimezone America/Chicago || true
+          date
+          XCODE=$(ls -d /Applications/Xcode_*.app | grep -v beta | sort -V | tail -1)
+          sudo xcode-select -s "$XCODE"
+          xcodebuild -version
+
+      - name: Pick a simulator
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c "
+          import json,sys
+          d=json.load(sys.stdin)['devices']
+          c=[x for k,v in d.items() if 'iOS' in k for x in v if x['name'].startswith('iPhone')]
+          pref=['iPhone 17 Pro','iPhone 16 Pro','iPhone 17','iPhone 16','iPhone 15 Pro','iPhone 15']
+          pick=next((x for p in pref for x in c if x['name']==p), c[-1])
+          print(pick['udid'])")
+          echo "UDID=$UDID" >> $GITHUB_ENV
+          xcrun simctl list devices | grep "$UDID"
+
+      - name: Build for testing
+        run: |
+          mkdir -p out/perf out/samples
+          brew install xcodegen
+          python3 ci/add_fulltests.py
+          xcodegen generate
+          set +e
+          xcodebuild build-for-testing -project MedJars.xcodeproj -scheme MedJars -configuration Debug \
+            -destination "platform=iOS Simulator,id=$UDID" -derivedDataPath build CODE_SIGNING_ALLOWED=NO > out/build.log 2>&1
+          STATUS=$?
+          grep -E "error:" out/build.log | sed "s#$GITHUB_WORKSPACE/##" | sort -u | head -200 > out/build-errors.txt
+          echo "build status $STATUS" | tee out/build-status.txt
+          tail -40 out/build.log
+          exit $STATUS
+
+      - name: Boot and seed
+        run: |
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl ui "$UDID" appearance dark
+          xcrun simctl status_bar "$UDID" override --time 9:41 --batteryState charged --batteryLevel 100 || true
+          TZ=America/Chicago python3 ci/seed_full.py "$PWD/out/seed.json"
+          cp out/seed.json /tmp/medjars-seed.json
+          # Also put the seed inside the app's own folder, in case the simulator can't read /tmp.
+          xcrun simctl install "$UDID" build/Build/Products/Debug-iphonesimulator/MedJars.app
+          DATA=$(xcrun simctl get_app_container "$UDID" com.medjars.app data)
+          mkdir -p "$DATA/Documents" && cp out/seed.json "$DATA/Documents/seed.json"
+          xcrun simctl privacy "$UDID" grant all com.medjars.app || true
+
+      - name: Run the UI tests while sampling the app
+        run: |
+          OUT="$PWD/out"
+          # CPU and memory every 2 s, a 2 s main-thread sample every 25 s.
+          (
+            n=0
+            while true; do
+              PID=$(pgrep -x MedJars | tail -1)
+              if [ -n "$PID" ]; then
+                echo "$(date +%s) $PID $(ps -o %cpu=,rss= -p $PID)" >> "$OUT/cpu.txt"
+                n=$((n+1))
+                if [ $((n % 12)) -eq 0 ]; then
+                  sample "$PID" 2 -mayDie -file "$OUT/samples/s_$(date +%s).txt" >/dev/null 2>&1 &
+                fi
+              fi
+              sleep 2
+            done
+          ) &
+          MON=$!
+          set +e
+          TEST_RUNNER_SEED_PATH=/tmp/medjars-seed.json TEST_RUNNER_PERF_DIR="$OUT/perf" \
+          xcodebuild test-without-building -project MedJars.xcodeproj -scheme MedJars -configuration Debug \
+            -destination "platform=iOS Simulator,id=$UDID" -derivedDataPath build \
+            -parallel-testing-enabled NO -test-timeouts-enabled NO \
+            -only-testing:MedJarsFullUITests/B2_ReproTests/test01_AllSheetRepeated -only-testing:MedJarsFullUITests/B2_ReproTests/test01b_AllSheetViaItemSheet \
+            -resultBundlePath out/result.xcresult CODE_SIGNING_ALLOWED=NO > out/test.log 2>&1
+          echo "test status $?" | tee out/test-status.txt
+          kill $MON 2>/dev/null
+          grep -E "^MARK " out/test.log > out/marks.txt
+          grep -E "measured \[|error:|Test Case .* (passed|failed)|Executed " out/test.log | head -400 > out/results.txt
+          tail -30 out/results.txt
+
+      - name: Collect logs, crashes and screenshots
+        if: always()
+        run: |
+          OUT="$PWD/out"
+          mkdir -p out/crashes out/shots
+          find ~/Library/Logs/DiagnosticReports -iname "*MedJars*" -mmin -200 -exec cp {} out/crashes/ \; 2>/dev/null || true
+          DATA=$(xcrun simctl get_app_container "$UDID" com.medjars.app data 2>/dev/null || true)
+          if [ -n "$DATA" ]; then
+            cp "$DATA/Documents/perf.log" out/perf/perf-documents.log 2>/dev/null || true
+            cp "$DATA/Documents/stdout.log" out/perf/stdout-documents.log 2>/dev/null || true
+            cp "$DATA/Documents/medjars.json" out/final-data.json 2>/dev/null || true
+          fi
+          xcrun simctl spawn "$UDID" log show --last 180m --style compact \
+            --predicate 'process == "MedJars" AND (subsystem BEGINSWITH "com.apple.SwiftUI" OR subsystem BEGINSWITH "com.apple.UIKit" OR category == "Hang" OR messageType == fault OR messageType == error)' \
+            > out/system-log.txt 2>/dev/null || true
+          xcrun simctl spawn "$UDID" log show --last 180m --style compact --predicate 'process == "MedJars"' 2>/dev/null \
+            | grep -iE "presenting|Publishing changes|Modifying state|multiple times per frame|cycle detected|Hang detected|hang|AttributeGraph|constraint|not supported|deadlock|Unable to simultaneously|precondition|fatal" \
+            | head -2000 > out/warnings.txt || true
+          if [ -d out/result.xcresult ]; then
+            xcrun xcresulttool export attachments --path out/result.xcresult --output-path out/att > /dev/null 2>&1 || true
+            python3 - <<'PY'
+          import json, os, re, subprocess
+          att = "out/att"
+          man = os.path.join(att, "manifest.json")
+          if os.path.exists(man):
+              data = json.load(open(man))
+              n = 0
+              for test in data:
+                  tname = test.get("testIdentifier", "test").split("/")[-1]
+                  for a in test.get("attachments", []):
+                      src = os.path.join(att, a["exportedFileName"])
+                      name = a.get("suggestedHumanReadableName", a["exportedFileName"])
+                      safe = re.sub(r"[^A-Za-z0-9 ._-]", "", name)[:80].strip()
+                      n += 1
+                      dst = f"out/shots/{n:04d} {tname} {safe}.jpg"
+                      subprocess.run(["sips", "-s", "format", "jpeg", "-s", "formatOptions", "55", "-Z", "900", src, "--out", dst],
+                                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+              print("screenshots", n)
+          PY
+            rm -rf out/att
+            xcrun xcresulttool get test-results summary --path out/result.xcresult > out/summary.json 2>/dev/null || true
+          fi
+          rm -rf out/result.xcresult
+          du -sh out/* | sort -h | tail -15
+
+      - name: Save results to the ci-fulltest branch
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd out || exit 0
+          git init -q -b ci-repro2
+          git add -A
+          git -c user.name="github-actions" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -qm "Full test ${{ github.run_number }} $(git -C .. rev-parse --short HEAD)"
+          git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" ci-repro2

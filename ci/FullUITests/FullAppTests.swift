@@ -20,11 +20,11 @@ class MedJarsUITestCase: XCTestCase {
         print(String(format: "MARK %.3f %@", Date().timeIntervalSince1970, text))
     }
 
-    func launch(seed: Bool = true) {
+    func launch(seed: Bool = true, extra: [String] = []) {
         let env = ProcessInfo.processInfo.environment
         var args = ["-perfHarness", "-captureStdout", "-askedForNotifications", "YES"]
         if seed { args.append("-seedFullTest") }
-        app.launchArguments = args
+        app.launchArguments = args + extra
         if let s = env["SEED_PATH"] { app.launchEnvironment["SEED_PATH"] = s }
         if let p = env["PERF_DIR"] { app.launchEnvironment["PERF_DIR"] = p }
         let start = Date()
@@ -404,6 +404,11 @@ final class B2_ReproTests: MedJarsUITestCase {
             if tapIf(button("Schedule")) { sleep(1); closeSheet() }
             _ = openAll("after Plan")
         }
+    }
+
+    func test01b_AllSheetViaItemSheet() {
+        launch(extra: ["-allViaItem"])
+        for i in 1...3 { step("All sheet as an item sheet, attempt \(i)") { _ = openAll("item \(i)") } }
     }
 
     func test02_ThisWeekFreshLaunch() {

@@ -531,8 +531,10 @@ private struct AsNeededStatus: View {
 enum DebugFlags {
     #if DEBUG
     static let noEffectChart = DebugHarness.flag("noEffectChart")
+    static let allViaItem = DebugHarness.flag("allViaItem")
     #else
     static let noEffectChart = false
+    static let allViaItem = false
     #endif
 }
 
