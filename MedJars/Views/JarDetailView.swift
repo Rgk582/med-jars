@@ -532,7 +532,9 @@ enum DebugFlags {
     #if DEBUG
     static let noEffectChart = DebugHarness.flag("noEffectChart")
     static let allViaItem = DebugHarness.flag("allViaItem")
+    static let fixedMenu = DebugHarness.flag("fixedMenu")
     #else
+    static let fixedMenu = false
     static let noEffectChart = false
     static let allViaItem = false
     #endif

@@ -513,6 +513,59 @@ final class B2_ReproTests: MedJarsUITestCase {
         }
     }
 
+    func test07_AllGhostProbe() {
+        launch()
+        step("Tap just above All, where the old Log button was") {
+            tapPlus()
+            _ = plusMenuLog()
+            sleep(2)
+            app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: 340, dy: 649)).tap()
+            sleep(2)
+            mark("REPRO ghost probe done")
+            closeSheet()
+        }
+        step("Tap the bottom edge of All") {
+            if !button("Log Next").exists {
+                tapPlus()
+                _ = plusMenuLog()
+                sleep(2)
+            }
+            app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: 340, dy: 696)).tap()
+            let ok = navBar("Log a Substance").waitForExistence(timeout: 5)
+            mark("REPRO all bottom-edge tap shown=\(ok)")
+            snap("after bottom edge tap")
+            if ok { closeSheet() }
+        }
+    }
+
+    func test08_FixedMenu() {
+        launch(extra: ["-fixedMenu"])
+        for i in 1...3 {
+            step("All with the fixed menu, attempt \(i)") {
+                tapPlus()
+                _ = plusMenuLog()
+                let all = button("All")
+                if waitFor(all, 3, "All button") { all.tap() }
+                let ok = navBar("Log a Substance").waitForExistence(timeout: 5)
+                mark("REPRO fixed-menu all \(i) shown=\(ok)")
+                check(ok, "All sheet opens with the fixed menu (\(i))")
+                snap("fixed menu all \(i)")
+                if ok { closeSheet() }
+            }
+        }
+        step("Schedule and Log Next still work with the fixed menu") {
+            tapPlus()
+            let sched = button("Schedule")
+            if waitFor(sched, 3, "Schedule button") { sched.tap() }
+            sleep(2)
+            snap("fixed menu schedule")
+            closeSheet()
+            tapPlus()
+            _ = plusMenuLog()
+            if tapIf(button("Log Next")) { sleep(2); snap("fixed menu log next"); closeSheet() }
+        }
+    }
+
     func test05_CoffeeShowsRightAway() {
         launch()
         step("Coffee from the Caffeine tile shows right away") {

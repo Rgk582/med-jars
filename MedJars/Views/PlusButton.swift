@@ -36,7 +36,18 @@ struct PlusLayer: View {
                     .accessibilityAddTraits(.isButton)
             }
             VStack(alignment: .trailing, spacing: 10) {
-                if open {
+                if open && DebugFlags.fixedMenu {
+                    // Same two buttons whose words change, so nothing is removed and reinserted in place.
+                    menuButton(logMenu ? "Log Next" : "Log", symbol: logMenu ? "clock.badge.checkmark" : "checkmark.circle.fill") {
+                        if logMenu { logNext() } else { withAnimation(.snappy) { logMenu = true } }
+                    }
+                    menuButton(logMenu ? "All" : "Schedule", symbol: logMenu ? "list.bullet" : "calendar.badge.plus") {
+                        let wasLog = logMenu
+                        close()
+                        if wasLog { showAll = true } else { planning = PlanTarget(jarId: nil, date: Self.nextHour) }
+                    }
+                    .disabled(!logMenu && store.jars.isEmpty)
+                } else if open {
                     if logMenu {
                         menuButton("Log Next", symbol: "clock.badge.checkmark") { logNext() }
                         menuButton("All", symbol: "list.bullet") {
